@@ -44,8 +44,8 @@ const Navbar = ({ className }: NavbarProps) => {
     >
       <div className="container mx-auto px-6 flex items-center justify-between">
         <Link to="/" className="flex items-center">
-          <span className="text-primary text-2xl font-bold tracking-tight">Health</span>
-          <span className="text-secondary text-2xl font-bold tracking-tight">Connect</span>
+          <span className="text-primary text-2xl font-bold tracking-tight">Cloud</span>
+          <span className="text-secondary text-2xl font-bold tracking-tight">Cure</span>
         </Link>
 
         {/* Desktop Navigation */}

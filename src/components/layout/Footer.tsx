@@ -59,8 +59,8 @@ const Footer = () => {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link to="/" className="inline-block mb-4">
-              <span className="text-primary text-2xl font-bold tracking-tight">Health</span>
-              <span className="text-secondary text-2xl font-bold tracking-tight">Connect</span>
+              <span className="text-primary text-2xl font-bold tracking-tight">Cloud</span>
+              <span className="text-secondary text-2xl font-bold tracking-tight">Cure</span>
             </Link>
             <p className="text-muted-foreground mb-4 max-w-xs">
               Your trusted partner for comprehensive virtual healthcare services, available 24/7.
@@ -105,7 +105,7 @@ const Footer = () => {
         {/* Footer Bottom */}
         <div className="flex flex-col md:flex-row items-center justify-between">
           <p className="text-muted-foreground text-sm mb-4 md:mb-0">
-            © {currentYear} HealthConnect. All rights reserved.
+            © {currentYear} CloudCure. All rights reserved.
           </p>
           <div className="flex items-center text-sm text-muted-foreground">
             <span>Made with</span>

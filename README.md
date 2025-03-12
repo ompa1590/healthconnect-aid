@@ -1,4 +1,5 @@
-# Welcome to your Lovable project
+
+# CloudCure - Virtual Healthcare Platform
 
 ## Project info
 
