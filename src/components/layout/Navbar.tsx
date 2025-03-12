@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -26,7 +27,6 @@ const Navbar = ({ className }: NavbarProps) => {
 
   const navItems = [
     { title: "Home", href: "/" },
-    { title: "Dashboard", href: "/dashboard" },
     { title: "Services", href: "#services" },
     { title: "How It Works", href: "#how-it-works" },
     { title: "About", href: "#about" },
@@ -72,13 +72,13 @@ const Navbar = ({ className }: NavbarProps) => {
             className="font-medium rounded-full px-6 border-primary/20 hover:bg-primary/5 hover:border-primary/30"
             asChild
           >
-            <Link to="/login">Log In</Link>
+            <Link to="/login">Patient Login</Link>
           </Button>
           <Button
             className="font-medium rounded-full px-6 bg-primary hover:bg-primary/90"
             asChild
           >
-            <Link to="/signup">Sign Up</Link>
+            <Link to="/admin-login">Provider Login</Link>
           </Button>
         </div>
 
@@ -108,10 +108,10 @@ const Navbar = ({ className }: NavbarProps) => {
             ))}
             <div className="pt-2 flex flex-col space-y-3">
               <Button variant="outline" className="w-full justify-center rounded-full" asChild>
-                <Link to="/login">Log In</Link>
+                <Link to="/login">Patient Login</Link>
               </Button>
               <Button className="w-full justify-center rounded-full" asChild>
-                <Link to="/signup">Sign Up</Link>
+                <Link to="/admin-login">Provider Login</Link>
               </Button>
             </div>
           </div>
