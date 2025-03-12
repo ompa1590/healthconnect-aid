@@ -27,7 +27,7 @@ const ServicesSection = () => {
       icon: ShieldPlus,
       name: "General Consultations",
       description: "On-demand medical advice from certified physicians",
-      price: "$15/consultation",
+      price: "$45/consultation",
       features: [
         "24/7 available physicians",
         "Video or audio consultations",
