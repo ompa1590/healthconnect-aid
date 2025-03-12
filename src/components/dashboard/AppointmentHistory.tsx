@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { CalendarClock, Clock, Video } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const AppointmentHistory = () => {
   const appointments = [

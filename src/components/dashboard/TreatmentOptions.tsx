@@ -1,7 +1,7 @@
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/button";
-import { Activity, Brain, Heart, Lungs, ShieldPlus } from "lucide-react";
+import { Activity, Brain, Heart, Stethoscope, ShieldPlus } from "lucide-react";
 
 const treatments = [
   {
@@ -29,7 +29,7 @@ const treatments = [
     price: "$50/month",
   },
   {
-    icon: Lungs,
+    icon: Stethoscope,
     name: "Respiratory Care",
     description: "Specialized care for asthma and respiratory conditions",
     price: "$85/consultation",
