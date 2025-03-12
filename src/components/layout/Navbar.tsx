@@ -1,6 +1,5 @@
-
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -12,6 +11,7 @@ interface NavbarProps {
 const Navbar = ({ className }: NavbarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const location = useLocation();
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -26,6 +26,7 @@ const Navbar = ({ className }: NavbarProps) => {
 
   const navItems = [
     { title: "Home", href: "/" },
+    { title: "Dashboard", href: "/dashboard" },
     { title: "Services", href: "#services" },
     { title: "How It Works", href: "#how-it-works" },
     { title: "About", href: "#about" },
@@ -51,13 +52,16 @@ const Navbar = ({ className }: NavbarProps) => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
           {navItems.map((item) => (
-            <a
+            <Link
               key={item.title}
-              href={item.href}
-              className="text-foreground/80 hover:text-foreground transition-colors duration-200"
+              to={item.href}
+              className={cn(
+                "text-foreground/80 hover:text-foreground transition-colors duration-200",
+                location.pathname === item.href && "text-primary font-medium"
+              )}
             >
               {item.title}
-            </a>
+            </Link>
           ))}
         </nav>
 
