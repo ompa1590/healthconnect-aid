@@ -10,6 +10,10 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import PatientLogin from "./pages/login/PatientLogin";
 import AdminLogin from "./pages/login/AdminLogin";
 import ProviderDashboard from "./pages/provider/ProviderDashboard";
+import ServicesPage from "./pages/ServicesPage";
+import HowItWorksPage from "./pages/HowItWorksPage";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
 import { useEffect } from "react";
 
 // Create a custom hook to add Google fonts to the document
@@ -43,6 +47,10 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/services" element={<ServicesPage />} />
+            <Route path="/how-it-works" element={<HowItWorksPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
             <Route path="/dashboard/*" element={<Dashboard />} />
             <Route path="/login" element={<PatientLogin />} />
             <Route path="/admin-login" element={<AdminLogin />} />

@@ -27,10 +27,10 @@ const Navbar = ({ className }: NavbarProps) => {
 
   const navItems = [
     { title: "Home", href: "/" },
-    { title: "Services", href: "#services" },
-    { title: "How It Works", href: "#how-it-works" },
-    { title: "About", href: "#about" },
-    { title: "Contact", href: "#contact" },
+    { title: "Services", href: "/services" },
+    { title: "How It Works", href: "/how-it-works" },
+    { title: "About", href: "/about" },
+    { title: "Contact", href: "/contact" },
   ];
 
   return (
@@ -97,14 +97,14 @@ const Navbar = ({ className }: NavbarProps) => {
         <div className="md:hidden absolute top-full left-0 w-full glass border-b border-border/30 animate-slide-up">
           <div className="container mx-auto px-6 py-4 flex flex-col space-y-4">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.title}
-                href={item.href}
+                to={item.href}
                 className="py-2 text-foreground/80 hover:text-foreground transition-colors duration-200"
                 onClick={() => setIsOpen(false)}
               >
                 {item.title}
-              </a>
+              </Link>
             ))}
             <div className="pt-2 flex flex-col space-y-3">
               <Button variant="outline" className="w-full justify-center rounded-full" asChild>
