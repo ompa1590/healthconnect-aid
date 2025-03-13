@@ -1,18 +1,25 @@
 
+import React, { useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { GlassCard } from "@/components/ui/GlassCard";
 import AppointmentScheduler from "@/components/dashboard/AppointmentScheduler";
 import AppointmentHistory from "@/components/dashboard/AppointmentHistory";
 import MedicalHistory from "@/components/dashboard/MedicalHistory";
 import TreatmentOptions from "@/components/dashboard/TreatmentOptions";
-import { CalendarDays, ClipboardList, History, Stethoscope, User } from "lucide-react";
+import { CalendarDays, ClipboardList, History, Stethoscope, User, Loader2 } from "lucide-react";
 import { MedicalIcon3D } from "@/components/ui/MedicalIcons3D";
 import WelcomeSection from "@/components/dashboard/WelcomeSection";
-import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const Dashboard = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [userName, setUserName] = useState("");
+  
   const queryParams = new URLSearchParams(location.search);
   const tabParam = queryParams.get('tab');
 
@@ -20,6 +27,76 @@ const Dashboard = () => {
   const defaultTab = tabParam && ["appointments", "history", "treatments", "records"].includes(tabParam) 
     ? tabParam 
     : "appointments";
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          throw error;
+        }
+        
+        if (!data.session) {
+          // User is not logged in, redirect to login page
+          toast({
+            title: "Authentication required",
+            description: "Please log in to access your dashboard",
+          });
+          navigate("/login");
+          return;
+        }
+        
+        // Get user profile
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', data.session.user.id)
+          .single();
+          
+        if (profileError) {
+          throw profileError;
+        }
+        
+        if (profileData) {
+          setUserName(profileData.name || "Patient");
+        }
+      } catch (error) {
+        console.error("Authentication error:", error);
+        toast({
+          title: "Authentication error",
+          description: error.message || "There was an error verifying your session",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+    
+    // Set up auth state listener
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        navigate("/login");
+      }
+    });
+    
+    return () => {
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+      }
+    };
+  }, [navigate, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-lg">Loading your dashboard...</span>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen pt-24 pb-16 px-4 md:px-6 max-w-7xl mx-auto">
@@ -29,7 +106,7 @@ const Dashboard = () => {
       <div className="fixed bottom-40 left-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl -z-10 blob-animation-slow"></div>
       
       {/* Welcome Section */}
-      <WelcomeSection userName="Alex" />
+      <WelcomeSection userName={userName} />
       
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 gap-4 mb-8 bg-transparent">
