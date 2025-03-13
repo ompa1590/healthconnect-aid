@@ -113,7 +113,7 @@ const AboutPage = () => {
             <h1 className="text-4xl md:text-5xl font-bold mb-6">Transforming Healthcare for the Digital Age</h1>
             <div className="text-lg text-muted-foreground mb-8">
               <p className="mb-4">
-                CloudCure was founded with a simple mission: to make quality healthcare accessible to everyone, everywhere. 
+                Altheo Health was founded with a simple mission: to make quality healthcare accessible to everyone, everywhere. 
                 We believe that technology can bridge the gap between patients and providers, creating a healthcare experience that is 
                 convenient, personalized, and effective.
               </p>

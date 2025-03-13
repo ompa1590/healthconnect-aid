@@ -9,7 +9,7 @@ const Footer = () => {
     {
       title: "Company",
       links: [
-        { name: "About Us", href: "#" },
+        { name: "About Us", href: "/about" },
         { name: "Careers", href: "#" },
         { name: "Privacy Policy", href: "#" },
         { name: "Terms of Service", href: "#" },
@@ -18,10 +18,10 @@ const Footer = () => {
     {
       title: "Services",
       links: [
-        { name: "Virtual Consultations", href: "#" },
-        { name: "Chronic Care Management", href: "#" },
-        { name: "Specialist Care", href: "#" },
-        { name: "Mental Health", href: "#" },
+        { name: "Virtual Consultations", href: "/services" },
+        { name: "Chronic Care Management", href: "/services" },
+        { name: "Specialist Care", href: "/services" },
+        { name: "Mental Health", href: "/services" },
       ],
     },
     {
@@ -36,7 +36,7 @@ const Footer = () => {
     {
       title: "Get in Touch",
       links: [
-        { name: "Contact Us", href: "#" },
+        { name: "Contact Us", href: "/contact" },
         { name: "Help Center", href: "#" },
         { name: "Feedback", href: "#" },
         { name: "Partner with Us", href: "#" },
@@ -59,8 +59,8 @@ const Footer = () => {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link to="/" className="inline-block mb-4">
-              <span className="text-primary text-2xl font-bold tracking-tight">Cloud</span>
-              <span className="text-secondary text-2xl font-bold tracking-tight">Cure</span>
+              <span className="text-primary text-2xl font-bold tracking-tight">Altheo</span>
+              <span className="text-secondary text-2xl font-bold tracking-tight">Health</span>
             </Link>
             <p className="text-muted-foreground mb-4 max-w-xs">
               Your trusted partner for comprehensive virtual healthcare services, available 24/7.
@@ -105,7 +105,7 @@ const Footer = () => {
         {/* Footer Bottom */}
         <div className="flex flex-col md:flex-row items-center justify-between">
           <p className="text-muted-foreground text-sm mb-4 md:mb-0">
-            © {currentYear} CloudCure. All rights reserved.
+            © {currentYear} Altheo Health. All rights reserved.
           </p>
           <div className="flex items-center text-sm text-muted-foreground">
             <span>Made with</span>

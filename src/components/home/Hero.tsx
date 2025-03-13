@@ -65,7 +65,7 @@ const Hero = () => {
                 className="rounded-full text-base font-medium px-8 border-primary/20 hover:bg-primary/5 hover:border-primary/30"
                 asChild
               >
-                <Link to="#how-it-works">Learn More</Link>
+                <Link to="/how-it-works">Learn More</Link>
               </Button>
             </div>
           </div>

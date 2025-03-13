@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -7,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Activity, 
-  FirstAid, 
+  Stethoscope, 
   Heart, 
   Brain, 
-  Stethoscope, 
+  Medical, 
   UserCheck, 
   Baby, 
   PanelRight, 
@@ -27,7 +26,7 @@ const ServicesPage = () => {
     {
       id: "general",
       title: "General & Urgent Care",
-      icon: FirstAid,
+      icon: Medical,
       color: "primary",
       services: [
         {
@@ -206,7 +205,7 @@ const ServicesPage = () => {
       style={{ animationDelay: `${index * 0.1}s` }}
     >
       <div className={`rounded-full ${service.iconColor}/10 w-14 h-14 flex items-center justify-center mb-5`}>
-        {selectedCategory === "general" && <FirstAid className={service.iconColor} size={24} />}
+        {selectedCategory === "general" && <Medical className={service.iconColor} size={24} />}
         {selectedCategory === "chronic" && <Heart className={service.iconColor} size={24} />}
         {selectedCategory === "specialist" && <UserCheck className={service.iconColor} size={24} />}
         {selectedCategory === "wellness" && <Activity className={service.iconColor} size={24} />}
