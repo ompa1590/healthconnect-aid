@@ -5,6 +5,8 @@ import Hero from "@/components/home/Hero";
 import FeaturesSection from "@/components/home/FeaturesSection";
 import ServicesSection from "@/components/home/ServicesSection";
 import CTASection from "@/components/home/CTASection";
+import DiagnosticCards from "@/components/home/DiagnosticCards";
+import HealthPrograms from "@/components/home/HealthPrograms";
 
 const Index = () => {
   return (
@@ -12,7 +14,9 @@ const Index = () => {
       <Navbar />
       <main>
         <Hero />
+        <DiagnosticCards />
         <FeaturesSection />
+        <HealthPrograms />
         <ServicesSection />
         <CTASection />
       </main>

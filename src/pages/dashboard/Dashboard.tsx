@@ -7,8 +7,20 @@ import MedicalHistory from "@/components/dashboard/MedicalHistory";
 import TreatmentOptions from "@/components/dashboard/TreatmentOptions";
 import { CalendarDays, ClipboardList, History, Stethoscope, User } from "lucide-react";
 import { MedicalIcon3D } from "@/components/ui/MedicalIcons3D";
+import WelcomeSection from "@/components/dashboard/WelcomeSection";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 const Dashboard = () => {
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const tabParam = queryParams.get('tab');
+
+  // Default tab from URL parameters or "appointments"
+  const defaultTab = tabParam && ["appointments", "history", "treatments", "records"].includes(tabParam) 
+    ? tabParam 
+    : "appointments";
+  
   return (
     <div className="min-h-screen pt-24 pb-16 px-4 md:px-6 max-w-7xl mx-auto">
       {/* Background Elements */}
@@ -16,14 +28,10 @@ const Dashboard = () => {
       <div className="fixed top-40 right-10 w-32 h-32 bg-secondary/5 rounded-full blur-3xl -z-10 blob-animation"></div>
       <div className="fixed bottom-40 left-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl -z-10 blob-animation-slow"></div>
       
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-4xl font-bold">Patient Dashboard</h1>
-        <div className="hidden md:block">
-          <MedicalIcon3D type="doctor" size="md" color="primary" />
-        </div>
-      </div>
+      {/* Welcome Section */}
+      <WelcomeSection userName="Alex" />
       
-      <Tabs defaultValue="appointments" className="w-full">
+      <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 gap-4 mb-8 bg-transparent">
           <TabsTrigger value="appointments" className="w-full data-[state=active]:bg-primary/10 group transition-all duration-300">
             <div className="relative">
