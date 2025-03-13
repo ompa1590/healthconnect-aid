@@ -7,6 +7,7 @@ import ServicesSection from "@/components/home/ServicesSection";
 import CTASection from "@/components/home/CTASection";
 import DiagnosticCards from "@/components/home/DiagnosticCards";
 import HealthPrograms from "@/components/home/HealthPrograms";
+import PopularTreatments from "@/components/home/PopularTreatments";
 
 const Index = () => {
   return (
@@ -15,6 +16,7 @@ const Index = () => {
       <main>
         <Hero />
         <DiagnosticCards />
+        <PopularTreatments />
         <FeaturesSection />
         <HealthPrograms />
         <ServicesSection />

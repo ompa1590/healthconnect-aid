@@ -2,8 +2,14 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { ServiceCategoryTabs } from "@/components/services/ServiceCategoryTabs";
+import HealthCategories from "@/components/services/HealthCategories";
+import AllTreatments from "@/components/services/AllTreatments";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
 
 const ServicesPage = () => {
+  const [viewMode, setViewMode] = useState("categories");
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -16,8 +22,28 @@ const ServicesPage = () => {
               Browse our services below and find the right care for your needs.
             </p>
           </div>
-
-          <ServiceCategoryTabs />
+          
+          <Tabs value={viewMode} onValueChange={setViewMode} className="mb-8">
+            <div className="flex justify-center mb-8">
+              <TabsList>
+                <TabsTrigger value="categories">Health Categories</TabsTrigger>
+                <TabsTrigger value="treatments">All Treatments</TabsTrigger>
+                <TabsTrigger value="services">Service Plans</TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="categories" className="animate-fade-in">
+              <HealthCategories />
+            </TabsContent>
+            
+            <TabsContent value="treatments" className="animate-fade-in">
+              <AllTreatments />
+            </TabsContent>
+            
+            <TabsContent value="services" className="animate-fade-in">
+              <ServiceCategoryTabs />
+            </TabsContent>
+          </Tabs>
         </section>
       </main>
       <Footer />
