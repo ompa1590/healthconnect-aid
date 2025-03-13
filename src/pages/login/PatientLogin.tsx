@@ -23,7 +23,7 @@ const PatientLogin = () => {
       // For demo purposes, any login works
       toast({
         title: "Login successful",
-        description: "Welcome back to CloudCure!",
+        description: "Welcome back to Altheo Health!",
       });
       navigate("/dashboard");
       setIsLoading(false);
@@ -35,8 +35,8 @@ const PatientLogin = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <Link to="/" className="inline-block">
-            <span className="text-primary text-4xl font-bold tracking-tight">Cloud</span>
-            <span className="text-secondary text-4xl font-bold tracking-tight">Cure</span>
+            <span className="text-primary text-4xl font-bold tracking-tight">Altheo</span>
+            <span className="text-secondary text-4xl font-bold tracking-tight">Health</span>
           </Link>
           <h2 className="mt-6 text-3xl font-bold text-foreground">Patient Login</h2>
           <p className="mt-2 text-sm text-muted-foreground">

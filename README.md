@@ -1,5 +1,5 @@
 
-# CloudCure - Virtual Healthcare Platform
+# Altheo Health - Virtual Healthcare Platform
 
 ## Project info
 
