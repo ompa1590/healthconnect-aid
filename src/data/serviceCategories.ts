@@ -1,9 +1,8 @@
-
 import { 
   Activity, 
   Stethoscope, 
   Heart, 
-  Medical, 
+  Hospital, 
   UserCheck, 
   Pill 
 } from "lucide-react";
@@ -12,7 +11,7 @@ export const serviceCategories = [
   {
     id: "general",
     title: "General & Urgent Care",
-    icon: Medical,
+    icon: Hospital,
     color: "primary",
     services: [
       {
