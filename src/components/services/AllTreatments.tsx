@@ -1,16 +1,16 @@
 
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Info } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { allTreatments, healthCategories } from "@/data/serviceCategories";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const AllTreatments = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const filteredTreatments = selectedCategory 
     ? allTreatments.filter(treatment => treatment.category === selectedCategory)
@@ -57,46 +57,72 @@ const AllTreatments = () => {
           const categoryColor = getCategoryColor(treatment.category);
           
           return (
-            <HoverCard key={treatment.id} openDelay={100} closeDelay={100}>
-              <HoverCardTrigger asChild>
-                <Card className="p-4 hover:shadow-md transition-all cursor-pointer border-muted/50 relative">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="font-medium">{treatment.title}</h3>
-                    </div>
-                    {CategoryIcon && (
-                      <div className={`rounded-full bg-${categoryColor}/10 p-1.5`}>
-                        <CategoryIcon className={`h-3.5 w-3.5 text-${categoryColor}`} />
-                      </div>
-                    )}
+            <div
+              key={treatment.id}
+              className="relative"
+              onMouseEnter={() => setHoveredId(treatment.id)}
+              onMouseLeave={() => setHoveredId(null)}
+            >
+              <Card className="p-4 hover:shadow-md transition-all cursor-pointer border-muted/50 h-full">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="font-medium">{treatment.title}</h3>
                   </div>
-                </Card>
-              </HoverCardTrigger>
-              <HoverCardContent className="w-80 p-4">
-                <div className="flex flex-col gap-3">
-                  <h4 className="text-base font-semibold">{treatment.title}</h4>
-                  <p className="text-sm text-muted-foreground">{treatment.description}</p>
-                  
-                  <div className="space-y-2">
-                    <h5 className="text-xs font-medium text-muted-foreground">Treatment options:</h5>
-                    <div className="flex flex-wrap gap-1.5">
-                      {treatment.treatments.map((option, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {option}
-                        </Badge>
-                      ))}
+                  {CategoryIcon && (
+                    <div className={`rounded-full bg-${categoryColor}/10 p-1.5`}>
+                      <CategoryIcon className={`h-3.5 w-3.5 text-${categoryColor}`} />
                     </div>
-                  </div>
-                  
-                  <Button size="sm" className="w-full mt-2" asChild>
-                    <Link to={treatment.path}>
-                      Learn More
-                      <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                    </Link>
-                  </Button>
+                  )}
                 </div>
-              </HoverCardContent>
-            </HoverCard>
+              </Card>
+
+              <AnimatePresence>
+                {hoveredId === treatment.id && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute inset-0 z-10"
+                  >
+                    <Card className="p-4 border shadow-md h-full flex flex-col">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="text-base font-semibold">{treatment.title}</h4>
+                        {CategoryIcon && (
+                          <div className={`rounded-full bg-${categoryColor}/10 p-1.5`}>
+                            <CategoryIcon className={`h-3.5 w-3.5 text-${categoryColor}`} />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">{treatment.description}</p>
+                      
+                      <div className="mt-auto space-y-2">
+                        <h5 className="text-xs font-medium text-muted-foreground">Treatment options:</h5>
+                        <div className="flex flex-wrap gap-1.5">
+                          {treatment.treatments.slice(0, 3).map((option, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {option}
+                            </Badge>
+                          ))}
+                          {treatment.treatments.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{treatment.treatments.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <Button size="sm" className="w-full mt-2" asChild>
+                          <Link to={treatment.path}>
+                            Learn More
+                            <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           );
         })}
       </div>

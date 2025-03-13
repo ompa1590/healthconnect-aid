@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface NavbarProps {
   className?: string;
@@ -72,6 +73,7 @@ const Navbar = ({ className }: NavbarProps) => {
 
         {/* Action Buttons */}
         <div className="hidden md:flex items-center space-x-4">
+          <ThemeToggle />
           <Button
             variant="outline"
             className="font-medium rounded-full px-6 border-primary/20 hover:bg-primary/5 hover:border-primary/30"
@@ -88,13 +90,16 @@ const Navbar = ({ className }: NavbarProps) => {
         </div>
 
         {/* Mobile Menu Button */}
-        <button
-          className="md:hidden text-foreground"
-          onClick={toggleMenu}
-          aria-label="Toggle Menu"
-        >
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        <div className="md:hidden flex items-center space-x-4">
+          <ThemeToggle />
+          <button
+            className="text-foreground"
+            onClick={toggleMenu}
+            aria-label="Toggle Menu"
+          >
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Navigation */}
