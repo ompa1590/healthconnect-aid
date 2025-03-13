@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   SendHorizontal, 
   Plus, 
@@ -28,8 +29,46 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+
+// Define types for the Web Speech API
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onend: () => void;
+  onerror: (event: any) => void;
+}
+
+interface SpeechRecognitionEvent {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  [index: number]: SpeechRecognitionResult;
+  item(index: number): SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  readonly length: number;
+  [index: number]: SpeechRecognitionAlternative;
+  item(index: number): SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface Window {
+  SpeechRecognition?: new () => SpeechRecognition;
+  webkitSpeechRecognition?: new () => SpeechRecognition;
+}
 
 interface AIHistoryStepProps {
   formData: SignupFormData;
@@ -92,9 +131,11 @@ const AIHistoryStep: React.FC<AIHistoryStepProps> = ({ formData, updateFormData 
 
   // Setup speech recognition when component mounts
   useEffect(() => {
-    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
+    // Check for browser support of SpeechRecognition
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognitionAPI) {
+      const recognition = new SpeechRecognitionAPI();
       recognition.continuous = true;
       recognition.interimResults = true;
       
@@ -657,15 +698,13 @@ const AIHistoryStep: React.FC<AIHistoryStepProps> = ({ formData, updateFormData 
               <Label>Alcohol Consumption</Label>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <input 
-                    type="checkbox" 
+                  <Checkbox 
                     id="drinks-alcohol" 
                     checked={lifestyleData.alcohol.drinks}
-                    onChange={(e) => setLifestyleData(prev => ({ 
+                    onCheckedChange={(checked) => setLifestyleData(prev => ({ 
                       ...prev, 
-                      alcohol: { ...prev.alcohol, drinks: e.target.checked } 
+                      alcohol: { ...prev.alcohol, drinks: checked === true } 
                     }))}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
                   <Label htmlFor="drinks-alcohol" className="text-sm font-normal">Do you drink alcohol?</Label>
                 </div>
@@ -709,15 +748,13 @@ const AIHistoryStep: React.FC<AIHistoryStepProps> = ({ formData, updateFormData 
               <Label>Smoking Habits</Label>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <input 
-                    type="checkbox" 
+                  <Checkbox 
                     id="smokes" 
                     checked={lifestyleData.smoking.smokes}
-                    onChange={(e) => setLifestyleData(prev => ({ 
+                    onCheckedChange={(checked) => setLifestyleData(prev => ({ 
                       ...prev, 
-                      smoking: { ...prev.smoking, smokes: e.target.checked } 
+                      smoking: { ...prev.smoking, smokes: checked === true } 
                     }))}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
                   <Label htmlFor="smokes" className="text-sm font-normal">Do you smoke cigarettes?</Label>
                 </div>
