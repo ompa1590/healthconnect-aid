@@ -9,11 +9,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
+import BookAppointment from "./BookAppointment";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { CalendarDays } from "lucide-react";
 
 const AppointmentScheduler = () => {
   const [date, setDate] = useState<Date>();
   const [specialist, setSpecialist] = useState("");
   const [timeSlot, setTimeSlot] = useState("");
+  const [openBookingFlow, setOpenBookingFlow] = useState(false);
 
   const specialists = [
     "General Practitioner",
@@ -77,7 +81,14 @@ const AppointmentScheduler = () => {
         </Select>
       </div>
 
-      <Button className="w-full">Schedule Appointment</Button>
+      <Dialog open={openBookingFlow} onOpenChange={setOpenBookingFlow}>
+        <DialogTrigger asChild>
+          <Button className="w-full">Schedule Appointment</Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          <BookAppointment />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

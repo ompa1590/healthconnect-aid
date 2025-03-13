@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/dashboard/Dashboard";
 import PatientLogin from "./pages/login/PatientLogin";
+import PatientSignup from "./pages/login/PatientSignup";
 import AdminLogin from "./pages/login/AdminLogin";
 import ProviderDashboard from "./pages/provider/ProviderDashboard";
 import ServicesPage from "./pages/ServicesPage";
@@ -53,6 +54,7 @@ const App = () => {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/dashboard/*" element={<Dashboard />} />
             <Route path="/login" element={<PatientLogin />} />
+            <Route path="/signup" element={<PatientSignup />} />
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/provider/dashboard/*" element={<ProviderDashboard />} />
             <Route path="*" element={<NotFound />} />
