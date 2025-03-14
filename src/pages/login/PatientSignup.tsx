@@ -131,7 +131,7 @@ const PatientSignup = () => {
         />
       ),
     },
-  };
+  ]; // Fixed: Changed the closing bracket from }; to ]
 
   const goToNextStep = () => {
     if (currentStep < steps.length - 1) {
