@@ -101,8 +101,8 @@ const HowItWorksPage = () => {
           </div>
 
           <div className="relative max-w-5xl mx-auto">
-            {/* Connecting line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-secondary -ml-0.5 hidden lg:block"></div>
+            {/* Connecting line - modified to only reach the last step */}
+            <div className="absolute left-1/2 top-0 h-[calc(100%-200px)] w-1 bg-gradient-to-b from-primary to-secondary -ml-0.5 hidden lg:block"></div>
 
             {steps.map((step, index) => (
               <div 
