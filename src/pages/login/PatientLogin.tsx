@@ -5,7 +5,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Lock, Mail, AlertCircle } from "lucide-react";
+import { Lock, Mail, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -15,6 +15,8 @@ const PatientLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -43,15 +45,80 @@ const PatientLogin = () => {
     };
   }, [navigate]);
 
+  // Define window function for hCaptcha callback
+  useEffect(() => {
+    // Define the callback function on window that hCaptcha will call
+    window.loginCaptchaCallback = (token: string) => {
+      console.log("Login captcha verified with token:", token);
+      setCaptchaToken(token);
+      setCaptchaVerified(true);
+    };
+    
+    // Clean up when component unmounts
+    return () => {
+      delete window.loginCaptchaCallback;
+    };
+  }, []);
+
+  // Load hCaptcha script
+  useEffect(() => {
+    const loadCaptchaScript = () => {
+      if (document.getElementById('hcaptcha-script')) {
+        return;
+      }
+      
+      const script = document.createElement('script');
+      script.id = 'hcaptcha-script';
+      script.src = 'https://hcaptcha.com/1/api.js?render=explicit&onload=renderLoginCaptcha';
+      script.async = true;
+      script.defer = true;
+      
+      // Add a callback to render the captcha once the script is loaded
+      window.renderLoginCaptcha = () => {
+        if (window.hcaptcha && document.getElementById('login-captcha')) {
+          try {
+            window.hcaptcha.render('login-captcha', {
+              sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
+              callback: 'loginCaptchaCallback'
+            });
+          } catch (error) {
+            console.error("Error rendering login captcha:", error);
+          }
+        }
+      };
+      
+      document.head.appendChild(script);
+      
+      return () => {
+        // Clean up
+        delete window.renderLoginCaptcha;
+        if (document.getElementById('hcaptcha-script')) {
+          document.getElementById('hcaptcha-script')?.remove();
+        }
+      };
+    };
+    
+    loadCaptchaScript();
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
     
+    if (!captchaVerified || !captchaToken) {
+      setErrorMessage("Please complete the captcha verification before signing in.");
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
+        options: {
+          captchaToken: captchaToken,
+        }
       });
       
       if (error) throw error;
@@ -80,6 +147,7 @@ const PatientLogin = () => {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
+          captchaToken: captchaToken,
         },
       });
       
@@ -160,13 +228,31 @@ const PatientLogin = () => {
               </div>
             </div>
 
+            {/* hCaptcha container */}
+            <div className="flex justify-center mt-4">
+              <div id="login-captcha"></div>
+            </div>
+            
+            {captchaVerified && (
+              <p className="text-green-500 text-sm font-medium text-center">
+                ✓ Captcha verification complete
+              </p>
+            )}
+
             <div>
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading}
+                disabled={isLoading || !captchaVerified}
               >
-                {isLoading ? "Signing in..." : "Sign in with Email"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign in with Email"
+                )}
               </Button>
             </div>
           </form>
@@ -188,7 +274,7 @@ const PatientLogin = () => {
                 variant="outline"
                 className="w-full"
                 onClick={handleGoogleLogin}
-                disabled={isGoogleLoading}
+                disabled={isGoogleLoading || !captchaVerified}
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                   <path
@@ -250,5 +336,14 @@ const PatientLogin = () => {
     </div>
   );
 };
+
+// Extend Window interface to include custom captcha callbacks
+declare global {
+  interface Window {
+    hcaptcha?: any;
+    renderLoginCaptcha?: () => void;
+    loginCaptchaCallback?: (token: string) => void;
+  }
+}
 
 export default PatientLogin;
