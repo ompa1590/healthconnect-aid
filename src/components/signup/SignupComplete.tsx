@@ -62,7 +62,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         if (error) throw error;
         
         const fileUrl = data?.path;
-        documentUrls.push(fileUrl);
+        documentUrls.push({
+          path: fileUrl,
+          name: file.name,
+          type: fileExt
+        });
         
         // Update progress
         setUploadProgress(Math.round(((i + 1) / files.length) * 100));
@@ -129,20 +133,22 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         // Upload documents if any
         if (formData.documentFiles && formData.documentFiles.length > 0) {
-          const documentUrls = await uploadDocuments(data.user.id);
+          const documentDetails = await uploadDocuments(data.user.id);
           
           // Save document references
-          if (documentUrls.length > 0) {
+          if (documentDetails.length > 0) {
+            // Use the new user_documents table
+            const documentsToInsert = documentDetails.map(doc => ({
+              user_id: data.user.id,
+              document_path: doc.path,
+              document_type: doc.type,
+              document_name: doc.name,
+              uploaded_at: new Date().toISOString(),
+            }));
+            
             const { error: documentsError } = await supabase
               .from('user_documents')
-              .insert(
-                documentUrls.map(url => ({
-                  user_id: data.user.id,
-                  document_path: url,
-                  document_type: url.split('.').pop(),
-                  uploaded_at: new Date().toISOString(),
-                }))
-              );
+              .insert(documentsToInsert);
               
             if (documentsError) {
               console.error("Error saving document references:", documentsError);
