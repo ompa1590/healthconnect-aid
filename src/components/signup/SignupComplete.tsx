@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Upload, Loader2 } from "lucide-react";
@@ -228,34 +229,45 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         <ul className="space-y-2 text-sm">
           <li className="flex">
             <span className="h-5 w-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs mr-2">1</span>
-            <span>Create your account with a single click</span>
+            <span>Complete the security verification below</span>
           </li>
           <li className="flex">
             <span className="h-5 w-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs mr-2">2</span>
-            <span>Log in to access your personal dashboard</span>
+            <span>Create your account with a single click</span>
           </li>
           <li className="flex">
             <span className="h-5 w-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs mr-2">3</span>
+            <span>Log in to access your personal dashboard</span>
+          </li>
+          <li className="flex">
+            <span className="h-5 w-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs mr-2">4</span>
             <span>Book your first virtual consultation</span>
           </li>
         </ul>
       </div>
       
-      <div className="my-6 flex justify-center">
-        <CaptchaComponent 
-          captchaId="signup-captcha" 
-          onVerify={handleCaptchaVerify}
-          callbackName="signupCaptchaCallback"
-        />
+      <div className="border-t border-border/30 pt-6">
+        <h4 className="font-medium mb-4">Security Verification</h4>
+        <p className="text-sm text-muted-foreground mb-4">
+          Please complete the security check below to verify you're human.
+        </p>
+        
+        <div className="flex justify-center mb-4">
+          <CaptchaComponent 
+            captchaId="signup-captcha" 
+            onVerify={handleCaptchaVerify}
+            callbackName="signupCaptchaCallback"
+          />
+        </div>
+        
+        {captchaVerified && (
+          <p className="text-green-500 text-sm font-medium flex items-center justify-center mb-4">
+            <CheckCircle className="h-4 w-4 mr-1" /> Verification complete
+          </p>
+        )}
       </div>
       
-      {captchaVerified && (
-        <p className="text-green-500 text-sm font-medium">
-          ✓ Captcha verification complete
-        </p>
-      )}
-      
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+      <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
         <Button 
           onClick={handleSignup} 
           disabled={loading || !captchaVerified}
