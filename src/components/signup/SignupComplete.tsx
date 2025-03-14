@@ -1,11 +1,12 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Calendar } from "lucide-react";
 import { SignupFormData } from "@/pages/login/PatientSignup";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface SignupCompleteProps {
   formData: SignupFormData;
@@ -14,10 +15,38 @@ interface SignupCompleteProps {
 
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
   const { toast } = useToast();
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   
+  // Load Supabase captcha script on component mount
+  useEffect(() => {
+    const loadCaptchaScript = async () => {
+      // Check if script is already loaded
+      if (document.getElementById('supabase-captcha-script')) {
+        return;
+      }
+      
+      // Load Supabase auth captcha script
+      const script = document.createElement('script');
+      script.id = 'supabase-captcha-script';
+      script.src = 'https://juwznmplmnkfpmrmrrfv.supabase.co/functions/v1/auth-captcha-js';
+      script.async = true;
+      
+      document.body.appendChild(script);
+    };
+    
+    loadCaptchaScript();
+  }, []);
+
   const handleSignup = async () => {
     try {
-      // Sign up the user with email and password
+      setLoading(true);
+      setError(null);
+      
+      // Trigger captcha verification
+      const captchaToken = await (window as any).supabaseCaptchaCallback();
+      
+      // Sign up the user with email and password (including captcha token)
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -25,6 +54,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           data: {
             name: formData.name,
           },
+          captchaToken,
         },
       });
       
@@ -64,11 +94,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       onComplete();
     } catch (error) {
       console.error("Error during signup:", error);
+      setError(error.message || "There was an error creating your account. Please try again.");
       toast({
         title: "Signup failed",
         description: error.message || "There was an error creating your account. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,6 +118,13 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       <p className="text-muted-foreground">
         Welcome to Altheo Health, {formData.name}! Your account details and medical information have been prepared for submission.
       </p>
+      
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       
       <div className="bg-muted/20 p-4 rounded-lg border border-border/30 my-6 text-left">
         <h4 className="font-medium mb-2">Next Steps</h4>
@@ -105,8 +145,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       </div>
       
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Button onClick={handleSignup}>
-          Create Account
+        <Button onClick={handleSignup} disabled={loading}>
+          {loading ? "Creating Account..." : "Create Account"}
         </Button>
         <Button variant="outline" asChild>
           <Link to="/login">
@@ -114,6 +154,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </Link>
         </Button>
       </div>
+      
+      {/* Captcha container will be auto-populated by Supabase */}
+      <div id="supabase-captcha-container" className="flex justify-center mt-4"></div>
     </div>
   );
 };
