@@ -1,7 +1,7 @@
 
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Calendar } from "lucide-react";
+import { CheckCircle, Calendar, Upload } from "lucide-react";
 import { SignupFormData } from "@/pages/login/PatientSignup";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = React.useState(0);
   
   // Load Supabase captcha script on component mount
   useEffect(() => {
@@ -37,6 +38,47 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     
     loadCaptchaScript();
   }, []);
+
+  const uploadDocuments = async (userId: string) => {
+    const files = formData.documentFiles || [];
+    if (files.length === 0) return [];
+    
+    try {
+      const documentUrls = [];
+      
+      // Upload each file to Supabase storage
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+          .from('medical_documents')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (error) throw error;
+        
+        const fileUrl = data?.path;
+        documentUrls.push(fileUrl);
+        
+        // Update progress
+        setUploadProgress(Math.round(((i + 1) / files.length) * 100));
+      }
+      
+      return documentUrls;
+    } catch (error) {
+      console.error("Error uploading documents:", error);
+      toast({
+        title: "Document upload failed",
+        description: "There was an issue uploading your documents. You can upload them later from your dashboard.",
+        variant: "destructive",
+      });
+      return [];
+    }
+  };
 
   const handleSignup = async () => {
     try {
@@ -84,6 +126,29 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           });
           
         if (medicalHistoryError) throw medicalHistoryError;
+        
+        // Upload documents if any
+        if (formData.documentFiles && formData.documentFiles.length > 0) {
+          const documentUrls = await uploadDocuments(data.user.id);
+          
+          // Save document references
+          if (documentUrls.length > 0) {
+            const { error: documentsError } = await supabase
+              .from('user_documents')
+              .insert(
+                documentUrls.map(url => ({
+                  user_id: data.user.id,
+                  document_path: url,
+                  document_type: url.split('.').pop(),
+                  uploaded_at: new Date().toISOString(),
+                }))
+              );
+              
+            if (documentsError) {
+              console.error("Error saving document references:", documentsError);
+            }
+          }
+        }
       }
       
       toast({
@@ -102,6 +167,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       });
     } finally {
       setLoading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -116,7 +182,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       <h3 className="text-xl font-semibold">Ready to Create Your Account</h3>
       
       <p className="text-muted-foreground">
-        Welcome to Altheo Health, {formData.name}! Your account details and medical information have been prepared for submission.
+        Welcome to Altheo Health, {formData.name}! Your account details, medical information, and documents have been prepared for submission.
       </p>
       
       {error && (
@@ -124,6 +190,33 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+      
+      {formData.documents && formData.documents.length > 0 && (
+        <div className="bg-muted/20 p-4 rounded-lg border border-border/30 my-4 text-left">
+          <div className="flex items-center mb-2">
+            <Upload className="h-4 w-4 mr-2 text-primary" />
+            <h4 className="font-medium">Documents to Upload</h4>
+          </div>
+          <ul className="space-y-1 text-sm">
+            {formData.documents.map((doc, index) => (
+              <li key={index} className="flex items-center">
+                <span className="h-3 w-3 rounded-full bg-primary/20 mr-2"></span>
+                <span className="truncate">{doc}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      
+      {uploadProgress > 0 && uploadProgress < 100 && (
+        <div className="w-full bg-muted/30 h-2 rounded-full mt-2">
+          <div 
+            className="bg-primary h-2 rounded-full transition-all duration-300"
+            style={{ width: `${uploadProgress}%` }}
+          ></div>
+          <p className="text-xs text-muted-foreground mt-1">Uploading documents... {uploadProgress}%</p>
+        </div>
       )}
       
       <div className="bg-muted/20 p-4 rounded-lg border border-border/30 my-6 text-left">

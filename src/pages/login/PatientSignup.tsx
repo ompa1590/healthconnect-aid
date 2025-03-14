@@ -9,6 +9,7 @@ import AccountInfoStep from "@/components/signup/AccountInfoStep";
 import ProvinceStep from "@/components/signup/ProvinceStep";
 import HealthCardStep from "@/components/signup/HealthCardStep";
 import AIHistoryStep from "@/components/signup/AIHistoryStep";
+import DocumentUploadStep from "@/components/signup/DocumentUploadStep";
 import SignupComplete from "@/components/signup/SignupComplete";
 
 export type SignupFormData = {
@@ -23,6 +24,8 @@ export type SignupFormData = {
     medications: string[];
     pastTreatments: string[];
   };
+  documents?: string[];
+  documentFiles?: File[];
 };
 
 const PatientSignup = () => {
@@ -39,6 +42,8 @@ const PatientSignup = () => {
       medications: [],
       pastTreatments: [],
     },
+    documents: [],
+    documentFiles: [],
   });
   
   const { toast } = useToast();
@@ -85,6 +90,15 @@ const PatientSignup = () => {
               ...data,
             },
           })} 
+        />
+      ),
+    },
+    {
+      title: "Upload Documents",
+      component: (
+        <DocumentUploadStep 
+          formData={formData} 
+          updateFormData={(data) => setFormData({ ...formData, ...data })} 
         />
       ),
     },
