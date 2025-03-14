@@ -1,7 +1,6 @@
-
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Calendar, Upload } from "lucide-react";
+import { CheckCircle, Upload } from "lucide-react";
 import { SignupFormData } from "@/pages/login/PatientSignup";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,28 +14,78 @@ interface SignupCompleteProps {
 
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
   const { toast } = useToast();
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = React.useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaWidgetId = React.useRef<number | null>(null);
   
-  // Load Supabase captcha script on component mount
+  // Load hCaptcha script
   useEffect(() => {
     const loadCaptchaScript = async () => {
-      // Check if script is already loaded
-      if (document.getElementById('supabase-captcha-script')) {
+      if (document.getElementById('hcaptcha-script')) {
         return;
       }
       
-      // Load Supabase auth captcha script
       const script = document.createElement('script');
-      script.id = 'supabase-captcha-script';
-      script.src = 'https://juwznmplmnkfpmrmrrfv.supabase.co/functions/v1/auth-captcha-js';
+      script.id = 'hcaptcha-script';
+      script.src = 'https://js.hcaptcha.com/1/api.js';
       script.async = true;
+      script.defer = true;
       
-      document.body.appendChild(script);
+      // Define the callback function on window
+      window.hcaptchaCallback = (token: string) => {
+        setCaptchaToken(token);
+      };
+      
+      script.dataset.callback = 'hcaptchaCallback';
+      
+      document.head.appendChild(script);
+      
+      return () => {
+        // Clean up the global function when component unmounts
+        delete window.hcaptchaCallback;
+      };
     };
     
     loadCaptchaScript();
+  }, []);
+  
+  // Initialize hCaptcha once the script is loaded
+  useEffect(() => {
+    const initCaptcha = () => {
+      if (window.hcaptcha && !captchaWidgetId.current) {
+        try {
+          // Allow some time for hCaptcha to fully initialize
+          setTimeout(() => {
+            const container = document.getElementById('hcaptcha-container');
+            if (container) {
+              captchaWidgetId.current = window.hcaptcha.render('hcaptcha-container', {
+                sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
+                theme: 'light',
+                callback: 'hcaptchaCallback'
+              });
+            }
+          }, 500);
+        } catch (error) {
+          console.error('hCaptcha initialization error:', error);
+        }
+      }
+    };
+
+    if (window.hcaptcha) {
+      initCaptcha();
+    } else {
+      // If hCaptcha isn't loaded yet, set up an event listener for when it is
+      const checkHcaptcha = setInterval(() => {
+        if (window.hcaptcha) {
+          clearInterval(checkHcaptcha);
+          initCaptcha();
+        }
+      }, 100);
+      
+      return () => clearInterval(checkHcaptcha);
+    }
   }, []);
 
   const uploadDocuments = async (userId: string) => {
@@ -89,8 +138,15 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       setLoading(true);
       setError(null);
       
-      // Trigger captcha verification
-      const captchaToken = await (window as any).supabaseCaptchaCallback();
+      if (!captchaToken) {
+        toast({
+          title: "Captcha Required",
+          description: "Please complete the captcha verification before creating your account.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
       
       // Sign up the user with email and password (including captcha token)
       const { data, error } = await supabase.auth.signUp({
@@ -100,7 +156,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           data: {
             name: formData.name,
           },
-          captchaToken,
+          captchaToken: captchaToken,
         },
       });
       
@@ -254,10 +310,17 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </Button>
       </div>
       
-      {/* Captcha container will be auto-populated by Supabase */}
-      <div id="supabase-captcha-container" className="flex justify-center mt-4"></div>
+      {/* hCaptcha container */}
+      <div id="hcaptcha-container" className="flex justify-center mt-4"></div>
     </div>
   );
 };
+
+declare global {
+  interface Window {
+    hcaptcha?: any;
+    hcaptchaCallback?: (token: string) => void;
+  }
+}
 
 export default SignupComplete;

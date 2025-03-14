@@ -1,16 +1,18 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Mic, Send, StopCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
+interface Window {
+  SpeechRecognition?: typeof SpeechRecognition;
+  webkitSpeechRecognition?: typeof SpeechRecognition;
+}
+
 interface AIHistoryStepProps {
   formData: any;
   updateFormData: (data: any) => void;
 }
-
-// Global window type definition for SpeechRecognition is already defined in the file
 
 const AIHistoryStep: React.FC<AIHistoryStepProps> = ({ formData, updateFormData }) => {
   const [userInput, setUserInput] = useState("");
@@ -24,10 +26,9 @@ const AIHistoryStep: React.FC<AIHistoryStepProps> = ({ formData, updateFormData 
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
 
-  // Initialize speech recognition
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
         recognitionRef.current = new SpeechRecognition();
         recognitionRef.current.continuous = true;
@@ -85,28 +86,22 @@ const AIHistoryStep: React.FC<AIHistoryStepProps> = ({ formData, updateFormData 
     
     setIsProcessing(true);
     
-    // Simple processing logic - in a real app this might call an AI service
     setTimeout(() => {
-      // Extract potential medical information from user input
       const inputLower = userInput.toLowerCase();
       
-      // Very basic extraction logic - would be replaced with proper NLP/AI
       const newConditions = extractMedicalInfo(inputLower, ["diabetes", "asthma", "hypertension", "arthritis"]);
       const newAllergies = extractMedicalInfo(inputLower, ["peanut", "penicillin", "lactose", "gluten"]);
       const newMedications = extractMedicalInfo(inputLower, ["aspirin", "insulin", "ibuprofen", "metformin"]);
       const newTreatments = extractMedicalInfo(inputLower, ["surgery", "therapy", "transplant", "radiation"]);
       
-      // Update lists avoiding duplicates
       setConditions(prev => [...new Set([...prev, ...newConditions])]);
       setAllergies(prev => [...new Set([...prev, ...newAllergies])]);
       setMedications(prev => [...new Set([...prev, ...newMedications])]);
       setPastTreatments(prev => [...new Set([...prev, ...newTreatments])]);
       
-      // Clear input after processing
       setUserInput("");
       setIsProcessing(false);
       
-      // Update form data
       updateFormData({
         conditions: [...new Set([...conditions, ...newConditions])],
         allergies: [...new Set([...allergies, ...newAllergies])],
@@ -121,12 +116,10 @@ const AIHistoryStep: React.FC<AIHistoryStepProps> = ({ formData, updateFormData 
     }, 1000);
   };
   
-  // Helper function to extract medical information from text
   const extractMedicalInfo = (text: string, keywords: string[]): string[] => {
     return keywords.filter(keyword => text.includes(keyword));
   };
   
-  // Update form data when any lists change
   useEffect(() => {
     updateFormData({
       conditions,
