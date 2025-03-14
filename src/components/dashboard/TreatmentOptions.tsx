@@ -3,7 +3,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Activity, Brain, Heart, Stethoscope, ShieldPlus } from "lucide-react";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const treatments = [
   {
@@ -56,59 +56,50 @@ const TreatmentOptions = () => {
       {treatments.map((treatment) => (
         <div
           key={treatment.id}
-          className="relative"
+          className="relative h-full"
           onMouseEnter={() => setHoveredId(treatment.id)}
           onMouseLeave={() => setHoveredId(null)}
         >
-          <GlassCard className="flex flex-col">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-full bg-primary/10">
-                <treatment.icon className="h-6 w-6 text-primary" />
+          <motion.div
+            animate={{
+              height: hoveredId === treatment.id ? "auto" : "initial",
+              transition: { duration: 0.3 }
+            }}
+          >
+            <GlassCard className="flex flex-col h-full">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <treatment.icon className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="font-medium">{treatment.name}</h3>
               </div>
-              <h3 className="font-medium">{treatment.name}</h3>
-            </div>
-            <p className="text-sm text-muted-foreground flex-grow">
-              {treatment.description}
-            </p>
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-sm font-medium">{treatment.price}</span>
-              <Button variant="outline" size="sm">
-                Learn More
-              </Button>
-            </div>
-          </GlassCard>
-
-          <AnimatePresence>
-            {hoveredId === treatment.id && (
+              <p className="text-sm text-muted-foreground">
+                {treatment.description}
+              </p>
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-sm font-medium">{treatment.price}</span>
+                <Button variant="outline" size="sm">
+                  Learn More
+                </Button>
+              </div>
+              
+              {/* Expanded content that appears on hover */}
               <motion.div
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 5 }}
-                transition={{ duration: 0.2 }}
-                className="absolute inset-0 z-10"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ 
+                  opacity: hoveredId === treatment.id ? 1 : 0,
+                  height: hoveredId === treatment.id ? "auto" : 0
+                }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden mt-4"
               >
-                <GlassCard className="h-full p-6 border shadow-md backdrop-blur-md">
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 rounded-full bg-primary/10">
-                        <treatment.icon className="h-6 w-6 text-primary" />
-                      </div>
-                      <h3 className="font-medium">{treatment.name}</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {treatment.details}
-                    </p>
-                    <div className="mt-auto">
-                      <span className="block text-sm font-medium mb-2">{treatment.price}</span>
-                      <Button variant="default" size="sm" className="w-full">
-                        Get Started
-                      </Button>
-                    </div>
-                  </div>
-                </GlassCard>
+                <p className="text-sm text-muted-foreground mb-3">{treatment.details}</p>
+                <Button variant="default" size="sm" className="w-full mt-2">
+                  Get Started
+                </Button>
               </motion.div>
-            )}
-          </AnimatePresence>
+            </GlassCard>
+          </motion.div>
         </div>
       ))}
     </div>
