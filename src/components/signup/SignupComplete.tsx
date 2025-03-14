@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Upload } from "lucide-react";
+import { CheckCircle, Upload, Loader2 } from "lucide-react";
 import { SignupFormData } from "@/pages/login/PatientSignup";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,36 +21,54 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [uploadProgress, setUploadProgress] = useState(0);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaVerified, setCaptchaVerified] = useState(false);
-  const captchaWidgetId = React.useRef<number | null>(null);
   
-  // Define the callback function for hCaptcha
-  const handleCaptchaVerify = useCallback((token: string) => {
-    console.log("Captcha verified with token:", token);
-    setCaptchaToken(token);
-    setCaptchaVerified(true);
+  // Define window function for hCaptcha callback
+  useEffect(() => {
+    // Define the callback function on window that hCaptcha will call
+    window.supabaseCaptchaCallback = (token: string) => {
+      console.log("Captcha verified with token:", token);
+      setCaptchaToken(token);
+      setCaptchaVerified(true);
+    };
+    
+    // Clean up when component unmounts
+    return () => {
+      delete window.supabaseCaptchaCallback;
+    };
   }, []);
 
   // Load hCaptcha script
   useEffect(() => {
-    const loadCaptchaScript = async () => {
+    const loadCaptchaScript = () => {
       if (document.getElementById('hcaptcha-script')) {
         return;
       }
       
-      // Define the callback function on window
-      window.hCaptchaOnVerify = handleCaptchaVerify;
-      
       const script = document.createElement('script');
       script.id = 'hcaptcha-script';
-      script.src = 'https://js.hcaptcha.com/1/api.js?onVerify=hCaptchaOnVerify';
+      script.src = 'https://hcaptcha.com/1/api.js?render=explicit&onload=renderCaptcha';
       script.async = true;
       script.defer = true;
+      
+      // Add a callback to render the captcha once the script is loaded
+      window.renderCaptcha = () => {
+        if (window.hcaptcha && document.getElementById('h-captcha')) {
+          try {
+            window.hcaptcha.render('h-captcha', {
+              sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
+              callback: 'supabaseCaptchaCallback'
+            });
+          } catch (error) {
+            console.error("Error rendering captcha:", error);
+          }
+        }
+      };
       
       document.head.appendChild(script);
       
       return () => {
-        // Clean up the global function when component unmounts
-        delete window.hCaptchaOnVerify;
+        // Clean up
+        delete window.renderCaptcha;
         if (document.getElementById('hcaptcha-script')) {
           document.getElementById('hcaptcha-script')?.remove();
         }
@@ -58,7 +76,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     };
     
     loadCaptchaScript();
-  }, [handleCaptchaVerify]);
+  }, []);
 
   const uploadDocuments = async (userId: string) => {
     const files = formData.documentFiles || [];
@@ -122,7 +140,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       console.log("Starting signup with captcha token:", captchaToken);
       
-      // Sign up the user with email and password (including captcha token)
+      // Sign up the user with email and password
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -138,65 +156,70 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       console.log("Signup successful:", data);
       
+      if (!data.user) {
+        throw new Error("Failed to create user account");
+      }
+      
       // Update the profile with additional information
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            province: formData.province,
-            health_card_number: formData.healthCardNumber,
-          })
-          .eq('id', data.user.id);
-          
-        if (profileError) throw profileError;
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          province: formData.province,
+          health_card_number: formData.healthCardNumber,
+        })
+        .eq('id', data.user.id);
         
-        // Save medical history
-        const { error: medicalHistoryError } = await supabase
-          .from('medical_history')
-          .insert({
+      if (profileError) {
+        console.error("Error updating profile:", profileError);
+      }
+      
+      // Save medical history
+      const { error: medicalHistoryError } = await supabase
+        .from('medical_history')
+        .insert({
+          user_id: data.user.id,
+          conditions: formData.medicalHistory.conditions,
+          allergies: formData.medicalHistory.allergies,
+          medications: formData.medicalHistory.medications,
+          past_treatments: formData.medicalHistory.pastTreatments,
+        });
+        
+      if (medicalHistoryError) {
+        console.error("Error saving medical history:", medicalHistoryError);
+      }
+      
+      // Upload documents if any
+      if (formData.documentFiles && formData.documentFiles.length > 0) {
+        const documentDetails = await uploadDocuments(data.user.id);
+        
+        // Save document references
+        if (documentDetails.length > 0) {
+          // Use the new user_documents table
+          const documentsToInsert = documentDetails.map(doc => ({
             user_id: data.user.id,
-            conditions: formData.medicalHistory.conditions,
-            allergies: formData.medicalHistory.allergies,
-            medications: formData.medicalHistory.medications,
-            past_treatments: formData.medicalHistory.pastTreatments,
-          });
+            document_path: doc.path,
+            document_type: doc.type,
+            document_name: doc.name,
+            uploaded_at: new Date().toISOString(),
+          }));
           
-        if (medicalHistoryError) throw medicalHistoryError;
-        
-        // Upload documents if any
-        if (formData.documentFiles && formData.documentFiles.length > 0) {
-          const documentDetails = await uploadDocuments(data.user.id);
-          
-          // Save document references
-          if (documentDetails.length > 0) {
-            // Use the new user_documents table
-            const documentsToInsert = documentDetails.map(doc => ({
-              user_id: data.user.id,
-              document_path: doc.path,
-              document_type: doc.type,
-              document_name: doc.name,
-              uploaded_at: new Date().toISOString(),
-            }));
+          const { error: documentsError } = await supabase
+            .from('user_documents')
+            .insert(documentsToInsert);
             
-            const { error: documentsError } = await supabase
-              .from('user_documents')
-              .insert(documentsToInsert);
-              
-            if (documentsError) {
-              console.error("Error saving document references:", documentsError);
-            }
+          if (documentsError) {
+            console.error("Error saving document references:", documentsError);
           }
         }
       }
       
       toast({
         title: "Account created successfully",
-        description: "Welcome to Altheo Health! You can now log in.",
+        description: "Welcome to Altheo Health! You are now logged in.",
       });
       
       // Navigate to dashboard after successful signup
       navigate('/dashboard');
-      onComplete();
     } catch (error) {
       console.error("Error during signup:", error);
       setError(error.message || "There was an error creating your account. Please try again.");
@@ -283,7 +306,12 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           disabled={loading || !captchaVerified}
           className={captchaVerified ? "bg-green-500 hover:bg-green-600" : ""}
         >
-          {loading ? "Creating Account..." : captchaVerified ? "Create Account ✓" : "Create Account"}
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating Account...
+            </>
+          ) : captchaVerified ? "Create Account ✓" : "Create Account"}
         </Button>
         <Button variant="outline" asChild>
           <Link to="/login">
@@ -292,14 +320,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </Button>
       </div>
       
-      {/* hCaptcha container with proper sitekey */}
+      {/* hCaptcha container */}
       <div className="flex justify-center mt-4">
-        <div
-          id="h-captcha"
-          className="h-captcha"
-          data-sitekey="62a482d2-14c8-4640-96a8-95a28a30d50c"
-          data-callback="hCaptchaOnVerify"
-        ></div>
+        <div id="h-captcha"></div>
       </div>
       
       {captchaVerified && (
@@ -314,7 +337,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
 declare global {
   interface Window {
     hcaptcha?: any;
-    hCaptchaOnVerify?: (token: string) => void;
+    renderCaptcha?: () => void;
+    supabaseCaptchaCallback?: (token: string) => void;
   }
 }
 

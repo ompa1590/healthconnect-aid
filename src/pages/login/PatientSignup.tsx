@@ -11,6 +11,7 @@ import HealthCardStep from "@/components/signup/HealthCardStep";
 import AIHistoryStep from "@/components/signup/AIHistoryStep";
 import DocumentUploadStep from "@/components/signup/DocumentUploadStep";
 import SignupComplete from "@/components/signup/SignupComplete";
+import { supabase } from "@/integrations/supabase/client";
 
 export type SignupFormData = {
   email: string;
@@ -48,6 +49,19 @@ const PatientSignup = () => {
   
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        // User is already logged in, redirect to dashboard
+        navigate('/dashboard');
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
 
   // Define the steps in the sign-up process
   const steps = [
@@ -112,12 +126,12 @@ const PatientSignup = () => {
               title: "Account created successfully",
               description: "Welcome to Altheo Health! You can now log in.",
             });
-            navigate("/login");
+            navigate("/dashboard");
           }}
         />
       ),
     },
-  ];
+  };
 
   const goToNextStep = () => {
     if (currentStep < steps.length - 1) {
