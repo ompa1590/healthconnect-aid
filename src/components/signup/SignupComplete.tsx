@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Upload, Loader2 } from "lucide-react";
 import { SignupFormData } from "@/pages/login/PatientSignup";
@@ -22,6 +22,15 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [uploadProgress, setUploadProgress] = useState(0);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
+  
+  // Force re-render of captcha on component mount to ensure it's visible
+  useEffect(() => {
+    // Reset and regenerate captcha with unique key
+    setCaptchaKey(Date.now().toString());
+    setCaptchaVerified(false);
+    setCaptchaToken(null);
+  }, []);
   
   const handleCaptchaVerify = (token: string) => {
     console.log("Captcha verified with token:", token);
@@ -252,9 +261,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           Please complete the security check below to verify you're human.
         </p>
         
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-4" id="captcha-container">
           <CaptchaComponent 
-            captchaId="signup-captcha" 
+            captchaId={`signup-captcha-${captchaKey}`}
             onVerify={handleCaptchaVerify}
             callbackName="signupCaptchaCallback"
           />
