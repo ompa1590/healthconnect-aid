@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Upload } from "lucide-react";
 import { SignupFormData } from "@/pages/login/PatientSignup";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -14,12 +15,21 @@ interface SignupCompleteProps {
 
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
   const captchaWidgetId = React.useRef<number | null>(null);
   
+  // Define the callback function for hCaptcha
+  const handleCaptchaVerify = useCallback((token: string) => {
+    console.log("Captcha verified with token:", token);
+    setCaptchaToken(token);
+    setCaptchaVerified(true);
+  }, []);
+
   // Load hCaptcha script
   useEffect(() => {
     const loadCaptchaScript = async () => {
@@ -27,66 +37,28 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         return;
       }
       
+      // Define the callback function on window
+      window.hCaptchaOnVerify = handleCaptchaVerify;
+      
       const script = document.createElement('script');
       script.id = 'hcaptcha-script';
-      script.src = 'https://js.hcaptcha.com/1/api.js';
+      script.src = 'https://js.hcaptcha.com/1/api.js?onVerify=hCaptchaOnVerify';
       script.async = true;
       script.defer = true;
-      
-      // Define the callback function on window
-      window.hcaptchaCallback = (token: string) => {
-        setCaptchaToken(token);
-      };
-      
-      script.dataset.callback = 'hcaptchaCallback';
       
       document.head.appendChild(script);
       
       return () => {
         // Clean up the global function when component unmounts
-        delete window.hcaptchaCallback;
+        delete window.hCaptchaOnVerify;
+        if (document.getElementById('hcaptcha-script')) {
+          document.getElementById('hcaptcha-script')?.remove();
+        }
       };
     };
     
     loadCaptchaScript();
-  }, []);
-  
-  // Initialize hCaptcha once the script is loaded
-  useEffect(() => {
-    const initCaptcha = () => {
-      if (window.hcaptcha && !captchaWidgetId.current) {
-        try {
-          // Allow some time for hCaptcha to fully initialize
-          setTimeout(() => {
-            const container = document.getElementById('hcaptcha-container');
-            if (container) {
-              captchaWidgetId.current = window.hcaptcha.render('hcaptcha-container', {
-                sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
-                theme: 'light',
-                callback: 'hcaptchaCallback'
-              });
-            }
-          }, 500);
-        } catch (error) {
-          console.error('hCaptcha initialization error:', error);
-        }
-      }
-    };
-
-    if (window.hcaptcha) {
-      initCaptcha();
-    } else {
-      // If hCaptcha isn't loaded yet, set up an event listener for when it is
-      const checkHcaptcha = setInterval(() => {
-        if (window.hcaptcha) {
-          clearInterval(checkHcaptcha);
-          initCaptcha();
-        }
-      }, 100);
-      
-      return () => clearInterval(checkHcaptcha);
-    }
-  }, []);
+  }, [handleCaptchaVerify]);
 
   const uploadDocuments = async (userId: string) => {
     const files = formData.documentFiles || [];
@@ -138,7 +110,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       setLoading(true);
       setError(null);
       
-      if (!captchaToken) {
+      if (!captchaVerified || !captchaToken) {
         toast({
           title: "Captcha Required",
           description: "Please complete the captcha verification before creating your account.",
@@ -147,6 +119,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         setLoading(false);
         return;
       }
+      
+      console.log("Starting signup with captcha token:", captchaToken);
       
       // Sign up the user with email and password (including captcha token)
       const { data, error } = await supabase.auth.signUp({
@@ -161,6 +135,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       });
       
       if (error) throw error;
+      
+      console.log("Signup successful:", data);
       
       // Update the profile with additional information
       if (data.user) {
@@ -218,6 +194,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         description: "Welcome to Altheo Health! You can now log in.",
       });
       
+      // Navigate to dashboard after successful signup
+      navigate('/dashboard');
       onComplete();
     } catch (error) {
       console.error("Error during signup:", error);
@@ -300,8 +278,12 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       </div>
       
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Button onClick={handleSignup} disabled={loading}>
-          {loading ? "Creating Account..." : "Create Account"}
+        <Button 
+          onClick={handleSignup} 
+          disabled={loading || !captchaVerified}
+          className={captchaVerified ? "bg-green-500 hover:bg-green-600" : ""}
+        >
+          {loading ? "Creating Account..." : captchaVerified ? "Create Account ✓" : "Create Account"}
         </Button>
         <Button variant="outline" asChild>
           <Link to="/login">
@@ -310,8 +292,21 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </Button>
       </div>
       
-      {/* hCaptcha container */}
-      <div id="hcaptcha-container" className="flex justify-center mt-4"></div>
+      {/* hCaptcha container with proper sitekey */}
+      <div className="flex justify-center mt-4">
+        <div
+          id="h-captcha"
+          className="h-captcha"
+          data-sitekey="62a482d2-14c8-4640-96a8-95a28a30d50c"
+          data-callback="hCaptchaOnVerify"
+        ></div>
+      </div>
+      
+      {captchaVerified && (
+        <p className="text-green-500 text-sm font-medium mt-2">
+          ✓ Captcha verification complete
+        </p>
+      )}
     </div>
   );
 };
@@ -319,7 +314,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
 declare global {
   interface Window {
     hcaptcha?: any;
-    hcaptchaCallback?: (token: string) => void;
+    hCaptchaOnVerify?: (token: string) => void;
   }
 }
 
