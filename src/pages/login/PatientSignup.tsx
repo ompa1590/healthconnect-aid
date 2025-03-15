@@ -124,7 +124,7 @@ const PatientSignup = () => {
           onComplete={() => {
             toast({
               title: "Account created successfully",
-              description: "Welcome to Altheo Health! You can now log in.",
+              description: "Welcome to Vyra Health! You can now log in.",
             });
             navigate("/dashboard");
           }}
@@ -150,7 +150,7 @@ const PatientSignup = () => {
       <div className="w-full max-w-xl space-y-8">
         <div className="text-center">
           <Link to="/" className="inline-block">
-            <span className="text-primary text-4xl font-bold tracking-tight">Altheo</span>
+            <span className="text-primary text-4xl font-bold tracking-tight">Vyra</span>
             <span className="text-secondary text-4xl font-bold tracking-tight">Health</span>
           </Link>
           <h2 className="mt-6 text-3xl font-bold text-foreground">{steps[currentStep].title}</h2>

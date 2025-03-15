@@ -65,7 +65,7 @@ export const useAuthLogin = () => {
       if (data.user) {
         toast({
           title: "Login successful",
-          description: "Welcome back to Altheo Health!",
+          description: "Welcome back to Vyra Health!",
         });
         navigate("/dashboard");
       }
