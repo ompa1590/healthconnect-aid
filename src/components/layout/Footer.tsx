@@ -59,7 +59,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link to="/" className="inline-block mb-4">
-              <span className="text-primary text-2xl font-bold tracking-tight">Altheo</span>
+              <span className="text-primary text-2xl font-bold tracking-tight">Vyra</span>
               <span className="text-secondary text-2xl font-bold tracking-tight">Health</span>
             </Link>
             <p className="text-muted-foreground mb-4 max-w-xs">
@@ -114,7 +114,7 @@ const Footer = () => {
         {/* Footer Bottom */}
         <div className="flex flex-col md:flex-row items-center justify-between">
           <p className="text-muted-foreground text-sm mb-4 md:mb-0">
-            © {currentYear} Altheo Health. All rights reserved.
+            © {currentYear} Vyra Health. All rights reserved.
           </p>
           <div className="flex items-center text-sm text-muted-foreground">
             <span>Made with</span>

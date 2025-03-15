@@ -167,7 +167,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       toast({
         title: "Account created successfully",
-        description: "Welcome to Altheo Health! You are now logged in.",
+        description: "Welcome to Vyra Health! You are now logged in.",
       });
       
       navigate('/dashboard');
@@ -196,7 +196,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       <h3 className="text-xl font-semibold">Ready to Create Your Account</h3>
       
       <p className="text-muted-foreground">
-        Welcome to Altheo Health, {formData.name}! Your account details, medical information, and documents have been prepared for submission.
+        Welcome to Vyra Health, {formData.name}! Your account details, medical information, and documents have been prepared for submission.
       </p>
       
       {error && (

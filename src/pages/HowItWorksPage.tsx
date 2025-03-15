@@ -1,3 +1,4 @@
+
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -51,7 +52,7 @@ const HowItWorksPage = () => {
       <main className="pt-32 pb-20">
         <section className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <h1 className="text-4xl font-bold mb-4">How CloudCare Works</h1>
+            <h1 className="text-4xl font-bold mb-4">How Vyra Health Works</h1>
             <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
               Our simple, secure process connects you with quality healthcare in minutes.
               Follow these steps to get the care you need, when you need it.

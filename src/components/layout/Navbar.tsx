@@ -51,7 +51,7 @@ const Navbar = ({ className }: NavbarProps) => {
     >
       <div className="container mx-auto px-6 flex items-center justify-between">
         <Link to="/" className="flex items-center">
-          <span className="text-primary text-2xl font-bold tracking-tight">Altheo</span>
+          <span className="text-primary text-2xl font-bold tracking-tight">Vyra</span>
           <span className="text-secondary text-2xl font-bold tracking-tight">Health</span>
         </Link>
 

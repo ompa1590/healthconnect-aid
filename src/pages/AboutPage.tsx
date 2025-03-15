@@ -1,3 +1,4 @@
+
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -191,7 +192,7 @@ const AboutPage = () => {
         {/* Why Choose Us */}
         <section className="container mx-auto px-6">
           <div className="text-center mb-12">
-            <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-muted text-primary mb-4">Why Choose Altheo Health</span>
+            <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-muted text-primary mb-4">Why Choose Vyra Health</span>
             <h2 className="text-3xl font-bold mb-4">Benefits of Our Platform</h2>
             <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
               We combine medical expertise with cutting-edge technology to deliver

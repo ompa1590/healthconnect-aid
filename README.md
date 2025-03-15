@@ -1,5 +1,5 @@
 
-# Altheo Health - Virtual Healthcare Platform
+# Vyra Health - Virtual Healthcare Platform
 
 ## Project info
 
