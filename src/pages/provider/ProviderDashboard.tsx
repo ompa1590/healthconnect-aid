@@ -1,13 +1,38 @@
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { CalendarDays, ClipboardList, Users, Clock, Stethoscope, Award, User, Building } from "lucide-react";
+import { CalendarDays, ClipboardList, Users, Clock, Stethoscope, Award, User, Building, LogOut } from "lucide-react";
 import ProviderAppointments from "@/components/provider/ProviderAppointments";
 import ProviderSchedule from "@/components/provider/ProviderSchedule";
 import ProviderPatients from "@/components/provider/ProviderPatients";
 import { MedicalIcon3D } from "@/components/ui/MedicalIcons3D";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const ProviderDashboard = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Sign out successful",
+        description: "You have been signed out from Vyra Health",
+      });
+      navigate("/admin-login");
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast({
+        title: "Sign out failed",
+        description: "There was an error signing out",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen pt-24 pb-16 px-4 md:px-6 max-w-7xl mx-auto">
       {/* Background Elements */}
@@ -17,8 +42,14 @@ const ProviderDashboard = () => {
       
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-4xl font-bold">Provider Dashboard</h1>
-        <div className="hidden md:block">
-          <MedicalIcon3D type="stethoscope" size="md" color="secondary" />
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={handleSignOut} className="flex items-center gap-2">
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
+          <div className="hidden md:block">
+            <MedicalIcon3D type="stethoscope" size="md" color="secondary" />
+          </div>
         </div>
       </div>
       

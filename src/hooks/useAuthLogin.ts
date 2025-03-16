@@ -65,7 +65,7 @@ export const useAuthLogin = () => {
       if (data.user) {
         toast({
           title: "Login successful",
-          description: "Welcome back to Vyra Health!",
+          description: "Welcome to Vyra Health Patient Portal!",
         });
         navigate("/dashboard");
       }
@@ -100,6 +100,24 @@ export const useAuthLogin = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Sign out successful",
+        description: "You have been signed out from Vyra Health",
+      });
+      navigate("/login");
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast({
+        title: "Sign out failed",
+        description: "There was an error signing out",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     email,
     setEmail,
@@ -114,6 +132,7 @@ export const useAuthLogin = () => {
     captchaVerified,
     setCaptchaVerified,
     handleLogin,
-    handleGoogleLogin
+    handleGoogleLogin,
+    handleSignOut
   };
 };

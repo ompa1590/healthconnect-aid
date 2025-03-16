@@ -1,11 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Lock, Mail, Shield } from "lucide-react";
+import { Lock, Mail, Shield, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -13,6 +14,19 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        // User is already logged in, redirect to dashboard
+        navigate('/provider/dashboard');
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,12 +36,30 @@ const AdminLogin = () => {
     setTimeout(() => {
       // For demo purposes, any login works
       toast({
-        title: "Provider login successful",
-        description: "Welcome back, Doctor!",
+        title: "Login successful",
+        description: "Welcome to Vyra Health Provider Portal!",
       });
       navigate("/provider/dashboard");
       setIsLoading(false);
     }, 1000);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Sign out successful",
+        description: "You have been signed out from Vyra Health",
+      });
+      navigate("/admin-login");
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast({
+        title: "Sign out failed",
+        description: "There was an error signing out",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -130,6 +162,16 @@ const AdminLogin = () => {
               >
                 Patient? Login here
               </Link>
+            </div>
+            
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleSignOut}
+              >
+                <LogOut className="mr-2 h-4 w-4" /> Sign Out
+              </Button>
             </div>
           </div>
         </GlassCard>

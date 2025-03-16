@@ -6,12 +6,13 @@ import AppointmentScheduler from "@/components/dashboard/AppointmentScheduler";
 import AppointmentHistory from "@/components/dashboard/AppointmentHistory";
 import MedicalHistory from "@/components/dashboard/MedicalHistory";
 import TreatmentOptions from "@/components/dashboard/TreatmentOptions";
-import { CalendarDays, ClipboardList, History, Stethoscope, User, Loader2 } from "lucide-react";
+import { CalendarDays, ClipboardList, History, Stethoscope, User, Loader2, LogOut } from "lucide-react";
 import { MedicalIcon3D } from "@/components/ui/MedicalIcons3D";
 import WelcomeSection from "@/components/dashboard/WelcomeSection";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -89,6 +90,24 @@ const Dashboard = () => {
     };
   }, [navigate, toast]);
 
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Sign out successful",
+        description: "You have been signed out from Vyra Health",
+      });
+      navigate("/login");
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast({
+        title: "Sign out failed",
+        description: "There was an error signing out",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -105,8 +124,18 @@ const Dashboard = () => {
       <div className="fixed top-40 right-10 w-32 h-32 bg-secondary/5 rounded-full blur-3xl -z-10 blob-animation"></div>
       <div className="fixed bottom-40 left-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl -z-10 blob-animation-slow"></div>
       
-      {/* Welcome Section */}
-      <WelcomeSection userName={userName} />
+      {/* Welcome Section with Sign Out Button */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <WelcomeSection userName={userName} />
+        <Button 
+          variant="outline" 
+          onClick={handleSignOut} 
+          className="mt-4 md:mt-0 flex items-center gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign Out
+        </Button>
+      </div>
       
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 gap-4 mb-8 bg-transparent">
