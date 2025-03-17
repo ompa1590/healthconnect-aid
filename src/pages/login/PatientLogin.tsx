@@ -5,8 +5,6 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { useAuthLogin } from "@/hooks/useAuthLogin";
 import LoginForm from "@/components/auth/LoginForm";
 import LoginFooter from "@/components/auth/LoginFooter";
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
 
 const PatientLogin = () => {
   const {
@@ -22,8 +20,7 @@ const PatientLogin = () => {
     captchaVerified,
     setCaptchaVerified,
     handleLogin,
-    handleGoogleLogin,
-    handleSignOut
+    handleGoogleLogin
   } = useAuthLogin();
 
   return (
@@ -55,16 +52,6 @@ const PatientLogin = () => {
             handleLogin={handleLogin}
             handleGoogleLogin={handleGoogleLogin}
           />
-
-          <div className="mt-4">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleSignOut}
-            >
-              <LogOut className="mr-2 h-4 w-4" /> Sign Out
-            </Button>
-          </div>
 
           <LoginFooter />
         </GlassCard>
