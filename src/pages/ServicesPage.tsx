@@ -1,4 +1,3 @@
-
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { ServiceCategoryTabs } from "@/components/services/ServiceCategoryTabs";
@@ -6,12 +5,9 @@ import HealthCategories from "@/components/services/HealthCategories";
 import AllTreatments from "@/components/services/AllTreatments";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
-
 const ServicesPage = () => {
   const [viewMode, setViewMode] = useState("categories");
-
-  return (
-    <div className="min-h-screen">
+  return <div className="min-h-screen">
       <Navbar />
       <main className="pt-32 pb-20">
         <section className="container mx-auto px-6">
@@ -28,7 +24,7 @@ const ServicesPage = () => {
               <TabsList>
                 <TabsTrigger value="categories">Health Categories</TabsTrigger>
                 <TabsTrigger value="treatments">All Treatments</TabsTrigger>
-                <TabsTrigger value="services">Service Plans</TabsTrigger>
+                <TabsTrigger value="services">Pricing</TabsTrigger>
               </TabsList>
             </div>
             
@@ -47,8 +43,6 @@ const ServicesPage = () => {
         </section>
       </main>
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default ServicesPage;
