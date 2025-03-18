@@ -85,7 +85,8 @@ const HealthPrograms = () => {
               <div className={`p-8 md:p-12 md:w-1/2 flex flex-col justify-center bg-gradient-to-br ${programs[activeSlide].bgColor}`}>
                 <div className="mb-6">
                   <span className="telehealth-badge">
-                    <programs[activeSlide].icon className="h-3.5 w-3.5 mr-1" />
+                    {/* Fixed syntax error here - proper way to render the icon component */}
+                    {React.createElement(programs[activeSlide].icon, { className: "h-3.5 w-3.5 mr-1" })}
                     {programs[activeSlide].tag}
                   </span>
                 </div>
