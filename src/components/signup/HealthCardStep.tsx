@@ -25,7 +25,7 @@ const HealthCardStep: React.FC<HealthCardStepProps> = ({ formData, updateFormDat
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="healthCardNumber">Health Card Number</Label>
+        <Label htmlFor="healthCardNumber">Health Card Number *</Label>
         <div className="relative">
           <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
           <Input

@@ -46,6 +46,7 @@ const PatientSignup = () => {
     documents: [],
     documentFiles: [],
   });
+  const [stepErrors, setStepErrors] = useState<string | null>(null);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -62,6 +63,52 @@ const PatientSignup = () => {
     
     checkSession();
   }, [navigate]);
+
+  // Validate current step
+  const validateCurrentStep = (): boolean => {
+    setStepErrors(null);
+    
+    switch (currentStep) {
+      case 0: // Account Info
+        if (!formData.name || !formData.name.trim()) {
+          setStepErrors("Full name is required");
+          return false;
+        }
+        if (!formData.email || !formData.email.trim()) {
+          setStepErrors("Email address is required");
+          return false;
+        }
+        if (!formData.password || formData.password.length < 8) {
+          setStepErrors("Password must be at least 8 characters");
+          return false;
+        }
+        if (!/[A-Z]/.test(formData.password)) {
+          setStepErrors("Password must include at least one uppercase letter");
+          return false;
+        }
+        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) {
+          setStepErrors("Password must include at least one special character");
+          return false;
+        }
+        break;
+        
+      case 1: // Province
+        if (!formData.province) {
+          setStepErrors("Please select your province");
+          return false;
+        }
+        break;
+        
+      case 2: // Health Card
+        if (!formData.healthCardNumber || !formData.healthCardNumber.trim()) {
+          setStepErrors("Health card number is required");
+          return false;
+        }
+        break;
+    }
+    
+    return true;
+  };
 
   // Define the steps in the sign-up process
   const steps = [
@@ -131,17 +178,26 @@ const PatientSignup = () => {
         />
       ),
     },
-  ]; // Fixed: Changed the closing bracket from }; to ]
+  };
 
   const goToNextStep = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      if (validateCurrentStep()) {
+        setCurrentStep(currentStep + 1);
+      } else {
+        toast({
+          title: "Please check your information",
+          description: stepErrors,
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const goToPreviousStep = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
+      setStepErrors(null);
     }
   };
 
@@ -168,6 +224,12 @@ const PatientSignup = () => {
               ></div>
             </div>
           </div>
+
+          {stepErrors && (
+            <div className="mb-6 p-3 bg-destructive/10 border border-destructive/30 rounded-md text-destructive text-sm">
+              {stepErrors}
+            </div>
+          )}
 
           {steps[currentStep].component}
 

@@ -45,7 +45,7 @@ const ProvinceStep: React.FC<ProvinceStepProps> = ({ formData, updateFormData })
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="province">Select Your Province</Label>
+        <Label htmlFor="province">Select Your Province *</Label>
         <div className="relative">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
             <MapPin className="text-muted-foreground h-5 w-5" />
@@ -53,6 +53,7 @@ const ProvinceStep: React.FC<ProvinceStepProps> = ({ formData, updateFormData })
           <Select 
             value={formData.province} 
             onValueChange={(value) => updateFormData({ province: value })}
+            required
           >
             <SelectTrigger className="pl-10">
               <SelectValue placeholder="Select a province" />

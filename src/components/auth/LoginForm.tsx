@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -36,13 +36,47 @@ const LoginForm: React.FC<LoginFormProps> = ({
   handleLogin,
   handleGoogleLogin
 }) => {
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
   const handleCaptchaVerify = (token: string) => {
     setCaptchaToken(token);
     setCaptchaVerified(true);
   };
 
+  const validateForm = (e: React.FormEvent) => {
+    let isValid = true;
+    
+    if (!email.trim()) {
+      setEmailError("Email is required");
+      isValid = false;
+    } else {
+      setEmailError(null);
+    }
+    
+    if (!password.trim()) {
+      setPasswordError("Password is required");
+      isValid = false;
+    } else {
+      setPasswordError(null);
+    }
+    
+    if (!isValid) {
+      e.preventDefault();
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    if (validateForm(e)) {
+      handleLogin(e);
+    }
+  };
+
   return (
-    <form className="space-y-6" onSubmit={handleLogin}>
+    <form className="space-y-6" onSubmit={handleSubmit}>
       {errorMessage && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
@@ -57,14 +91,20 @@ const LoginForm: React.FC<LoginFormProps> = ({
             id="email"
             name="email"
             type="email"
-            placeholder="Email address"
+            placeholder="Email address *"
             autoComplete="email"
             required
-            className="pl-10"
+            className={`pl-10 ${emailError ? "border-destructive" : ""}`}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (e.target.value.trim()) setEmailError(null);
+            }}
           />
         </div>
+        {emailError && (
+          <p className="text-xs text-destructive">{emailError}</p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -74,14 +114,20 @@ const LoginForm: React.FC<LoginFormProps> = ({
             id="password"
             name="password"
             type="password"
-            placeholder="Password"
+            placeholder="Password *"
             autoComplete="current-password"
             required
-            className="pl-10"
+            className={`pl-10 ${passwordError ? "border-destructive" : ""}`}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (e.target.value.trim()) setPasswordError(null);
+            }}
           />
         </div>
+        {passwordError && (
+          <p className="text-xs text-destructive">{passwordError}</p>
+        )}
         <div className="flex items-center justify-between">
           <div className="text-sm">
             <Link

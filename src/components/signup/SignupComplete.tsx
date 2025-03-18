@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle, Upload, Loader2 } from "lucide-react";
 import { SignupFormData } from "@/pages/login/PatientSignup";
 import { Link, useNavigate } from "react-router-dom";
@@ -8,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import CaptchaComponent from "@/components/auth/CaptchaComponent";
+import { TermsDialog, PrivacyDialog } from "./LegalPopups";
 
 interface SignupCompleteProps {
   formData: SignupFormData;
@@ -23,6 +25,27 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  
+  // Validate that all required fields are present
+  const validateRequiredFields = () => {
+    if (!formData.name || !formData.name.trim()) {
+      return "Full name is required";
+    }
+    if (!formData.email || !formData.email.trim()) {
+      return "Email address is required";
+    }
+    if (!formData.password || !formData.password.trim()) {
+      return "Password is required";
+    }
+    if (!formData.province || !formData.province.trim()) {
+      return "Province is required";
+    }
+    if (!formData.healthCardNumber || !formData.healthCardNumber.trim()) {
+      return "Health card number is required";
+    }
+    return null;
+  };
   
   // Force re-render of captcha on component mount to ensure it's visible
   useEffect(() => {
@@ -85,6 +108,20 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     try {
       setLoading(true);
       setError(null);
+      
+      // Validate all required fields
+      const validationError = validateRequiredFields();
+      if (validationError) {
+        setError(validationError);
+        setLoading(false);
+        return;
+      }
+      
+      if (!termsAccepted) {
+        setError("You must accept the Terms & Conditions and Privacy Policy to create an account");
+        setLoading(false);
+        return;
+      }
       
       if (!captchaVerified || !captchaToken) {
         toast({
@@ -242,15 +279,15 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </li>
           <li className="flex">
             <span className="h-5 w-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs mr-2">2</span>
-            <span>Create your account with a single click</span>
+            <span>Accept the Terms & Conditions and Privacy Policy</span>
           </li>
           <li className="flex">
             <span className="h-5 w-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs mr-2">3</span>
-            <span>Log in to access your personal dashboard</span>
+            <span>Create your account with a single click</span>
           </li>
           <li className="flex">
             <span className="h-5 w-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs mr-2">4</span>
-            <span>Book your first virtual consultation</span>
+            <span>Log in to access your personal dashboard</span>
           </li>
         </ul>
       </div>
@@ -276,18 +313,39 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         )}
       </div>
       
+      <div className="flex items-center space-x-2 justify-center">
+        <Checkbox 
+          id="terms" 
+          checked={termsAccepted}
+          onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+        />
+        <label
+          htmlFor="terms"
+          className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-left"
+        >
+          I agree to the{" "}
+          <TermsDialog>
+            <span className="text-primary hover:underline cursor-pointer">Terms and Conditions</span>
+          </TermsDialog>{" "}
+          and{" "}
+          <PrivacyDialog>
+            <span className="text-primary hover:underline cursor-pointer">Privacy Policy</span>
+          </PrivacyDialog>
+        </label>
+      </div>
+      
       <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
         <Button 
           onClick={handleSignup} 
-          disabled={loading || !captchaVerified}
-          className={captchaVerified ? "bg-green-500 hover:bg-green-600" : ""}
+          disabled={loading || !captchaVerified || !termsAccepted}
+          className={captchaVerified && termsAccepted ? "bg-green-500 hover:bg-green-600" : ""}
         >
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Creating Account...
             </>
-          ) : captchaVerified ? "Create Account ✓" : "Create Account"}
+          ) : captchaVerified && termsAccepted ? "Create Account ✓" : "Create Account"}
         </Button>
         <Button variant="outline" asChild>
           <Link to="/login">

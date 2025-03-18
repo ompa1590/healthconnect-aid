@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Mic, Send, StopCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { extractMedicalInfo } from "@/utils/medicalExtractor";
 
 // Define proper TypeScript interfaces for SpeechRecognition
 interface SpeechRecognitionEvent extends Event {
@@ -114,26 +115,22 @@ const AIHistoryStep: React.FC<AIHistoryStepProps> = ({ formData, updateFormData 
     setIsProcessing(true);
     
     setTimeout(() => {
-      const inputLower = userInput.toLowerCase();
+      // Use the improved medical extractor
+      const extractedInfo = extractMedicalInfo(userInput);
       
-      const newConditions = extractMedicalInfo(inputLower, ["diabetes", "asthma", "hypertension", "arthritis"]);
-      const newAllergies = extractMedicalInfo(inputLower, ["peanut", "penicillin", "lactose", "gluten"]);
-      const newMedications = extractMedicalInfo(inputLower, ["aspirin", "insulin", "ibuprofen", "metformin"]);
-      const newTreatments = extractMedicalInfo(inputLower, ["surgery", "therapy", "transplant", "radiation"]);
-      
-      setConditions(prev => [...new Set([...prev, ...newConditions])]);
-      setAllergies(prev => [...new Set([...prev, ...newAllergies])]);
-      setMedications(prev => [...new Set([...prev, ...newMedications])]);
-      setPastTreatments(prev => [...new Set([...prev, ...newTreatments])]);
+      setConditions(prev => [...new Set([...prev, ...extractedInfo.conditions])]);
+      setAllergies(prev => [...new Set([...prev, ...extractedInfo.allergies])]);
+      setMedications(prev => [...new Set([...prev, ...extractedInfo.medications])]);
+      setPastTreatments(prev => [...new Set([...prev, ...extractedInfo.pastTreatments])]);
       
       setUserInput("");
       setIsProcessing(false);
       
       updateFormData({
-        conditions: [...new Set([...conditions, ...newConditions])],
-        allergies: [...new Set([...allergies, ...newAllergies])],
-        medications: [...new Set([...medications, ...newMedications])],
-        pastTreatments: [...new Set([...pastTreatments, ...newTreatments])],
+        conditions: [...new Set([...conditions, ...extractedInfo.conditions])],
+        allergies: [...new Set([...allergies, ...extractedInfo.allergies])],
+        medications: [...new Set([...medications, ...extractedInfo.medications])],
+        pastTreatments: [...new Set([...pastTreatments, ...extractedInfo.pastTreatments])],
       });
       
       toast({
@@ -141,10 +138,6 @@ const AIHistoryStep: React.FC<AIHistoryStepProps> = ({ formData, updateFormData 
         description: "Your medical history has been updated based on your input.",
       });
     }, 1000);
-  };
-  
-  const extractMedicalInfo = (text: string, keywords: string[]): string[] => {
-    return keywords.filter(keyword => text.includes(keyword));
   };
   
   useEffect(() => {
