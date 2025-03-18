@@ -55,7 +55,7 @@ const Hero = () => {
             </div>
           </div>
 
-          {/* Hero Visual - Updated with real doctor image */}
+          {/* Hero Visual - Updated with female doctor in video call */}
           <div className="relative animate-fade-in" style={{
           animationDelay: "0.4s"
         }}>
@@ -77,7 +77,7 @@ const Hero = () => {
               
               <div className="aspect-video rounded-xl overflow-hidden bg-gradient-to-r from-primary/20 to-secondary/20 mb-6 relative">
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1364&auto=format&fit=crop')" }}></div>
+                  <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1364&auto=format&fit=crop')" }}></div>
                   <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
                     <div className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full text-primary font-medium">
                       Live Consultation
