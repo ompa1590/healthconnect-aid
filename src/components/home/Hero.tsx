@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { ArrowRight, CheckCircle, Video, Calendar, Shield, MessageCircle, Stethoscope } from "lucide-react";
+import { ArrowRight, CheckCircle, Video, Calendar, Shield, MessageCircle, Stethoscope, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 

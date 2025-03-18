@@ -1,8 +1,8 @@
 
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ArrowLeft, ArrowRight, Heart, Cigarette, Brain, PanelRight, Clock, ArrowRightCircle } from "lucide-react";
-import { useState } from "react";
 import { Link } from "react-router-dom";
 
 const HealthPrograms = () => {
@@ -85,7 +85,7 @@ const HealthPrograms = () => {
               <div className={`p-8 md:p-12 md:w-1/2 flex flex-col justify-center bg-gradient-to-br ${programs[activeSlide].bgColor}`}>
                 <div className="mb-6">
                   <span className="telehealth-badge">
-                    {/* Fixed syntax error here - proper way to render the icon component */}
+                    {/* Properly render the icon component with imported React */}
                     {React.createElement(programs[activeSlide].icon, { className: "h-3.5 w-3.5 mr-1" })}
                     {programs[activeSlide].tag}
                   </span>
