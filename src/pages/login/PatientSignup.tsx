@@ -177,8 +177,8 @@ const PatientSignup = () => {
           }}
         />
       ),
-    },
-  };
+    }
+  ];
 
   const goToNextStep = () => {
     if (currentStep < steps.length - 1) {
