@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -53,31 +54,31 @@ export default {
 					foreground: 'hsl(var(--card-foreground))'
 				},
                 health: {
-                  50: '#f0fafa',
-                  100: '#d0f1f1',
-                  200: '#a0e3e3',
-                  300: '#70d5d5',
-                  400: '#40c7c7',
-                  500: '#26acac',
-                  600: '#1d8a8a',
-                  700: '#156868',
-                  800: '#0e4646',
-                  900: '#072424',
+                  50: '#f0fffa',
+                  100: '#d0fff1',
+                  200: '#a0ffe3',
+                  300: '#70ffd5',
+                  400: '#40ffc7',
+                  500: '#26e0ac',
+                  600: '#1db88a',
+                  700: '#158868',
+                  800: '#0e5846',
+                  900: '#072c24',
                 },
                 medical: {
-                  light: '#e8f5fe',
-                  DEFAULT: '#3498db',
-                  dark: '#2980b9',
+                  light: '#e0f4ff',
+                  DEFAULT: '#1a9bff',
+                  dark: '#0077cc',
                 },
                 wellness: {
-                  light: '#e6faf4',
-                  DEFAULT: '#2ecc71',
-                  dark: '#27ae60',
+                  light: '#e6fff4',
+                  DEFAULT: '#22dd7b',
+                  dark: '#1cae60',
                 },
                 care: {
-                  light: '#fef2f2', 
-                  DEFAULT: '#e74c3c',
-                  dark: '#c0392b',
+                  light: '#fff0f0', 
+                  DEFAULT: '#ff5546',
+                  dark: '#dd3c2b',
                 },
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
