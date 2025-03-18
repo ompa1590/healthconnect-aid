@@ -1,7 +1,11 @@
+
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ArrowRight, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MedicalIcon3D } from "@/components/ui/MedicalIcons3D";
+
 const Hero = () => {
   const benefits = ["24/7 access to healthcare professionals", "Secure, HIPAA-compliant consultations", "Chronic care management programs", "On-demand specialist services"];
   return <section className="relative pt-32 pb-20 overflow-hidden">
@@ -26,7 +30,10 @@ const Hero = () => {
               <span className="block">Virtual Healthcare</span>
               <span className="block gradient-text">Always Accessible</span>
             </h1>
-            <p className="text-lg text-muted-foreground mb-8 text-balance"></p>
+            <p className="text-lg text-muted-foreground mb-8 text-balance">
+              Connect with licensed medical professionals from the comfort of your home. 
+              Vyra Health brings quality healthcare to your fingertips.
+            </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
               {benefits.map((benefit, index) => <div key={index} className="flex items-start">
@@ -48,7 +55,7 @@ const Hero = () => {
             </div>
           </div>
 
-          {/* Hero Visual */}
+          {/* Hero Visual - Updated with real doctor image */}
           <div className="relative animate-fade-in" style={{
           animationDelay: "0.4s"
         }}>
@@ -70,27 +77,25 @@ const Hero = () => {
               
               <div className="aspect-video rounded-xl overflow-hidden bg-gradient-to-r from-primary/20 to-secondary/20 mb-6 relative">
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-2xl font-medium text-primary/50">Video Consultation Demo</div>
-                  
-                  {/* 3D-like doctor avatar */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="relative w-32 h-32">
-                      <div className="absolute inset-0 bg-secondary/20 rounded-full"></div>
-                      <div className="absolute inset-2 bg-white rounded-full overflow-hidden">
-                        <div className="absolute top-[25%] w-full h-[15%] bg-secondary/30 rounded-full"></div>
-                        <div className="absolute bottom-0 w-full h-[40%] bg-primary/30 rounded-t-full"></div>
-                      </div>
-                      {/* Stethoscope */}
-                      <div className="absolute top-1/2 right-0 h-2 w-8 bg-secondary rounded-full"></div>
+                  <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1364&auto=format&fit=crop')" }}></div>
+                  <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
+                    <div className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full text-primary font-medium">
+                      Live Consultation
                     </div>
                   </div>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-medium">Dr. Sarah Johnson</h3>
-                    <p className="text-sm text-muted-foreground">General Practitioner</p>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
+                      <AvatarImage src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=1470&auto=format&fit=crop" />
+                      <AvatarFallback>SJ</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="text-lg font-medium">Dr. Sarah Johnson</h3>
+                      <p className="text-sm text-muted-foreground">General Practitioner</p>
+                    </div>
                   </div>
                   <Button size="sm" className="rounded-full bg-secondary hover:bg-secondary/90">
                     Connect Now

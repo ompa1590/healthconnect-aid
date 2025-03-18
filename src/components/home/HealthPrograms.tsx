@@ -15,6 +15,7 @@ const HealthPrograms = () => {
       description: "Personalized weight management programs with medical supervision and ongoing support.",
       ctaText: "Learn more",
       ctaLink: "/services/weight-management",
+      image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=1470&auto=format&fit=crop"
     },
     {
       id: 2,
@@ -23,6 +24,7 @@ const HealthPrograms = () => {
       description: "Smoke-free nicotine replacement therapies with professional support every step of the way.",
       ctaText: "Get started",
       ctaLink: "/services/smoking-cessation",
+      image: "https://images.unsplash.com/photo-1603398893325-4b2fa958ef9c?q=80&w=1470&auto=format&fit=crop"
     },
     {
       id: 3,
@@ -31,6 +33,7 @@ const HealthPrograms = () => {
       description: "Evidence-based therapy approaches with licensed professionals for better mental wellness.",
       ctaText: "Explore options",
       ctaLink: "/services/mental-health",
+      image: "https://images.unsplash.com/photo-1493836512294-502baa1986e2?q=80&w=1470&auto=format&fit=crop"
     }
   ];
 
@@ -65,8 +68,13 @@ const HealthPrograms = () => {
                 </Button>
               </div>
               
-              <div className="md:w-1/2 bg-gradient-to-r from-gray-100 to-gray-200 h-[300px] md:h-auto flex items-center justify-center">
-                <div className="text-gray-400 text-lg">Program Image Placeholder</div>
+              <div className="md:w-1/2 h-[300px] md:h-auto relative overflow-hidden">
+                <img 
+                  src={programs[activeSlide].image} 
+                  alt={programs[activeSlide].title} 
+                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent md:bg-gradient-to-l" />
               </div>
             </div>
           </GlassCard>
