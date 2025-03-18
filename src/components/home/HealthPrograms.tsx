@@ -21,10 +21,10 @@ const HealthPrograms = () => {
       id: 2,
       tag: "Smoking Cessation",
       title: "Commit to quitting",
-      description: "Smoke-free nicotine replacement therapies with professional support every step of the way.",
+      description: "Evidence-based nicotine replacement therapies with professional support every step of the way.",
       ctaText: "Get started",
       ctaLink: "/services/smoking-cessation",
-      image: "https://images.unsplash.com/photo-1603398893325-4b2fa958ef9c?q=80&w=1470&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?q=80&w=1470&auto=format&fit=crop"
     },
     {
       id: 3,

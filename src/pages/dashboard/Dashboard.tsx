@@ -6,13 +6,14 @@ import AppointmentScheduler from "@/components/dashboard/AppointmentScheduler";
 import AppointmentHistory from "@/components/dashboard/AppointmentHistory";
 import MedicalHistory from "@/components/dashboard/MedicalHistory";
 import TreatmentOptions from "@/components/dashboard/TreatmentOptions";
-import { CalendarDays, ClipboardList, History, Stethoscope, User, Loader2, LogOut } from "lucide-react";
+import { CalendarDays, ClipboardList, History, Stethoscope, User, Loader2, LogOut, HeartPulse, ActivitySquare, PieChart, Bell } from "lucide-react";
 import { MedicalIcon3D } from "@/components/ui/MedicalIcons3D";
 import WelcomeSection from "@/components/dashboard/WelcomeSection";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -118,23 +119,64 @@ const Dashboard = () => {
   }
   
   return (
-    <div className="min-h-screen pt-24 pb-16 px-4 md:px-6 max-w-7xl mx-auto">
+    <div className="min-h-screen pt-20 pb-16 px-4 md:px-6 max-w-7xl mx-auto">
       {/* Background Elements */}
       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-primary/5 to-transparent -z-10"></div>
       <div className="fixed top-40 right-10 w-32 h-32 bg-secondary/5 rounded-full blur-3xl -z-10 blob-animation"></div>
       <div className="fixed bottom-40 left-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl -z-10 blob-animation-slow"></div>
       
-      {/* Welcome Section with Sign Out Button */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-        <WelcomeSection userName={userName} />
-        <Button 
-          variant="outline" 
-          onClick={handleSignOut} 
-          className="mt-4 md:mt-0 flex items-center gap-2"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </Button>
+      {/* Header Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Welcome Card */}
+        <GlassCard className="p-6 col-span-2 flex flex-col md:flex-row items-center justify-between">
+          <div className="flex items-center">
+            <Avatar className="h-16 w-16 mr-4 border-2 border-primary/20">
+              <AvatarImage src="https://images.unsplash.com/photo-1623605931891-d5b95ee98459?q=80&w=2070&auto=format&fit=crop" />
+              <AvatarFallback>
+                {userName.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold">Hello, {userName}!</h1>
+              <p className="text-muted-foreground">Welcome to your health dashboard</p>
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={handleSignOut} 
+            className="mt-4 md:mt-0 flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
+        </GlassCard>
+        
+        {/* Quick Stats */}
+        <GlassCard className="p-6">
+          <h3 className="text-lg font-medium mb-4">Health Snapshot</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-muted/50 p-3 rounded-lg flex flex-col items-center">
+              <HeartPulse className="h-6 w-6 text-primary mb-1" />
+              <span className="text-sm font-medium">Heart Rate</span>
+              <span className="text-xl font-bold">72 BPM</span>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-lg flex flex-col items-center">
+              <ActivitySquare className="h-6 w-6 text-primary mb-1" />
+              <span className="text-sm font-medium">Activity</span>
+              <span className="text-xl font-bold">3,240 steps</span>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-lg flex flex-col items-center">
+              <PieChart className="h-6 w-6 text-primary mb-1" />
+              <span className="text-sm font-medium">Sleep</span>
+              <span className="text-xl font-bold">7.2 hours</span>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-lg flex flex-col items-center">
+              <Bell className="h-6 w-6 text-primary mb-1" />
+              <span className="text-sm font-medium">Reminders</span>
+              <span className="text-xl font-bold">2 today</span>
+            </div>
+          </div>
+        </GlassCard>
       </div>
       
       <Tabs defaultValue={defaultTab} className="w-full">
@@ -235,10 +277,16 @@ const Dashboard = () => {
                 </div>
               </div>
               
-              <div className="flex items-center justify-center h-40 bg-muted/30 rounded-lg">
-                <div className="text-center">
-                  <User className="h-10 w-10 text-muted-foreground/50 mx-auto mb-2" />
-                  <p className="text-muted-foreground">Select a category to view your health records</p>
+              <div className="relative h-64 rounded-lg bg-gradient-to-r from-primary/5 to-secondary/5 overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop" 
+                  alt="Medical records" 
+                  className="w-full h-full object-cover opacity-30"
+                />
+                <div className="absolute inset-0 flex items-center justify-center flex-col p-6 text-center">
+                  <User className="h-16 w-16 text-primary/70 mb-4" />
+                  <p className="text-lg font-medium">Select a category above to view your health records</p>
+                  <p className="text-sm text-muted-foreground mt-2">All your medical information in one secure place</p>
                 </div>
               </div>
             </div>
