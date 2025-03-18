@@ -77,7 +77,7 @@ const Hero = () => {
               
               <div className="aspect-video rounded-xl overflow-hidden bg-gradient-to-r from-primary/20 to-secondary/20 mb-6 relative">
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1364&auto=format&fit=crop')" }}></div>
+                  <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/lovable-uploads/15f04839-7fe9-4e25-acca-3cac2453305a.png')" }}></div>
                   <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
                     <div className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full text-primary font-medium">
                       Live Consultation
@@ -89,7 +89,7 @@ const Hero = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
-                      <AvatarImage src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=1470&auto=format&fit=crop" />
+                      <AvatarImage src="/lovable-uploads/15f04839-7fe9-4e25-acca-3cac2453305a.png" />
                       <AvatarFallback>SJ</AvatarFallback>
                     </Avatar>
                     <div>
