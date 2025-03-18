@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -64,6 +63,21 @@ export default {
                   700: '#156868',
                   800: '#0e4646',
                   900: '#072424',
+                },
+                medical: {
+                  light: '#e8f5fe',
+                  DEFAULT: '#3498db',
+                  dark: '#2980b9',
+                },
+                wellness: {
+                  light: '#e6faf4',
+                  DEFAULT: '#2ecc71',
+                  dark: '#27ae60',
+                },
+                care: {
+                  light: '#fef2f2', 
+                  DEFAULT: '#e74c3c',
+                  dark: '#c0392b',
                 },
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
@@ -139,7 +153,9 @@ export default {
       },
       fontFamily: {
         sans: ['Inter var', 'SF Pro Display', 'system-ui', 'sans-serif'],
-        mono: ['SF Mono', 'monospace']
+        mono: ['SF Mono', 'monospace'],
+        display: ['Montserrat', 'system-ui', 'sans-serif'],
+        medical: ['Inter', 'SF Pro Display', 'system-ui', 'sans-serif']
       }
 		}
 	},

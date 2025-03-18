@@ -1,153 +1,143 @@
 
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { Bot, MessageCircle, Video, Activity, Stethoscope, Calendar } from "lucide-react";
+import { Video, ArrowRight, Clock, Calendar, ShieldCheck, Headphones, Stethoscope } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const CTASection = () => {
   return (
     <section className="py-20 relative overflow-hidden">
       {/* Background Elements */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/5 to-transparent"></div>
-        <div className="absolute bottom-0 left-0 w-1/2 h-full bg-gradient-to-r from-secondary/5 to-transparent"></div>
-      </div>
-
-      {/* 3D decorative shapes */}
-      <div className="absolute top-20 left-1/4 w-24 h-24 bg-primary/10 rounded-full floating-slow"></div>
-      <div className="absolute top-40 right-1/3 w-16 h-16 bg-secondary/10 rounded-lg transform rotate-45 floating" style={{ animationDelay: "1s" }}></div>
-      <div className="absolute bottom-1/3 left-1/4 w-20 h-20 border-2 border-primary/10 rounded-full floating-fast" style={{ animationDelay: "0.5s" }}></div>
+      <div className="absolute inset-0 -z-10 health-pattern-bg"></div>
 
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* CTA Content */}
-          <div className="max-w-xl animate-fade-in">
-            <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-muted text-primary mb-4">Start Your Health Journey</span>
+          <div className="max-w-xl">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-1 w-12 bg-primary rounded-full"></div>
+              <span className="text-primary font-medium text-sm">VIRTUAL APPOINTMENTS</span>
+            </div>
             <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-              Experience Healthcare <span className="gradient-text">Without Boundaries</span>
+              Connect with Specialists <span className="text-primary">Anytime, Anywhere</span>
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
-              Join thousands of patients who have transformed their healthcare experience. Our platform provides 24/7 access to quality care from the comfort of your home.
+              Get the care you need from the comfort of your home with our secure telehealth platform. No waiting rooms, no commute—just quality healthcare on your schedule.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <Button
-                size="lg"
-                className="rounded-full text-base font-medium px-8 bg-primary hover:bg-primary/90 transform transition-transform duration-300 hover:scale-105"
-                asChild
-              >
-                <Link to="/signup">Get Started Now</Link>
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="rounded-full text-base font-medium px-8 border-primary/20 hover:bg-primary/5 hover:border-primary/30 transform transition-transform duration-300 hover:scale-105"
-                asChild
-              >
-                <Link to="#">View Pricing</Link>
-              </Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+              <div className="flex items-center gap-3">
+                <div className="medical-icon-bg">
+                  <Video className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="font-semibold">HD Video Calls</h4>
+                  <p className="text-sm text-muted-foreground">Crystal-clear connections</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="wellness-icon-bg">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="font-semibold">HIPAA Compliant</h4>
+                  <p className="text-sm text-muted-foreground">Your data stays private</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="medical-icon-bg">
+                  <Clock className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="font-semibold">24/7 Availability</h4>
+                  <p className="text-sm text-muted-foreground">Care when you need it</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="care-icon-bg">
+                  <Headphones className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="font-semibold">Ongoing Support</h4>
+                  <p className="text-sm text-muted-foreground">Continuous care access</p>
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-6">
-              <div className="flex -space-x-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-10 rounded-full border-2 border-background bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center text-xs font-medium transform transition-transform duration-300 hover:scale-110 hover:z-10"
-                  >
-                    {i}
-                  </div>
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">4,000+</span> patients trust our telehealth services
-              </p>
+            <div className="flex flex-col sm:flex-row gap-4 mb-4">
+              <Button size="lg" className="rounded-full text-base font-medium px-8 group" asChild>
+                <Link to="/signup">
+                  Book Your First Visit
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </Button>
+              <Button variant="outline" size="lg" className="rounded-full text-base font-medium px-8" asChild>
+                <Link to="/services">Browse Services</Link>
+              </Button>
             </div>
+            
+            <p className="text-sm text-muted-foreground">
+              Most insurance plans accepted. Virtual visits start at just $49.
+            </p>
           </div>
 
-          {/* CTA Visuals with 3D-like cards */}
-          <div className="relative animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <GlassCard className="sm:translate-y-8 transform transition-all duration-500 hover:translate-y-6 hover:shadow-xl">
-                <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-sm"></div>
-                <Video className="h-8 w-8 text-primary mb-4 transform transition-transform duration-300 hover:scale-110" />
-                <h3 className="text-xl font-semibold mb-2">Video Consultations</h3>
-                <p className="text-muted-foreground">
-                  Secure, HD video calls with healthcare professionals from anywhere.
-                </p>
+          {/* Right side - Visual content */}
+          <div className="relative">
+            <GlassCard className="overflow-hidden border-none shadow-xl">
+              <div className="aspect-video relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-secondary/20"></div>
                 
-                {/* 3D-like animated illustration */}
-                <div className="h-12 mt-4 relative">
-                  <div className="absolute left-0 w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center floating-fast">
-                    <Stethoscope className="h-4 w-4 text-primary/60" />
-                  </div>
-                  <div className="absolute left-1/3 top-2 w-10 h-5 bg-secondary/20 rounded-lg floating" style={{ animationDelay: "0.7s" }}>
-                    <div className="w-full h-1 bg-secondary/30 rounded-full mt-2"></div>
-                  </div>
-                  <div className="absolute right-4 w-6 h-6 bg-primary/10 rounded-lg transform rotate-45 floating-slow" style={{ animationDelay: "1.2s" }}></div>
-                </div>
-              </GlassCard>
-
-              <GlassCard className="transform transition-all duration-500 hover:translate-y-[-8px] hover:shadow-xl">
-                <div className="absolute -top-4 -left-4 w-16 h-16 bg-gradient-to-br from-secondary/20 to-transparent rounded-full blur-sm"></div>
-                <Bot className="h-8 w-8 text-secondary mb-4 transform transition-transform duration-300 hover:scale-110" />
-                <h3 className="text-xl font-semibold mb-2">AI Symptom Analysis</h3>
-                <p className="text-muted-foreground">
-                  Advanced AI helps understand your symptoms before your consultation.
-                </p>
-                
-                {/* 3D-like animated illustration */}
-                <div className="h-12 mt-4 relative">
-                  <div className="absolute left-2 top-2 w-6 h-6 bg-secondary/20 rounded-lg transform rotate-12 floating-fast" style={{ animationDelay: "0.3s" }}></div>
-                  <div className="absolute left-1/2 w-8 h-8 bg-gradient-to-r from-secondary/30 to-primary/30 rounded-full floating" style={{ animationDelay: "0.9s" }}></div>
-                  <div className="absolute right-2 w-4 h-4 bg-secondary/10 rounded-full floating-slow" style={{ animationDelay: "1.5s" }}></div>
-                </div>
-              </GlassCard>
-
-              <GlassCard className="sm:col-span-2 transform transition-all duration-500 hover:translate-y-[-4px] hover:shadow-xl">
-                <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-gradient-to-tl from-primary/10 to-secondary/10 rounded-full blur-sm"></div>
-                <MessageCircle className="h-8 w-8 text-primary mb-4 transform transition-transform duration-300 hover:scale-110" />
-                <h3 className="text-xl font-semibold mb-2">Secure Messaging</h3>
-                <p className="text-muted-foreground">
-                  HIPAA-compliant messaging with your healthcare team for continuous support.
-                </p>
-                
-                {/* 3D-like animated illustration with message bubbles */}
-                <div className="h-16 mt-4 relative">
-                  <div className="absolute left-0 w-8 h-6 bg-muted rounded-lg transform -rotate-6 floating-fast">
-                    <div className="w-full h-1 bg-primary/20 rounded-full mt-2"></div>
-                    <div className="w-3/4 h-1 bg-primary/20 rounded-full mt-1 ml-1"></div>
-                  </div>
-                  <div className="absolute left-1/4 top-6 w-10 h-8 bg-primary/10 rounded-lg transform rotate-3 floating" style={{ animationDelay: "0.5s" }}>
-                    <div className="w-full h-1 bg-primary/20 rounded-full mt-2"></div>
-                    <div className="w-2/3 h-1 bg-primary/20 rounded-full mt-1 ml-1"></div>
-                    <div className="w-1/2 h-1 bg-primary/20 rounded-full mt-1 ml-1"></div>
-                  </div>
-                  <div className="absolute right-1/4 top-2 w-12 h-7 bg-secondary/10 rounded-lg transform -rotate-3 floating-slow" style={{ animationDelay: "1s" }}>
-                    <div className="w-full h-1 bg-secondary/20 rounded-full mt-2"></div>
-                    <div className="w-3/4 h-1 bg-secondary/20 rounded-full mt-1 ml-2"></div>
-                  </div>
-                  <div className="absolute right-0 top-8 w-9 h-6 bg-muted rounded-lg transform rotate-6 floating" style={{ animationDelay: "1.5s" }}>
-                    <div className="w-full h-1 bg-primary/20 rounded-full mt-2"></div>
-                    <div className="w-1/2 h-1 bg-primary/20 rounded-full mt-1 ml-1"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center">
+                    <Stethoscope className="h-10 w-10 text-primary" />
                   </div>
                 </div>
-              </GlassCard>
-            </div>
-
-            {/* Decorative Elements */}
-            <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/10 rounded-full filter blur-2xl -z-10 blob-animation-slow"></div>
-            <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-secondary/10 rounded-full filter blur-2xl -z-10 blob-animation"></div>
+                
+                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-6">
+                  <h3 className="text-white text-xl font-semibold mb-2">Vyra Health Telehealth</h3>
+                  <p className="text-white/90 text-sm">
+                    Connect with our board-certified healthcare providers via secure video consultations.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <div className="text-sm font-medium">Live Now</div>
+                  </div>
+                  <div className="text-sm font-medium flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    Next Available: <span className="text-primary">Today</span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <div className="text-xs text-muted-foreground">Wait Time</div>
+                    <div className="text-sm font-medium">~5 min</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <div className="text-xs text-muted-foreground">Avg. Visit</div>
+                    <div className="text-sm font-medium">15 min</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <div className="text-xs text-muted-foreground">Providers</div>
+                    <div className="text-sm font-medium">30+ Online</div>
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+            
+            {/* Floating elements */}
+            <div className="absolute -top-10 -right-10 w-28 h-28 bg-primary/10 rounded-full blur-2xl"></div>
+            <div className="absolute -bottom-10 -left-10 w-28 h-28 bg-secondary/10 rounded-full blur-2xl"></div>
           </div>
         </div>
-      </div>
-
-      {/* Floating elements */}
-      <div className="absolute bottom-10 right-10 w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center floating">
-        <Activity className="h-5 w-5 text-primary/50" />
-      </div>
-      <div className="absolute top-1/3 left-10 w-12 h-12 bg-secondary/20 rounded-full flex items-center justify-center floating-slow">
-        <Calendar className="h-6 w-6 text-secondary/50" />
       </div>
     </section>
   );

@@ -7,6 +7,8 @@ import ServicesSection from "@/components/home/ServicesSection";
 import DiagnosticCards from "@/components/home/DiagnosticCards";
 import HealthPrograms from "@/components/home/HealthPrograms";
 import PopularTreatments from "@/components/home/PopularTreatments";
+import CTASection from "@/components/home/CTASection";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 const Index = () => {
   return (
@@ -16,8 +18,9 @@ const Index = () => {
         <Hero />
         <DiagnosticCards />
         <PopularTreatments />
-        <FeaturesSection />
         <HealthPrograms />
+        <CTASection />
+        <FeaturesSection />
         <ServicesSection />
       </main>
       <Footer />
