@@ -107,13 +107,13 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
   };
   
   return (
-    <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-      <DialogHeader>
+    <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogHeader className="sticky top-0 z-30 bg-background pb-2">
         <DialogTitle className="text-2xl font-normal">Book an Appointment</DialogTitle>
       </DialogHeader>
       
-      {/* Progress Stepper */}
-      <div className="mb-8 mt-4">
+      {/* Progress Stepper - Sticky */}
+      <div className="sticky top-0 z-20 bg-background pt-2 pb-6">
         <div className="flex justify-between relative">
           {steps.map((step, index) => (
             <div key={index} className="flex flex-col items-center z-10">
@@ -148,7 +148,10 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
         </div>
       </div>
       
-      {renderStep()}
+      {/* Scrollable content area */}
+      <div className="flex-grow overflow-y-auto">
+        {renderStep()}
+      </div>
     </DialogContent>
   );
 };

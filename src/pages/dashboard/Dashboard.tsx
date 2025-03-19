@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import AppointmentScheduler from "@/components/dashboard/AppointmentScheduler";
@@ -197,7 +196,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Always show navbar on all dashboard pages */}
       <DashboardNavbar userName={userName} />
       
       <Routes>
