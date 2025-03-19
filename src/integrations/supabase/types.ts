@@ -53,25 +53,43 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          data_consent: boolean | null
+          date_of_birth: string | null
+          email: string | null
+          emergency_contact: string | null
+          family_doctor: string | null
           health_card_number: string | null
           id: string
           name: string | null
+          phone: string | null
           province: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          data_consent?: boolean | null
+          date_of_birth?: string | null
+          email?: string | null
+          emergency_contact?: string | null
+          family_doctor?: string | null
           health_card_number?: string | null
           id: string
           name?: string | null
+          phone?: string | null
           province?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          data_consent?: boolean | null
+          date_of_birth?: string | null
+          email?: string | null
+          emergency_contact?: string | null
+          family_doctor?: string | null
           health_card_number?: string | null
           id?: string
           name?: string | null
+          phone?: string | null
           province?: string | null
           updated_at?: string
         }

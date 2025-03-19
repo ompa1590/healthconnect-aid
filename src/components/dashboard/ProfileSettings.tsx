@@ -18,74 +18,144 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { HeartPulseLoader } from "@/components/ui/heart-pulse-loader";
+import { supabase } from "@/integrations/supabase/client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
-interface UserProfile {
-  id: string;
-  name: string;
-  email?: string;
-  province: string;
-  health_card_number: string;
-  phone?: string;
-  date_of_birth?: string;
-  family_doctor?: string;
-  emergency_contact?: string;
-  data_consent?: boolean;
-  created_at: string;
-  updated_at: string;
-}
+// Define the profile schema with Zod
+const profileSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  phone: z.string().optional(),
+  date_of_birth: z.string().optional(),
+  family_doctor: z.string().optional(),
+  emergency_contact: z.string().optional(),
+  province: z.string(),
+  health_card_number: z.string(),
+  data_consent: z.boolean().default(false)
+});
+
+type ProfileFormValues = z.infer<typeof profileSchema>;
 
 const ProfileSettings = () => {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<Partial<UserProfile>>({});
   
+  // Initialize the form
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      date_of_birth: "",
+      family_doctor: "",
+      emergency_contact: "",
+      province: "",
+      health_card_number: "",
+      data_consent: false
+    }
+  });
+  
+  // Fetch user profile data from Supabase
   useEffect(() => {
-    // Simulate fetching user data from Supabase
-    setTimeout(() => {
-      const mockUserData: UserProfile = {
-        id: "user-123",
-        name: "John Doe",
-        email: "john.doe@example.com",
-        province: "Ontario",
-        health_card_number: "1234-567-890-AB",
-        phone: "416-555-0123",
-        date_of_birth: "1985-06-15",
-        family_doctor: "Dr. Sarah Johnson",
-        emergency_contact: "Jane Doe (Wife) - 416-555-0124",
-        data_consent: true,
-        created_at: "2023-01-15T12:00:00Z",
-        updated_at: "2023-01-15T12:00:00Z"
-      };
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          throw new Error("User not authenticated");
+        }
+        
+        // Fetch user profile from profiles table
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+        
+        if (error) throw error;
+        
+        if (profile) {
+          // Get user email from auth
+          form.reset({
+            name: profile.name || "",
+            email: user.email || "",
+            phone: profile.phone || "",
+            date_of_birth: profile.date_of_birth || "",
+            family_doctor: profile.family_doctor || "",
+            emergency_contact: profile.emergency_contact || "",
+            province: profile.province || "",
+            health_card_number: profile.health_card_number || "",
+            data_consent: profile.data_consent || false
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast.error("Failed to load profile", {
+          description: "Please try again later"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProfile();
+  }, [form]);
+  
+  // Handle form submission
+  const onSubmit = async (data: ProfileFormValues) => {
+    try {
+      setSaving(true);
       
-      setProfile(mockUserData);
-      setFormData(mockUserData);
-      setLoading(false);
-    }, 1500);
-  }, []);
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value
-    }));
-  };
-  
-  const handleSaveChanges = () => {
-    setSaving(true);
-    // Simulate API call to update profile
-    setTimeout(() => {
-      setProfile(prev => ({
-        ...prev!,
-        ...formData,
-        updated_at: new Date().toISOString()
-      }));
-      setSaving(false);
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+      
+      // Update profile in Supabase
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          name: data.name,
+          phone: data.phone,
+          date_of_birth: data.date_of_birth,
+          family_doctor: data.family_doctor,
+          emergency_contact: data.emergency_contact,
+          data_consent: data.data_consent
+        })
+        .eq("id", user.id);
+      
+      if (error) throw error;
+      
+      // Update email in auth if it changed
+      const currentUser = await supabase.auth.getUser();
+      if (currentUser.data.user?.email !== data.email) {
+        const { error: emailUpdateError } = await supabase.auth.updateUser({
+          email: data.email
+        });
+        
+        if (emailUpdateError) throw emailUpdateError;
+      }
+      
       toast.success("Profile updated successfully", {
         description: "Your profile information has been saved."
       });
-    }, 1500);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile", {
+        description: "Please try again later"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
   
   if (loading) {
@@ -109,166 +179,217 @@ const ProfileSettings = () => {
           Profile Settings
         </h2>
         
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <Label htmlFor="name" className="flex items-center gap-2">
-                <UserRound className="h-4 w-4" />
-                Full Name
-              </Label>
-              <Input 
-                id="name"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
                 name="name"
-                value={formData.name || ""}
-                onChange={handleInputChange}
-                className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="flex items-center gap-2">
+                      <UserRound className="h-4 w-4" />
+                      Full Name
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary/20" 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            
-            <div className="space-y-3">
-              <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Email Address
-              </Label>
-              <Input 
-                id="email"
+              
+              <FormField
+                control={form.control}
                 name="email"
-                value={formData.email || ""}
-                onChange={handleInputChange}
-                className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Email Address
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary/20" 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            
-            <div className="space-y-3">
-              <Label htmlFor="phone" className="flex items-center gap-2">
-                <Phone className="h-4 w-4" />
-                Phone Number
-              </Label>
-              <Input 
-                id="phone"
+              
+              <FormField
+                control={form.control}
                 name="phone"
-                value={formData.phone || ""}
-                onChange={handleInputChange}
-                className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      Phone Number
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary/20" 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            
-            <div className="space-y-3">
-              <Label htmlFor="date_of_birth" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Date of Birth
-              </Label>
-              <Input 
-                id="date_of_birth"
+              
+              <FormField
+                control={form.control}
                 name="date_of_birth"
-                value={formData.date_of_birth || ""}
-                onChange={handleInputChange}
-                className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Date of Birth
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary/20" 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            
-            <div className="space-y-3">
-              <Label htmlFor="family_doctor" className="flex items-center gap-2">
-                <User2 className="h-4 w-4" />
-                Family Doctor
-              </Label>
-              <Input 
-                id="family_doctor"
+              
+              <FormField
+                control={form.control}
                 name="family_doctor"
-                value={formData.family_doctor || ""}
-                onChange={handleInputChange}
-                className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="flex items-center gap-2">
+                      <User2 className="h-4 w-4" />
+                      Family Doctor
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary/20" 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            
-            <div className="space-y-3">
-              <Label htmlFor="emergency_contact" className="flex items-center gap-2">
-                <Phone className="h-4 w-4" />
-                Emergency Contact
-              </Label>
-              <Input 
-                id="emergency_contact"
+              
+              <FormField
+                control={form.control}
                 name="emergency_contact"
-                value={formData.emergency_contact || ""}
-                onChange={handleInputChange}
-                className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      Emergency Contact
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary/20" 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            
-            <div className="space-y-3">
-              <Label htmlFor="province" className="flex items-center gap-2">
-                <BadgeInfo className="h-4 w-4" />
-                Province
-              </Label>
-              <Input 
-                id="province"
+              
+              <FormField
+                control={form.control}
                 name="province"
-                value={formData.province || ""}
-                onChange={handleInputChange}
-                disabled
-                className="bg-muted/50"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="flex items-center gap-2">
+                      <BadgeInfo className="h-4 w-4" />
+                      Province
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        disabled
+                        className="bg-muted/50"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="health_card_number"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="flex items-center gap-2">
+                      <BadgeInfo className="h-4 w-4" />
+                      Health Card Number
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        disabled
+                        className="bg-muted/50"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
             
-            <div className="space-y-3">
-              <Label htmlFor="health_card_number" className="flex items-center gap-2">
-                <BadgeInfo className="h-4 w-4" />
-                Health Card Number
-              </Label>
-              <Input 
-                id="health_card_number"
-                name="health_card_number"
-                value={formData.health_card_number || ""}
-                onChange={handleInputChange}
-                disabled
-                className="bg-muted/50"
-              />
-            </div>
-          </div>
-          
-          <div className="flex items-start space-x-3 pt-4 border-t">
-            <Switch 
-              id="data_consent"
+            <FormField
+              control={form.control}
               name="data_consent"
-              checked={formData.data_consent || false}
-              onCheckedChange={(checked) => 
-                setFormData(prev => ({ ...prev, data_consent: checked }))
-              }
-            />
-            <div className="space-y-1">
-              <Label 
-                htmlFor="data_consent" 
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <ShieldAlert className="h-4 w-4" />
-                Data Consent
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                I consent to the collection and processing of my health data in accordance with the privacy policy.
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex justify-end pt-4">
-            <Button 
-              onClick={handleSaveChanges}
-              disabled={saving}
-              className="transition-all duration-300 hover:shadow-md"
-            >
-              {saving ? (
-                <>
-                  <HeartPulseLoader size="sm" color="text-white" className="mr-2" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <SaveIcon className="mr-2 h-4 w-4" />
-                  Save Changes
-                </>
+              render={({ field }) => (
+                <FormItem className="flex items-start space-x-3 pt-4 border-t">
+                  <FormControl>
+                    <Switch 
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1">
+                    <FormLabel className="flex items-center gap-2 cursor-pointer">
+                      <ShieldAlert className="h-4 w-4" />
+                      Data Consent
+                    </FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      I consent to the collection and processing of my health data in accordance with the privacy policy.
+                    </p>
+                  </div>
+                </FormItem>
               )}
-            </Button>
-          </div>
-        </div>
+            />
+            
+            <div className="flex justify-end pt-4">
+              <Button 
+                type="submit"
+                disabled={saving}
+                className="transition-all duration-300 hover:shadow-md"
+              >
+                {saving ? (
+                  <>
+                    <HeartPulseLoader size="sm" color="text-white" className="mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <SaveIcon className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );
