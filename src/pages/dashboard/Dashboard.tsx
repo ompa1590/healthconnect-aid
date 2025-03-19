@@ -17,43 +17,40 @@ import TreatmentOptionsPage from "./TreatmentOptionsPage";
 import HealthRecordsPage from "./HealthRecordsPage";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import BookAppointmentFlow from "@/components/dashboard/BookingFlow/BookAppointmentFlow";
-
 const Dashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState("");
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
-  
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
-        
+        const {
+          data,
+          error
+        } = await supabase.auth.getSession();
         if (error) {
           throw error;
         }
-        
         if (!data.session) {
           toast({
             title: "Authentication required",
-            description: "Please log in to access your dashboard",
+            description: "Please log in to access your dashboard"
           });
           navigate("/login");
           return;
         }
-        
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('name')
-          .eq('id', data.session.user.id)
-          .single();
-          
+        const {
+          data: profileData,
+          error: profileError
+        } = await supabase.from('profiles').select('name').eq('id', data.session.user.id).single();
         if (profileError) {
           throw profileError;
         }
-        
         if (profileData) {
           setUserName(profileData.name || "Patient");
         }
@@ -62,39 +59,33 @@ const Dashboard = () => {
         toast({
           title: "Authentication error",
           description: error.message || "There was an error verifying your session",
-          variant: "destructive",
+          variant: "destructive"
         });
       } finally {
         setIsLoading(false);
       }
     };
-    
     checkAuth();
-    
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: authListener
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         navigate("/login");
       }
     });
-    
     return () => {
       if (authListener && authListener.subscription) {
         authListener.subscription.unsubscribe();
       }
     };
   }, [navigate, toast]);
-
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2 text-lg">Loading your dashboard...</span>
-      </div>
-    );
+      </div>;
   }
-  
-  const DashboardHome = () => (
-    <div className="max-w-6xl mx-auto px-6 py-10">
+  const DashboardHome = () => <div className="max-w-6xl mx-auto px-6 py-10">
       <div className="mb-8">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-3xl font-normal text-gray-800">Welcome back, {userName}</h1>
@@ -148,25 +139,7 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       
-      <Card className="mb-8 border rounded-xl shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center mr-3">
-                <Tag className="h-4 w-4 text-secondary" />
-              </div>
-              <div>
-                <h3 className="font-medium">Special Offer</h3>
-                <p className="text-sm text-muted-foreground">Get $40 off your visit fee on all treatments</p>
-              </div>
-            </div>
-            <Button variant="outline" className="flex items-center gap-1" size="sm">
-              Explore treatments
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      
       
       <h2 className="text-2xl font-medium mb-6">Your Appointments</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -182,27 +155,15 @@ const Dashboard = () => {
             <CardContent className="p-6">
               <h3 className="text-lg font-medium mb-3">Quick Links</h3>
               <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start text-left" 
-                  onClick={() => navigate("/dashboard/medical-history")}
-                >
+                <Button variant="outline" className="w-full justify-start text-left" onClick={() => navigate("/dashboard/medical-history")}>
                   <ClipboardList className="mr-2 h-4 w-4" />
                   View Medical History
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start text-left"
-                  onClick={() => navigate("/dashboard/health-records")}
-                >
+                <Button variant="outline" className="w-full justify-start text-left" onClick={() => navigate("/dashboard/health-records")}>
                   <ClipboardList className="mr-2 h-4 w-4" />
                   Access Health Records
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start text-left"
-                  onClick={() => navigate("/dashboard/treatment-options")}
-                >
+                <Button variant="outline" className="w-full justify-start text-left" onClick={() => navigate("/dashboard/treatment-options")}>
                   <Stethoscope className="mr-2 h-4 w-4" />
                   Explore Treatment Options
                 </Button>
@@ -223,11 +184,8 @@ const Dashboard = () => {
           </Card>
         </div>
       </div>
-    </div>
-  );
-  
-  return (
-    <div className="min-h-screen bg-white">
+    </div>;
+  return <div className="min-h-screen bg-white">
       <DashboardNavbar userName={userName} />
       
       <Routes>
@@ -239,8 +197,6 @@ const Dashboard = () => {
         <Route path="/treatment-options" element={<TreatmentOptionsPage />} />
         <Route path="/health-records" element={<HealthRecordsPage />} />
       </Routes>
-    </div>
-  );
+    </div>;
 };
-
 export default Dashboard;
