@@ -27,13 +27,13 @@ const ServiceSelection = ({
   );
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 px-2">
       <div>
-        <h2 className="text-2xl font-medium mb-2">Select a Service</h2>
-        <p className="text-muted-foreground">Choose the service you'd like to book</p>
+        <h2 className="text-2xl font-medium mb-3">Select a Service</h2>
+        <p className="text-muted-foreground">Choose the service you'd like to book for your appointment</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-h-[450px] overflow-y-auto pr-3 pb-2">
         {allServices.map((service, index) => {
           const serviceKey = `${service.categoryId}-${index}`;
           const isSelected = selectedService === serviceKey;
@@ -41,22 +41,22 @@ const ServiceSelection = ({
           return (
             <Card 
               key={serviceKey} 
-              className={`cursor-pointer hover:shadow-md transition-all overflow-hidden ${
+              className={`cursor-pointer transition-all overflow-hidden hover:shadow-md ${
                 isSelected 
-                  ? "border-primary" 
-                  : "border-muted/50"
+                  ? "border-primary/50 shadow-sm bg-primary/5" 
+                  : "border-muted/50 hover:border-muted"
               }`}
               onClick={() => onSelectService(serviceKey)}
             >
               <CardContent className="p-5 flex flex-col h-full">
                 {isSelected && (
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute top-3 right-3">
                     <CheckCircle2 className="h-5 w-5 text-primary" />
                   </div>
                 )}
                 
                 <div className="mb-4">
-                  <div className={`p-2 w-fit rounded-md bg-${service.iconColor || 'primary'}/10 mb-2`}>
+                  <div className={`p-2 w-fit rounded-md bg-${service.iconColor || 'primary'}/10 mb-3`}>
                     {service.categoryIcon && <service.categoryIcon className={`h-5 w-5 text-${service.iconColor || 'primary'}`} />}
                   </div>
                   <div className="text-sm text-muted-foreground mb-1">{service.categoryTitle}</div>
@@ -75,14 +75,14 @@ const ServiceSelection = ({
         })}
       </div>
       
-      <div className="flex justify-end">
+      <div className="flex justify-end pt-2">
         <Button 
           onClick={onNext}
           disabled={!selectedService}
-          className="flex items-center"
+          className="flex items-center gap-2 px-6"
         >
           Choose Specialist
-          <ArrowRight className="ml-2 h-4 w-4" />
+          <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
     </div>

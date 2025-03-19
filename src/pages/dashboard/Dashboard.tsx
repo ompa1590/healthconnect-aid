@@ -94,12 +94,15 @@ const Dashboard = () => {
 
   const DashboardHome = () => (
     <div className="max-w-6xl mx-auto px-6 py-10">
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-2">
-          <h1 className="text-3xl font-normal text-gray-800">Welcome back, {userName}</h1>
+      <div className="mb-8 bg-gradient-to-r from-health-100 to-health-50 p-8 rounded-xl shadow-sm">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h1 className="text-3xl font-normal text-gray-800 mb-2">Welcome back, {userName}</h1>
+            <p className="text-gray-500">You're all caught up with your health journey</p>
+          </div>
           <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2 bg-primary/90 hover:bg-primary shadow-md">
                 <PlusCircle className="h-4 w-4" />
                 Book a New Appointment
               </Button>
@@ -107,10 +110,9 @@ const Dashboard = () => {
             <BookAppointmentFlow onClose={() => setBookingDialogOpen(false)} />
           </Dialog>
         </div>
-        <p className="text-gray-500">You're all caught up</p>
       </div>
       
-      <Card className="mb-8 border rounded-xl shadow-sm overflow-hidden">
+      <Card className="mb-8 border rounded-xl shadow-sm overflow-hidden bg-gradient-to-br from-white to-health-50">
         <CardContent className="p-0">
           <div className="flex flex-col md:flex-row justify-between items-start">
             <div className="p-6">
@@ -126,11 +128,11 @@ const Dashboard = () => {
                   <span className="ml-2 text-muted-foreground">June 15th at 2:00 PM</span>
                 </div>
               </div>
-              <Button className="mt-4" size="sm">
+              <Button className="mt-4 shadow-sm transition-all hover:shadow-md" size="sm">
                 Join Appointment
               </Button>
             </div>
-            <div className="bg-muted/10 p-6 w-full md:w-auto flex flex-col items-start justify-center">
+            <div className="bg-muted/5 p-6 w-full md:w-auto flex flex-col items-start justify-center">
               <p className="text-sm text-muted-foreground mb-2">Your current plans</p>
               <div className="flex items-center gap-x-6 gap-y-2 flex-wrap">
                 <div className="flex items-center gap-2">
@@ -149,7 +151,7 @@ const Dashboard = () => {
       
       <h2 className="text-2xl font-medium mb-6">Your Appointments</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border rounded-xl shadow-sm">
+        <Card className="border rounded-xl shadow-sm hover:shadow-md transition-all">
           <CardContent className="p-6">
             <h2 className="text-xl font-medium mb-4">Upcoming & Past Appointments</h2>
             <AppointmentHistory />
@@ -157,19 +159,19 @@ const Dashboard = () => {
         </Card>
         
         <div className="space-y-4">
-          <Card className="border rounded-xl shadow-sm">
+          <Card className="border rounded-xl shadow-sm hover:shadow-md transition-all">
             <CardContent className="p-6">
               <h3 className="text-lg font-medium mb-3">Quick Links</h3>
               <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start text-left" onClick={() => navigate("/dashboard/medical-history")}>
+                <Button variant="outline" className="w-full justify-start text-left hover:bg-health-50 hover:border-health-200 transition-colors" onClick={() => navigate("/dashboard/medical-history")}>
                   <ClipboardList className="mr-2 h-4 w-4" />
                   View Medical History
                 </Button>
-                <Button variant="outline" className="w-full justify-start text-left" onClick={() => navigate("/dashboard/health-records")}>
+                <Button variant="outline" className="w-full justify-start text-left hover:bg-health-50 hover:border-health-200 transition-colors" onClick={() => navigate("/dashboard/health-records")}>
                   <ClipboardList className="mr-2 h-4 w-4" />
                   Access Health Records
                 </Button>
-                <Button variant="outline" className="w-full justify-start text-left" onClick={() => navigate("/dashboard/treatment-options")}>
+                <Button variant="outline" className="w-full justify-start text-left hover:bg-health-50 hover:border-health-200 transition-colors" onClick={() => navigate("/dashboard/treatment-options")}>
                   <Stethoscope className="mr-2 h-4 w-4" />
                   Explore Treatment Options
                 </Button>
@@ -177,13 +179,13 @@ const Dashboard = () => {
             </CardContent>
           </Card>
           
-          <Card className="border rounded-xl shadow-sm">
+          <Card className="border rounded-xl shadow-sm hover:shadow-md transition-all bg-gradient-to-br from-white to-health-50/50">
             <CardContent className="p-6">
               <h3 className="text-lg font-medium mb-3">Need Help?</h3>
               <p className="text-muted-foreground mb-4">
                 Our support team is available 24/7 to assist you with any questions or concerns.
               </p>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full shadow-sm hover:shadow-md hover:bg-primary/5">
                 Contact Support
               </Button>
             </CardContent>
@@ -193,12 +195,10 @@ const Dashboard = () => {
     </div>
   );
 
-  // On child routes, we won't render a second navbar if we're already showing one
-  const shouldRenderNavbar = location.pathname === '/dashboard';
-
   return (
     <div className="min-h-screen bg-white">
-      {shouldRenderNavbar && <DashboardNavbar userName={userName} />}
+      {/* Always show navbar on all dashboard pages */}
+      <DashboardNavbar userName={userName} />
       
       <Routes>
         <Route path="/" element={<DashboardHome />} />
