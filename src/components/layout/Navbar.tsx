@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import LanguageSelector from "@/components/ui/LanguageSelector";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface NavbarProps {
   className?: string;
@@ -14,6 +16,7 @@ const Navbar = ({ className }: NavbarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const { t } = useLanguage();
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -32,11 +35,11 @@ const Navbar = ({ className }: NavbarProps) => {
   }, [location.pathname]);
 
   const navItems = [
-    { title: "Home", href: "/" },
-    { title: "Services", href: "/services" },
-    { title: "How It Works", href: "/how-it-works" },
-    { title: "About", href: "/about" },
-    { title: "Contact", href: "/contact" },
+    { title: t('home'), href: "/" },
+    { title: t('services'), href: "/services" },
+    { title: t('howItWorks'), href: "/how-it-works" },
+    { title: t('about'), href: "/about" },
+    { title: t('contact'), href: "/contact" },
   ];
 
   return (
@@ -73,24 +76,26 @@ const Navbar = ({ className }: NavbarProps) => {
 
         {/* Action Buttons */}
         <div className="hidden md:flex items-center space-x-4">
+          <LanguageSelector />
           <ThemeToggle />
           <Button
             variant="outline"
             className="font-medium rounded-full px-6 border-primary/20 hover:bg-primary/5 hover:border-primary/30"
             asChild
           >
-            <Link to="/login">Patient Login</Link>
+            <Link to="/login">{t('patientLogin')}</Link>
           </Button>
           <Button
             className="font-medium rounded-full px-6 bg-primary hover:bg-primary/90"
             asChild
           >
-            <Link to="/admin-login">Provider Login</Link>
+            <Link to="/admin-login">{t('providerLogin')}</Link>
           </Button>
         </div>
 
         {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center space-x-4">
+          <LanguageSelector />
           <ThemeToggle />
           <button
             className="text-foreground"
@@ -118,10 +123,10 @@ const Navbar = ({ className }: NavbarProps) => {
             ))}
             <div className="pt-2 flex flex-col space-y-3">
               <Button variant="outline" className="w-full justify-center rounded-full" asChild>
-                <Link to="/login">Patient Login</Link>
+                <Link to="/login">{t('patientLogin')}</Link>
               </Button>
               <Button className="w-full justify-center rounded-full" asChild>
-                <Link to="/admin-login">Provider Login</Link>
+                <Link to="/admin-login">{t('providerLogin')}</Link>
               </Button>
             </div>
           </div>

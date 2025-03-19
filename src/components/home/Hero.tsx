@@ -4,8 +4,11 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { ArrowRight, CheckCircle, Video, Calendar, Shield, MessageCircle, Stethoscope, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Hero = () => {
+  const { t } = useLanguage();
+  
   const benefits = [
     "24/7 access to healthcare professionals", 
     "Secure, HIPAA-compliant telehealth platform", 
@@ -30,15 +33,14 @@ const Hero = () => {
           }}>
             <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary mb-6">
               <span className="pulse-dot mr-2"></span>
-              <span>Telehealth reimagined for better care</span>
+              <span>{t('telehealth')}</span>
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 text-balance">
-              <span className="block">Healthcare at Your</span>
-              <span className="block text-primary">Fingertips</span>
+              <span className="block">{t('healthcareAtYour')}</span>
+              <span className="block text-primary">{t('fingertips')}</span>
             </h1>
             <p className="text-lg text-muted-foreground mb-8 text-balance">
-              Connect with board-certified healthcare professionals through secure video consultations. 
-              Get diagnosed, treated, and prescribed medication—all from the comfort of your home.
+              {t('connectWithDescription')}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
@@ -53,12 +55,12 @@ const Hero = () => {
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" className="rounded-full text-base font-medium px-8 group" asChild>
                 <Link to="/signup">
-                  Start Your Visit
+                  {t('startYourVisit')}
                   <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
               <Button variant="outline" size="lg" className="rounded-full text-base font-medium px-8 border-primary/20 hover:bg-primary/5 hover:border-primary/30" asChild>
-                <Link to="/how-it-works">How It Works</Link>
+                <Link to="/how-it-works">{t('howItWorks')}</Link>
               </Button>
             </div>
           </div>

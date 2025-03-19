@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ArrowLeft, ArrowRight, Heart, Cigarette, Brain, PanelRight, Clock, ArrowRightCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const HealthPrograms = () => {
   const [activeSlide, setActiveSlide] = useState(0);
+  const { language } = useLanguage();
   
   const programs = [
     {
@@ -27,7 +29,7 @@ const HealthPrograms = () => {
       description: "Connect with specialists who provide evidence-based therapies and personalized plans to help you quit for good.",
       ctaText: "Breathe easier",
       ctaLink: "/services/smoking-cessation",
-      image: "/lovable-uploads/ca9bf6d1-7eb8-48e1-a631-f8a0ce3bde57.png",
+      image: "/lovable-uploads/a49002ca-5abd-4317-bb2c-d2d6f823122e.png",
       icon: Cigarette,
       bgColor: "from-secondary/20 to-secondary/5"
     },

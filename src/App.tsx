@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +19,7 @@ import { useEffect } from "react";
 import MedicalHistoryPage from "./pages/dashboard/MedicalHistoryPage";
 import TreatmentOptionsPage from "./pages/dashboard/TreatmentOptionsPage";
 import HealthRecordsPage from "./pages/dashboard/HealthRecordsPage";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 const useAddGoogleFonts = () => {
   useEffect(() => {
@@ -42,26 +44,28 @@ const App = () => {
   
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/services" element={<ServicesPage />} />
-            <Route path="/how-it-works" element={<HowItWorksPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/*" element={<Dashboard />} />
-            <Route path="/login" element={<PatientLogin />} />
-            <Route path="/signup" element={<PatientSignup />} />
-            <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/provider/dashboard/*" element={<ProviderDashboard />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <LanguageProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/services" element={<ServicesPage />} />
+              <Route path="/how-it-works" element={<HowItWorksPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/*" element={<Dashboard />} />
+              <Route path="/login" element={<PatientLogin />} />
+              <Route path="/signup" element={<PatientSignup />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/provider/dashboard/*" element={<ProviderDashboard />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 };
