@@ -1,19 +1,16 @@
 
 import React, { useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { Card, CardContent } from "@/components/ui/card";
 import AppointmentScheduler from "@/components/dashboard/AppointmentScheduler";
 import AppointmentHistory from "@/components/dashboard/AppointmentHistory";
 import MedicalHistory from "@/components/dashboard/MedicalHistory";
 import TreatmentOptions from "@/components/dashboard/TreatmentOptions";
-import { CalendarDays, ClipboardList, History, Stethoscope, User, Loader2, LogOut, HeartPulse, ActivitySquare, PieChart, Bell } from "lucide-react";
-import { MedicalIcon3D } from "@/components/ui/MedicalIcons3D";
-import WelcomeSection from "@/components/dashboard/WelcomeSection";
+import { CalendarDays, ClipboardList, History, Stethoscope, Loader2, LogOut, Tag, ArrowRight } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -119,180 +116,174 @@ const Dashboard = () => {
   }
   
   return (
-    <div className="min-h-screen pt-20 pb-16 px-4 md:px-6 max-w-7xl mx-auto">
-      {/* Background Elements */}
-      <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-primary/5 to-transparent -z-10"></div>
-      <div className="fixed top-40 right-10 w-32 h-32 bg-secondary/5 rounded-full blur-3xl -z-10 blob-animation"></div>
-      <div className="fixed bottom-40 left-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl -z-10 blob-animation-slow"></div>
-      
+    <div className="min-h-screen bg-white">
       {/* Header Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Welcome Card */}
-        <GlassCard className="p-6 col-span-2 flex flex-col md:flex-row items-center justify-between">
-          <div className="flex items-center">
-            <Avatar className="h-16 w-16 mr-4 border-2 border-primary/20">
-              <AvatarImage src="https://images.unsplash.com/photo-1623605931891-d5b95ee98459?q=80&w=2070&auto=format&fit=crop" />
-              <AvatarFallback>
-                {userName.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Hello, {userName}!</h1>
-              <p className="text-muted-foreground">Welcome to your health dashboard</p>
-            </div>
+      <div className="max-w-6xl mx-auto px-6 py-10">
+        <div className="flex justify-between items-center mb-10">
+          <div>
+            <h1 className="text-4xl font-normal text-gray-800">Welcome back, {userName}</h1>
+            <p className="text-gray-500 mt-1">You're all caught up</p>
           </div>
           <Button 
             variant="outline" 
             onClick={handleSignOut} 
-            className="mt-4 md:mt-0 flex items-center gap-2"
+            className="flex items-center gap-2"
           >
             <LogOut className="h-4 w-4" />
             Sign Out
           </Button>
-        </GlassCard>
+        </div>
         
-        {/* Quick Stats */}
-        <GlassCard className="p-6">
-          <h3 className="text-lg font-medium mb-4">Health Snapshot</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-muted/50 p-3 rounded-lg flex flex-col items-center">
-              <HeartPulse className="h-6 w-6 text-primary mb-1" />
-              <span className="text-sm font-medium">Heart Rate</span>
-              <span className="text-xl font-bold">72 BPM</span>
+        {/* Current Treatment Card */}
+        <Card className="mb-8 border rounded-xl shadow-sm overflow-hidden">
+          <CardContent className="p-0">
+            <div className="flex flex-col md:flex-row justify-between items-start">
+              <div className="p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                    <Tag className="h-4 w-4 text-primary" />
+                  </div>
+                  <h2 className="text-lg font-medium">Current Treatment</h2>
+                </div>
+                <div className="flex items-center gap-4 mb-2 text-sm">
+                  <div className="flex items-center">
+                    <span className="font-medium">Upcoming Appointment:</span>
+                    <span className="ml-2 text-muted-foreground">June 15th at 2:00 PM</span>
+                  </div>
+                </div>
+                <Button className="mt-4" size="sm">
+                  Join Appointment
+                </Button>
+              </div>
+              <div className="bg-muted/10 p-6 w-full md:w-auto flex flex-col items-start justify-center">
+                <p className="text-sm text-muted-foreground mb-2">Your current plans</p>
+                <div className="flex items-center gap-x-6 gap-y-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-primary"></div>
+                    <span className="text-sm font-medium">Dermatology Consultation</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-secondary"></div>
+                    <span className="text-sm font-medium">Monthly Wellness Check</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="bg-muted/50 p-3 rounded-lg flex flex-col items-center">
-              <ActivitySquare className="h-6 w-6 text-primary mb-1" />
-              <span className="text-sm font-medium">Activity</span>
-              <span className="text-xl font-bold">3,240 steps</span>
+          </CardContent>
+        </Card>
+        
+        {/* Special Offer Card */}
+        <Card className="mb-8 border rounded-xl shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center mr-3">
+                  <Tag className="h-4 w-4 text-secondary" />
+                </div>
+                <div>
+                  <h3 className="font-medium">Special Offer</h3>
+                  <p className="text-sm text-muted-foreground">Get $40 off your visit fee on all treatments</p>
+                </div>
+              </div>
+              <Button variant="outline" className="flex items-center gap-1" size="sm">
+                Explore treatments
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
             </div>
-            <div className="bg-muted/50 p-3 rounded-lg flex flex-col items-center">
-              <PieChart className="h-6 w-6 text-primary mb-1" />
-              <span className="text-sm font-medium">Sleep</span>
-              <span className="text-xl font-bold">7.2 hours</span>
+          </CardContent>
+        </Card>
+        
+        {/* Main Tabs Content */}
+        <Tabs defaultValue={defaultTab} className="w-full">
+          <TabsList className="bg-muted/20 p-1 mb-8 rounded-lg">
+            <TabsTrigger 
+              value="appointments" 
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all duration-200"
+            >
+              <CalendarDays className="mr-2 h-4 w-4" />
+              Appointments
+            </TabsTrigger>
+            <TabsTrigger 
+              value="history" 
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all duration-200"
+            >
+              <History className="mr-2 h-4 w-4" />
+              Medical History
+            </TabsTrigger>
+            <TabsTrigger 
+              value="treatments" 
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all duration-200"
+            >
+              <Stethoscope className="mr-2 h-4 w-4" />
+              Treatment Options
+            </TabsTrigger>
+            <TabsTrigger 
+              value="records" 
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all duration-200"
+            >
+              <ClipboardList className="mr-2 h-4 w-4" />
+              Health Records
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="appointments">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="border rounded-xl shadow-sm">
+                <CardContent className="p-6">
+                  <h2 className="text-xl font-medium mb-4">Schedule Appointment</h2>
+                  <AppointmentScheduler />
+                </CardContent>
+              </Card>
+              <Card className="border rounded-xl shadow-sm">
+                <CardContent className="p-6">
+                  <h2 className="text-xl font-medium mb-4">Upcoming & Past Appointments</h2>
+                  <AppointmentHistory />
+                </CardContent>
+              </Card>
             </div>
-            <div className="bg-muted/50 p-3 rounded-lg flex flex-col items-center">
-              <Bell className="h-6 w-6 text-primary mb-1" />
-              <span className="text-sm font-medium">Reminders</span>
-              <span className="text-xl font-bold">2 today</span>
-            </div>
-          </div>
-        </GlassCard>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <Card className="border rounded-xl shadow-sm">
+              <CardContent className="p-6">
+                <h2 className="text-xl font-medium mb-4">Medical History</h2>
+                <MedicalHistory />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="treatments">
+            <Card className="border rounded-xl shadow-sm">
+              <CardContent className="p-6">
+                <h2 className="text-xl font-medium mb-4">Available Treatment Options</h2>
+                <TreatmentOptions />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="records">
+            <Card className="border rounded-xl shadow-sm">
+              <CardContent className="p-6">
+                <h2 className="text-xl font-medium mb-4">Health Records</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="p-4 bg-muted/10 rounded-lg hover:bg-muted/20 transition-colors">
+                    <h3 className="font-medium mb-2">Lab Results</h3>
+                    <p className="text-sm text-muted-foreground">View your recent laboratory test results</p>
+                  </div>
+                  <div className="p-4 bg-muted/10 rounded-lg hover:bg-muted/20 transition-colors">
+                    <h3 className="font-medium mb-2">Prescriptions</h3>
+                    <p className="text-sm text-muted-foreground">Access and manage your medication prescriptions</p>
+                  </div>
+                  <div className="p-4 bg-muted/10 rounded-lg hover:bg-muted/20 transition-colors">
+                    <h3 className="font-medium mb-2">Documents</h3>
+                    <p className="text-sm text-muted-foreground">View and download your medical documents</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-      
-      <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 gap-4 mb-8 bg-transparent">
-          <TabsTrigger value="appointments" className="w-full data-[state=active]:bg-primary/10 group transition-all duration-300">
-            <div className="relative">
-              <div className="absolute -top-1 -left-1 h-8 w-8 rounded-full bg-muted opacity-0 group-data-[state=active]:opacity-100 transition-opacity duration-300"></div>
-              <CalendarDays className="mr-2 h-5 w-5 relative z-10 group-data-[state=active]:text-primary group-hover:scale-110 transition-transform duration-300" />
-            </div>
-            Appointments
-          </TabsTrigger>
-          <TabsTrigger value="history" className="w-full data-[state=active]:bg-primary/10 group transition-all duration-300">
-            <div className="relative">
-              <div className="absolute -top-1 -left-1 h-8 w-8 rounded-full bg-muted opacity-0 group-data-[state=active]:opacity-100 transition-opacity duration-300"></div>
-              <History className="mr-2 h-5 w-5 relative z-10 group-data-[state=active]:text-primary group-hover:scale-110 transition-transform duration-300" />
-            </div>
-            Medical History
-          </TabsTrigger>
-          <TabsTrigger value="treatments" className="w-full data-[state=active]:bg-primary/10 group transition-all duration-300">
-            <div className="relative">
-              <div className="absolute -top-1 -left-1 h-8 w-8 rounded-full bg-muted opacity-0 group-data-[state=active]:opacity-100 transition-opacity duration-300"></div>
-              <Stethoscope className="mr-2 h-5 w-5 relative z-10 group-data-[state=active]:text-primary group-hover:scale-110 transition-transform duration-300" />
-            </div>
-            Treatment Options
-          </TabsTrigger>
-          <TabsTrigger value="records" className="w-full data-[state=active]:bg-primary/10 group transition-all duration-300">
-            <div className="relative">
-              <div className="absolute -top-1 -left-1 h-8 w-8 rounded-full bg-muted opacity-0 group-data-[state=active]:opacity-100 transition-opacity duration-300"></div>
-              <ClipboardList className="mr-2 h-5 w-5 relative z-10 group-data-[state=active]:text-primary group-hover:scale-110 transition-transform duration-300" />
-            </div>
-            Health Records
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="appointments">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <GlassCard className="transform transition-all duration-500 hover:translate-y-[-4px] hover:shadow-xl relative overflow-hidden">
-              <div className="absolute -top-6 -right-6 w-16 h-16 bg-primary/10 rounded-full blur-md"></div>
-              <div className="flex items-center mb-4">
-                <MedicalIcon3D type="stethoscope" size="sm" color="primary" className="mr-3" />
-                <h2 className="text-2xl font-semibold">Schedule Appointment</h2>
-              </div>
-              <AppointmentScheduler />
-            </GlassCard>
-            <GlassCard className="transform transition-all duration-500 hover:translate-y-[-4px] hover:shadow-xl relative overflow-hidden">
-              <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-secondary/10 rounded-full blur-md"></div>
-              <div className="flex items-center mb-4">
-                <MedicalIcon3D type="monitor" size="sm" color="secondary" className="mr-3" />
-                <h2 className="text-2xl font-semibold">Upcoming & Past Appointments</h2>
-              </div>
-              <AppointmentHistory />
-            </GlassCard>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="history">
-          <GlassCard className="transform transition-all duration-500 hover:translate-y-[-4px] hover:shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-full"></div>
-            <div className="flex items-center mb-4">
-              <MedicalIcon3D type="heart" size="sm" color="primary" className="mr-3" />
-              <h2 className="text-2xl font-semibold">Medical History</h2>
-            </div>
-            <MedicalHistory />
-          </GlassCard>
-        </TabsContent>
-
-        <TabsContent value="treatments">
-          <GlassCard className="transform transition-all duration-500 hover:translate-y-[-4px] hover:shadow-xl relative overflow-hidden">
-            <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-secondary/5 to-transparent rounded-tr-full"></div>
-            <div className="flex items-center mb-4">
-              <MedicalIcon3D type="pill" size="sm" color="secondary" className="mr-3" />
-              <h2 className="text-2xl font-semibold">Available Treatment Options</h2>
-            </div>
-            <TreatmentOptions />
-          </GlassCard>
-        </TabsContent>
-
-        <TabsContent value="records">
-          <GlassCard className="transform transition-all duration-500 hover:translate-y-[-4px] hover:shadow-xl relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-md"></div>
-            <div className="flex items-center mb-4">
-              <MedicalIcon3D type="brain" size="sm" color="primary" className="mr-3" />
-              <h2 className="text-2xl font-semibold">Health Records</h2>
-            </div>
-            <div className="relative">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="p-4 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
-                  <h3 className="font-medium mb-2">Lab Results</h3>
-                  <p className="text-sm text-muted-foreground">View your recent laboratory test results</p>
-                </div>
-                <div className="p-4 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
-                  <h3 className="font-medium mb-2">Prescriptions</h3>
-                  <p className="text-sm text-muted-foreground">Access and manage your medication prescriptions</p>
-                </div>
-                <div className="p-4 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
-                  <h3 className="font-medium mb-2">Documents</h3>
-                  <p className="text-sm text-muted-foreground">View and download your medical documents</p>
-                </div>
-              </div>
-              
-              <div className="relative h-64 rounded-lg bg-gradient-to-r from-primary/5 to-secondary/5 overflow-hidden">
-                <img 
-                  src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop" 
-                  alt="Medical records" 
-                  className="w-full h-full object-cover opacity-30"
-                />
-                <div className="absolute inset-0 flex items-center justify-center flex-col p-6 text-center">
-                  <User className="h-16 w-16 text-primary/70 mb-4" />
-                  <p className="text-lg font-medium">Select a category above to view your health records</p>
-                  <p className="text-sm text-muted-foreground mt-2">All your medical information in one secure place</p>
-                </div>
-              </div>
-            </div>
-          </GlassCard>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 };
