@@ -2,7 +2,7 @@
 import React from "react";
 
 type MedicalIcon3DProps = {
-  type: "stethoscope" | "pill" | "heart" | "brain" | "doctor" | "patient" | "monitor";
+  type: "stethoscope" | "pill" | "heart" | "brain" | "doctor" | "patient" | "monitor" | "clock" | "shield";
   size?: "sm" | "md" | "lg" | "xl";
   color?: "primary" | "secondary" | "accent" | "muted";
   animate?: boolean;
@@ -151,6 +151,67 @@ export const MedicalIcon3D: React.FC<MedicalIcon3DProps> = ({
             <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1/4 h-1/4 rounded-full border-2 border-white/60 flex items-center justify-center ${animate ? 'pulse-dot' : ''}`}>
               <div className="w-3/4 h-[2px] bg-white/60"></div>
               <div className="absolute w-[2px] h-3/4 bg-white/60"></div>
+            </div>
+          </div>
+        );
+
+      case "clock":
+        return (
+          <div className="relative">
+            {/* Clock face */}
+            <div className={`w-full h-full rounded-full bg-${color}/20 border-4 border-${color}/40 shadow-md`}></div>
+            
+            {/* Clock hands */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              {/* Hour hand */}
+              <div 
+                className={`absolute w-[3px] h-[30%] bg-${color}/70 rounded-full origin-bottom ${animate ? 'animate-spin-slow' : ''}`} 
+                style={{ transformOrigin: 'bottom', animationDuration: '12s' }}
+              ></div>
+              
+              {/* Minute hand */}
+              <div 
+                className={`absolute w-[2px] h-[40%] bg-${color}/90 rounded-full origin-bottom ${animate ? 'animate-spin-slow' : ''}`} 
+                style={{ transformOrigin: 'bottom', animationDuration: '60s' }}
+              ></div>
+              
+              {/* Center dot */}
+              <div className={`w-[10%] h-[10%] rounded-full bg-${color} z-10`}></div>
+            </div>
+            
+            {/* Clock markers */}
+            <div className="absolute inset-[10%] rounded-full">
+              {[...Array(12)].map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`absolute w-[8%] h-[8%] bg-${color}/60 rounded-full`}
+                  style={{ 
+                    top: '0%', 
+                    left: '50%',
+                    transform: `rotate(${i * 30}deg) translateY(-350%) translateX(-50%)` 
+                  }}
+                ></div>
+              ))}
+            </div>
+          </div>
+        );
+
+      case "shield":
+        return (
+          <div className="relative">
+            {/* Shield background */}
+            <div className={`w-full h-full bg-${color}/20 rounded-t-full rounded-b-lg shadow-md ${animate ? 'floating-slow' : ''}`}></div>
+            
+            {/* Shield inner part */}
+            <div className="absolute inset-[15%] flex items-center justify-center">
+              <div className={`w-full h-full bg-${color}/30 rounded-t-full rounded-b-lg shadow-inner`}></div>
+              
+              {/* Security symbol */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className={`w-1/2 h-3/4 border-[3px] border-${color}/70 rounded-md ${animate ? 'pulse-dot' : ''}`}></div>
+                <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/3 w-1/4 h-1/4 border-[3px] border-${color}/70 border-b-0 rounded-t-full`}></div>
+                <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 translate-y-0 w-[10%] h-[20%] bg-${color}/70 rounded-full`}></div>
+              </div>
             </div>
           </div>
         );

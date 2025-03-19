@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { ArrowRight, CheckCircle, Video, Calendar, Shield, MessageCircle, Stethoscope, Clock } from "lucide-react";
+import { ArrowRight, Video, Calendar, Shield, MessageCircle, Stethoscope, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -44,10 +44,10 @@ const Hero = () => {
               {t('connectWithDescription')}
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
               {benefits.map((benefit, index) => (
-                <div key={index} className="flex items-start group">
-                  <div className="mr-3 mt-1">
+                <div key={index} className="flex items-start group p-3 rounded-lg transition-colors hover:bg-muted/30">
+                  <div className="mr-4">
                     <MedicalIcon3D 
                       type={benefit.icon as any} 
                       size="sm" 
@@ -55,7 +55,7 @@ const Hero = () => {
                       animate={true}
                     />
                   </div>
-                  <span className="pt-1">{benefit.text}</span>
+                  <span className="pt-3 font-medium">{benefit.text}</span>
                 </div>
               ))}
             </div>
