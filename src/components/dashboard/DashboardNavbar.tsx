@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
+import { ClipboardList, Home, Stethoscope, Award, User } from "lucide-react";
 
 interface DashboardNavbarProps {
   userName: string;
@@ -62,13 +63,16 @@ const DashboardNavbar = ({ userName }: DashboardNavbarProps) => {
             </Link>
             
             <div className="hidden md:flex items-center space-x-8">
-              <Link to="/dashboard" className="text-gray-700 hover:text-primary transition-colors">
+              <Link to="/dashboard" className="text-gray-700 hover:text-primary transition-colors flex items-center gap-1">
+                <Home className="h-4 w-4" />
                 Home
               </Link>
-              <Link to="/dashboard/services" className="text-gray-700 hover:text-primary transition-colors">
+              <Link to="/dashboard/services" className="text-gray-700 hover:text-primary transition-colors flex items-center gap-1">
+                <Stethoscope className="h-4 w-4" />
                 Our Services
               </Link>
-              <Link to="/dashboard/rewards" className="text-gray-700 hover:text-primary transition-colors">
+              <Link to="/dashboard/rewards" className="text-gray-700 hover:text-primary transition-colors flex items-center gap-1">
+                <Award className="h-4 w-4" />
                 Rewards
               </Link>
             </div>
@@ -85,16 +89,26 @@ const DashboardNavbar = ({ userName }: DashboardNavbarProps) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  My Account
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>
-                  Profile
+                  <User className="h-4 w-4 mr-2" />
+                  Profile Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/dashboard?tab=history")}>
+                <DropdownMenuItem onClick={() => navigate("/dashboard/medical-history")}>
+                  <ClipboardList className="h-4 w-4 mr-2" />
                   Medical History
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/dashboard?tab=records")}>
+                <DropdownMenuItem onClick={() => navigate("/dashboard/health-records")}>
+                  <ClipboardList className="h-4 w-4 mr-2" />
                   Health Records
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/dashboard/treatment-options")}>
+                  <Stethoscope className="h-4 w-4 mr-2" />
+                  Treatment Options
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>

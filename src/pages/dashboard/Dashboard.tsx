@@ -1,12 +1,9 @@
-
 import React, { useEffect, useState } from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AppointmentScheduler from "@/components/dashboard/AppointmentScheduler";
 import AppointmentHistory from "@/components/dashboard/AppointmentHistory";
-import MedicalHistory from "@/components/dashboard/MedicalHistory";
-import TreatmentOptions from "@/components/dashboard/TreatmentOptions";
-import { CalendarDays, ClipboardList, History, Stethoscope, Loader2, Tag, ArrowRight } from "lucide-react";
+import { CalendarDays, ClipboardList, Stethoscope, Loader2, Tag, ArrowRight, PlusCircle } from "lucide-react";
 import { useLocation, useNavigate, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -15,6 +12,11 @@ import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
 import ProfileSettings from "@/components/dashboard/ProfileSettings";
 import DashboardServices from "@/components/dashboard/DashboardServices";
 import DashboardRewards from "@/components/dashboard/DashboardRewards";
+import MedicalHistoryPage from "./MedicalHistoryPage";
+import TreatmentOptionsPage from "./TreatmentOptionsPage";
+import HealthRecordsPage from "./HealthRecordsPage";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import BookAppointmentFlow from "@/components/dashboard/BookingFlow/BookAppointmentFlow";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -22,14 +24,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState("");
-  
-  const queryParams = new URLSearchParams(location.search);
-  const tabParam = queryParams.get('tab');
-
-  // Default tab from URL parameters or "appointments"
-  const defaultTab = tabParam && ["appointments", "history", "treatments", "records"].includes(tabParam) 
-    ? tabParam 
-    : "appointments";
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -41,7 +36,6 @@ const Dashboard = () => {
         }
         
         if (!data.session) {
-          // User is not logged in, redirect to login page
           toast({
             title: "Authentication required",
             description: "Please log in to access your dashboard",
@@ -50,7 +44,6 @@ const Dashboard = () => {
           return;
         }
         
-        // Get user profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('name')
@@ -78,7 +71,6 @@ const Dashboard = () => {
     
     checkAuth();
     
-    // Set up auth state listener
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         navigate("/login");
@@ -101,15 +93,24 @@ const Dashboard = () => {
     );
   }
   
-  // Main dashboard content for the root route
   const DashboardHome = () => (
     <div className="max-w-6xl mx-auto px-6 py-10">
-      <div className="mb-10">
-        <h1 className="text-3xl font-normal text-gray-800">Welcome back, {userName}</h1>
-        <p className="text-gray-500 mt-1">You're all caught up</p>
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-2">
+          <h1 className="text-3xl font-normal text-gray-800">Welcome back, {userName}</h1>
+          <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <PlusCircle className="h-4 w-4" />
+                Book a New Appointment
+              </Button>
+            </DialogTrigger>
+            <BookAppointmentFlow onClose={() => setBookingDialogOpen(false)} />
+          </Dialog>
+        </div>
+        <p className="text-gray-500">You're all caught up</p>
       </div>
       
-      {/* Current Treatment Card */}
       <Card className="mb-8 border rounded-xl shadow-sm overflow-hidden">
         <CardContent className="p-0">
           <div className="flex flex-col md:flex-row justify-between items-start">
@@ -147,7 +148,6 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       
-      {/* Special Offer Card */}
       <Card className="mb-8 border rounded-xl shadow-sm">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
@@ -168,96 +168,61 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       
-      {/* Main Tabs Content */}
-      <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="bg-muted/20 p-1 mb-8 rounded-lg">
-          <TabsTrigger 
-            value="appointments" 
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all duration-200"
-          >
-            <CalendarDays className="mr-2 h-4 w-4" />
-            Appointments
-          </TabsTrigger>
-          <TabsTrigger 
-            value="history" 
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all duration-200"
-          >
-            <History className="mr-2 h-4 w-4" />
-            Medical History
-          </TabsTrigger>
-          <TabsTrigger 
-            value="treatments" 
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all duration-200"
-          >
-            <Stethoscope className="mr-2 h-4 w-4" />
-            Treatment Options
-          </TabsTrigger>
-          <TabsTrigger 
-            value="records" 
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all duration-200"
-          >
-            <ClipboardList className="mr-2 h-4 w-4" />
-            Health Records
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="appointments">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border rounded-xl shadow-sm">
-              <CardContent className="p-6">
-                <h2 className="text-xl font-medium mb-4">Schedule Appointment</h2>
-                <AppointmentScheduler />
-              </CardContent>
-            </Card>
-            <Card className="border rounded-xl shadow-sm">
-              <CardContent className="p-6">
-                <h2 className="text-xl font-medium mb-4">Upcoming & Past Appointments</h2>
-                <AppointmentHistory />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="history">
+      <h2 className="text-2xl font-medium mb-6">Your Appointments</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border rounded-xl shadow-sm">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-medium mb-4">Upcoming & Past Appointments</h2>
+            <AppointmentHistory />
+          </CardContent>
+        </Card>
+        
+        <div className="space-y-4">
           <Card className="border rounded-xl shadow-sm">
             <CardContent className="p-6">
-              <h2 className="text-xl font-medium mb-4">Medical History</h2>
-              <MedicalHistory />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="treatments">
-          <Card className="border rounded-xl shadow-sm">
-            <CardContent className="p-6">
-              <h2 className="text-xl font-medium mb-4">Available Treatment Options</h2>
-              <TreatmentOptions />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="records">
-          <Card className="border rounded-xl shadow-sm">
-            <CardContent className="p-6">
-              <h2 className="text-xl font-medium mb-4">Health Records</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="p-4 bg-muted/10 rounded-lg hover:bg-muted/20 transition-colors">
-                  <h3 className="font-medium mb-2">Lab Results</h3>
-                  <p className="text-sm text-muted-foreground">View your recent laboratory test results</p>
-                </div>
-                <div className="p-4 bg-muted/10 rounded-lg hover:bg-muted/20 transition-colors">
-                  <h3 className="font-medium mb-2">Prescriptions</h3>
-                  <p className="text-sm text-muted-foreground">Access and manage your medication prescriptions</p>
-                </div>
-                <div className="p-4 bg-muted/10 rounded-lg hover:bg-muted/20 transition-colors">
-                  <h3 className="font-medium mb-2">Documents</h3>
-                  <p className="text-sm text-muted-foreground">View and download your medical documents</p>
-                </div>
+              <h3 className="text-lg font-medium mb-3">Quick Links</h3>
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-left" 
+                  onClick={() => navigate("/dashboard/medical-history")}
+                >
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  View Medical History
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-left"
+                  onClick={() => navigate("/dashboard/health-records")}
+                >
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  Access Health Records
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-left"
+                  onClick={() => navigate("/dashboard/treatment-options")}
+                >
+                  <Stethoscope className="mr-2 h-4 w-4" />
+                  Explore Treatment Options
+                </Button>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+          
+          <Card className="border rounded-xl shadow-sm">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-medium mb-3">Need Help?</h3>
+              <p className="text-muted-foreground mb-4">
+                Our support team is available 24/7 to assist you with any questions or concerns.
+              </p>
+              <Button variant="outline" className="w-full">
+                Contact Support
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
   
@@ -270,6 +235,9 @@ const Dashboard = () => {
         <Route path="/profile" element={<ProfileSettings />} />
         <Route path="/services" element={<DashboardServices />} />
         <Route path="/rewards" element={<DashboardRewards />} />
+        <Route path="/medical-history" element={<MedicalHistoryPage />} />
+        <Route path="/treatment-options" element={<TreatmentOptionsPage />} />
+        <Route path="/health-records" element={<HealthRecordsPage />} />
       </Routes>
     </div>
   );
