@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -27,7 +26,7 @@ const HealthPrograms = () => {
       description: "Connect with specialists who provide evidence-based therapies and personalized plans to help you quit for good.",
       ctaText: "Breathe easier",
       ctaLink: "/services/smoking-cessation",
-      image: "https://images.unsplash.com/photo-1620048269620-77f8dd21a019?q=80&w=2070&auto=format&fit=crop",
+      image: "public/lovable-uploads/ca9bf6d1-7eb8-48e1-a631-f8a0ce3bde57.png",
       icon: Cigarette,
       bgColor: "from-secondary/20 to-secondary/5"
     },
@@ -85,7 +84,6 @@ const HealthPrograms = () => {
               <div className={`p-8 md:p-12 md:w-1/2 flex flex-col justify-center bg-gradient-to-br ${programs[activeSlide].bgColor}`}>
                 <div className="mb-6">
                   <span className="telehealth-badge">
-                    {/* Properly render the icon component with imported React */}
                     {React.createElement(programs[activeSlide].icon, { className: "h-3.5 w-3.5 mr-1" })}
                     {programs[activeSlide].tag}
                   </span>
