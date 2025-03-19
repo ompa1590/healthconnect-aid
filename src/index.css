@@ -251,6 +251,35 @@
     background-color: #ffffff;
     background-image: url("data:image/svg+xml,%3Csvg width='32' height='64' viewBox='0 0 32 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 28h20V16h-4v8H4V4h28v28h-4V8H8v12h4v-8h12v20H0v-4zm12 8h20v4H16v24H0v-4h12V36zm16 12h-4v12h8v-8h-4v-4z' fill='%23f0f0f0' fill-opacity='0.5' fill-rule='evenodd'/%3E%3C/svg%3E");
   }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .animate-slide-left {
+    animation: slide-left 1s ease-in-out infinite;
+  }
+  
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out forwards;
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.4s ease-out forwards;
+  }
+  
+  .animate-slide-up {
+    animation: slide-up 0.4s ease-out forwards;
+  }
+  
+  .animate-heart-beat {
+    animation: heart-beat 1.5s ease-in-out infinite;
+  }
 }
 
 @keyframes blob {
@@ -277,7 +306,61 @@
   }
 }
 
-/* Custom scrollbar */
+@keyframes slide-left {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes scale-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes heart-beat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.15);
+  }
+  30% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.15);
+  }
+}
+
 ::-webkit-scrollbar {
   @apply w-2;
 }
