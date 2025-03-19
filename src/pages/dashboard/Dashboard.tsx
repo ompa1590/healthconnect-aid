@@ -1,9 +1,9 @@
+
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AppointmentScheduler from "@/components/dashboard/AppointmentScheduler";
 import AppointmentHistory from "@/components/dashboard/AppointmentHistory";
-import { CalendarDays, ClipboardList, Stethoscope, Loader2, Tag, ArrowRight, PlusCircle } from "lucide-react";
+import { CalendarDays, ClipboardList, Stethoscope, Loader2, Tag, PlusCircle } from "lucide-react";
 import { useLocation, useNavigate, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -15,24 +15,22 @@ import DashboardRewards from "@/components/dashboard/DashboardRewards";
 import MedicalHistoryPage from "./MedicalHistoryPage";
 import TreatmentOptionsPage from "./TreatmentOptionsPage";
 import HealthRecordsPage from "./HealthRecordsPage";
+import PastAppointmentsPage from "./PastAppointmentsPage";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import BookAppointmentFlow from "@/components/dashboard/BookingFlow/BookAppointmentFlow";
+
 const Dashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState("");
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const {
-          data,
-          error
-        } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
         if (error) {
           throw error;
         }
@@ -44,13 +42,17 @@ const Dashboard = () => {
           navigate("/login");
           return;
         }
-        const {
-          data: profileData,
-          error: profileError
-        } = await supabase.from('profiles').select('name').eq('id', data.session.user.id).single();
+        
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', data.session.user.id)
+          .single();
+          
         if (profileError) {
           throw profileError;
         }
+        
         if (profileData) {
           setUserName(profileData.name || "Patient");
         }
@@ -65,27 +67,33 @@ const Dashboard = () => {
         setIsLoading(false);
       }
     };
+    
     checkAuth();
-    const {
-      data: authListener
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         navigate("/login");
       }
     });
+    
     return () => {
       if (authListener && authListener.subscription) {
         authListener.subscription.unsubscribe();
       }
     };
   }, [navigate, toast]);
+
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">
+    return (
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2 text-lg">Loading your dashboard...</span>
-      </div>;
+      </div>
+    );
   }
-  const DashboardHome = () => <div className="max-w-6xl mx-auto px-6 py-10">
+
+  const DashboardHome = () => (
+    <div className="max-w-6xl mx-auto px-6 py-10">
       <div className="mb-8">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-3xl font-normal text-gray-800">Welcome back, {userName}</h1>
@@ -139,8 +147,6 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       
-      
-      
       <h2 className="text-2xl font-medium mb-6">Your Appointments</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="border rounded-xl shadow-sm">
@@ -184,19 +190,28 @@ const Dashboard = () => {
           </Card>
         </div>
       </div>
-    </div>;
-  return <div className="min-h-screen bg-white">
-      <DashboardNavbar userName={userName} />
+    </div>
+  );
+
+  // On child routes, we won't render a second navbar if we're already showing one
+  const shouldRenderNavbar = location.pathname === '/dashboard';
+
+  return (
+    <div className="min-h-screen bg-white">
+      {shouldRenderNavbar && <DashboardNavbar userName={userName} />}
       
       <Routes>
         <Route path="/" element={<DashboardHome />} />
         <Route path="/profile" element={<ProfileSettings />} />
         <Route path="/services" element={<DashboardServices />} />
         <Route path="/rewards" element={<DashboardRewards />} />
+        <Route path="/past-appointments" element={<PastAppointmentsPage />} />
         <Route path="/medical-history" element={<MedicalHistoryPage />} />
         <Route path="/treatment-options" element={<TreatmentOptionsPage />} />
         <Route path="/health-records" element={<HealthRecordsPage />} />
       </Routes>
-    </div>;
+    </div>
+  );
 };
+
 export default Dashboard;

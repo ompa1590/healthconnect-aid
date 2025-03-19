@@ -8,20 +8,42 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Loader2, CheckCircle2 } from "lucide-react";
+
+type ProfileData = {
+  name: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  healthCardNumber: string;
+  familyDoctor: string;
+  emergencyContact: string;
+  dataConsent: boolean;
+};
 
 const ProfileSettings = () => {
   const { toast } = useToast();
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<ProfileData>({
     name: "",
     email: "",
     phone: "",
     dateOfBirth: "",
     healthCardNumber: "",
-    familyDoctor: "Not provided",
-    emergencyContact: "Not provided",
+    familyDoctor: "",
+    emergencyContact: "",
     dataConsent: false,
   });
   const [loading, setLoading] = useState(true);
+  const [updateField, setUpdateField] = useState<keyof ProfileData | null>(null);
+  const [fieldValue, setFieldValue] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -69,12 +91,71 @@ const ProfileSettings = () => {
     fetchProfile();
   }, [toast]);
   
-  const handleUpdate = (field: string) => {
-    toast({
-      title: "Update requested",
-      description: `You requested to update your ${field}`,
-    });
-    // In a real app, this would open a modal or form to update the specific field
+  const handleUpdate = (field: keyof ProfileData) => {
+    setUpdateField(field);
+    setFieldValue(profile[field] as string);
+  };
+  
+  const handleSaveField = async () => {
+    if (!updateField) return;
+    
+    try {
+      setIsSaving(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const updates: Record<string, any> = {};
+      
+      // Map profile fields to database columns
+      switch (updateField) {
+        case 'name':
+          updates.name = fieldValue;
+          break;
+        case 'phone':
+          updates.phone = fieldValue;
+          break;
+        case 'dateOfBirth':
+          updates.date_of_birth = fieldValue;
+          break;
+        case 'healthCardNumber':
+          updates.health_card_number = fieldValue;
+          break;
+        case 'familyDoctor':
+          updates.family_doctor = fieldValue;
+          break;
+        case 'emergencyContact':
+          updates.emergency_contact = fieldValue;
+          break;
+        default:
+          break;
+      }
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', session.user.id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setProfile(prev => ({ ...prev, [updateField]: fieldValue }));
+      
+      toast({
+        title: "Profile updated",
+        description: `Your ${updateField} has been updated successfully`,
+      });
+      
+      setUpdateField(null);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Update failed",
+        description: "We couldn't update your profile information",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
   
   const handleConsentChange = async (checked: boolean) => {
@@ -109,15 +190,16 @@ const ProfileSettings = () => {
 
   if (loading) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
-        <p>Loading profile...</p>
+      <div className="h-full w-full flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading profile...</span>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl font-normal mb-6">Profile</h1>
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-3xl font-normal mb-6">Profile Settings</h1>
       
       <Card className="mb-8 border rounded-xl shadow-sm">
         <CardContent className="p-6 space-y-6">
@@ -137,7 +219,7 @@ const ProfileSettings = () => {
           <div>
             <div className="flex justify-between items-center mb-1">
               <Label className="text-base">Date of birth</Label>
-              <Button variant="outline" size="sm" onClick={() => handleUpdate("date of birth")}>
+              <Button variant="outline" size="sm" onClick={() => handleUpdate("dateOfBirth")}>
                 Update
               </Button>
             </div>
@@ -161,7 +243,7 @@ const ProfileSettings = () => {
           <div>
             <div className="flex justify-between items-center mb-1">
               <Label className="text-base">Health card number</Label>
-              <Button variant="outline" size="sm" onClick={() => handleUpdate("health card")}>
+              <Button variant="outline" size="sm" onClick={() => handleUpdate("healthCardNumber")}>
                 Update
               </Button>
             </div>
@@ -173,8 +255,8 @@ const ProfileSettings = () => {
           <div>
             <div className="flex justify-between items-center mb-1">
               <Label className="text-base">Email address</Label>
-              <Button variant="outline" size="sm" onClick={() => handleUpdate("email")}>
-                Update
+              <Button variant="outline" size="sm" disabled>
+                Update via Settings
               </Button>
             </div>
             <p className="text-gray-700">{profile.email}</p>
@@ -189,7 +271,7 @@ const ProfileSettings = () => {
           <div>
             <div className="flex justify-between items-center mb-1">
               <Label className="text-base">Family doctor</Label>
-              <Button variant="outline" size="sm" onClick={() => handleUpdate("family doctor")}>
+              <Button variant="outline" size="sm" onClick={() => handleUpdate("familyDoctor")}>
                 Update
               </Button>
             </div>
@@ -201,7 +283,7 @@ const ProfileSettings = () => {
           <div>
             <div className="flex justify-between items-center mb-1">
               <Label className="text-base">Emergency contact</Label>
-              <Button variant="outline" size="sm" onClick={() => handleUpdate("emergency contact")}>
+              <Button variant="outline" size="sm" onClick={() => handleUpdate("emergencyContact")}>
                 Update
               </Button>
             </div>
@@ -237,6 +319,40 @@ const ProfileSettings = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Update Dialog */}
+      <Dialog open={updateField !== null} onOpenChange={(open) => !open && setUpdateField(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update {updateField}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Input 
+              value={fieldValue} 
+              onChange={(e) => setFieldValue(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUpdateField(null)}>Cancel</Button>
+            <Button onClick={handleSaveField} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

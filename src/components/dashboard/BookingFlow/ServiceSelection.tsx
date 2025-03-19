@@ -33,33 +33,46 @@ const ServiceSelection = ({
         <p className="text-muted-foreground">Choose the service you'd like to book</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2">
-        {allServices.map((service, index) => (
-          <Card 
-            key={`${service.categoryId}-${index}`} 
-            className={`cursor-pointer hover:shadow-md transition-all overflow-hidden ${
-              selectedService === `${service.categoryId}-${index}` 
-                ? "border-primary" 
-                : "border-muted/50"
-            }`}
-            onClick={() => onSelectService(`${service.categoryId}-${index}`)}
-          >
-            <CardContent className="p-4 flex items-start gap-3">
-              {selectedService === `${service.categoryId}-${index}` && (
-                <div className="absolute top-2 right-2">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2">
+        {allServices.map((service, index) => {
+          const serviceKey = `${service.categoryId}-${index}`;
+          const isSelected = selectedService === serviceKey;
+          
+          return (
+            <Card 
+              key={serviceKey} 
+              className={`cursor-pointer hover:shadow-md transition-all overflow-hidden ${
+                isSelected 
+                  ? "border-primary" 
+                  : "border-muted/50"
+              }`}
+              onClick={() => onSelectService(serviceKey)}
+            >
+              <CardContent className="p-5 flex flex-col h-full">
+                {isSelected && (
+                  <div className="absolute top-2 right-2">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                  </div>
+                )}
+                
+                <div className="mb-4">
+                  <div className={`p-2 w-fit rounded-md bg-${service.iconColor || 'primary'}/10 mb-2`}>
+                    {service.categoryIcon && <service.categoryIcon className={`h-5 w-5 text-${service.iconColor || 'primary'}`} />}
+                  </div>
+                  <div className="text-sm text-muted-foreground mb-1">{service.categoryTitle}</div>
+                  <h3 className="font-medium text-lg mb-1">{service.title}</h3>
                 </div>
-              )}
-              
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">{service.categoryTitle}</div>
-                <h3 className="font-medium mb-1">{service.title}</h3>
-                <p className="text-sm text-muted-foreground line-clamp-2">{service.description}</p>
-                <div className="mt-2 text-sm font-medium">{service.price}</div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                
+                <p className="text-sm text-muted-foreground mb-4 flex-grow">{service.description}</p>
+                
+                <div className="mt-auto flex items-center justify-between">
+                  <div className="text-sm font-medium text-primary">{service.price}</div>
+                  <div className={`h-3 w-3 rounded-full ${isSelected ? 'bg-primary' : 'bg-muted'}`}></div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
       
       <div className="flex justify-end">
