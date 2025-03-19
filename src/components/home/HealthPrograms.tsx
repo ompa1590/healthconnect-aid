@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -26,7 +27,7 @@ const HealthPrograms = () => {
       description: "Connect with specialists who provide evidence-based therapies and personalized plans to help you quit for good.",
       ctaText: "Breathe easier",
       ctaLink: "/services/smoking-cessation",
-      image: "public/lovable-uploads/ca9bf6d1-7eb8-48e1-a631-f8a0ce3bde57.png",
+      image: "/lovable-uploads/ca9bf6d1-7eb8-48e1-a631-f8a0ce3bde57.png",
       icon: Cigarette,
       bgColor: "from-secondary/20 to-secondary/5"
     },
