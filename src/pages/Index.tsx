@@ -3,7 +3,6 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Hero from "@/components/home/Hero";
 import FeaturesSection from "@/components/home/FeaturesSection";
-import ServicesSection from "@/components/home/ServicesSection";
 import DiagnosticCards from "@/components/home/DiagnosticCards";
 import HealthPrograms from "@/components/home/HealthPrograms";
 import PopularTreatments from "@/components/home/PopularTreatments";
@@ -20,7 +19,6 @@ const Index = () => {
         <PopularTreatments />
         <HealthPrograms />
         <FeaturesSection />
-        <ServicesSection />
       </main>
       <Footer />
       
