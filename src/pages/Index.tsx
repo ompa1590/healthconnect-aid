@@ -8,6 +8,7 @@ import DiagnosticCards from "@/components/home/DiagnosticCards";
 import HealthPrograms from "@/components/home/HealthPrograms";
 import PopularTreatments from "@/components/home/PopularTreatments";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import LanguageSelector from "@/components/ui/LanguageSelector";
 
 const Index = () => {
   return (
@@ -22,6 +23,11 @@ const Index = () => {
         <ServicesSection />
       </main>
       <Footer />
+      
+      <div className="fixed bottom-6 right-6 flex flex-col gap-2 z-50">
+        <LanguageSelector />
+        <ThemeToggle />
+      </div>
     </div>
   );
 };

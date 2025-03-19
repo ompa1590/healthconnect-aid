@@ -5,15 +5,16 @@ import { ArrowRight, CheckCircle, Video, Calendar, Shield, MessageCircle, Stetho
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { MedicalIcon3D } from "@/components/ui/MedicalIcons3D";
 
 const Hero = () => {
   const { t } = useLanguage();
   
   const benefits = [
-    "24/7 access to healthcare professionals", 
-    "Secure, HIPAA-compliant telehealth platform", 
-    "Prescription management & delivery", 
-    "Follow-up care & monitoring"
+    { text: "24/7 access to healthcare professionals", icon: "clock", color: "primary" },
+    { text: "Secure, HIPAA-compliant telehealth platform", icon: "shield", color: "secondary" },
+    { text: "Prescription management & delivery", icon: "pill", color: "primary" },
+    { text: "Follow-up care & monitoring", icon: "heart", color: "secondary" }
   ];
   
   return (
@@ -45,9 +46,16 @@ const Hero = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
               {benefits.map((benefit, index) => (
-                <div key={index} className="flex items-start">
-                  <CheckCircle className="h-5 w-5 text-primary shrink-0 mt-0.5 mr-2" />
-                  <span>{benefit}</span>
+                <div key={index} className="flex items-start group">
+                  <div className="mr-3 mt-1">
+                    <MedicalIcon3D 
+                      type={benefit.icon as any} 
+                      size="sm" 
+                      color={benefit.color as any}
+                      animate={true}
+                    />
+                  </div>
+                  <span className="pt-1">{benefit.text}</span>
                 </div>
               ))}
             </div>
