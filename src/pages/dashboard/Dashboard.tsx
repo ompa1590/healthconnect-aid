@@ -17,19 +17,22 @@ import HealthRecordsPage from "./HealthRecordsPage";
 import PastAppointmentsPage from "./PastAppointmentsPage";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import BookAppointmentFlow from "@/components/dashboard/BookingFlow/BookAppointmentFlow";
-
 const Dashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState("");
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
-
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
+        const {
+          data,
+          error
+        } = await supabase.auth.getSession();
         if (error) {
           throw error;
         }
@@ -41,17 +44,13 @@ const Dashboard = () => {
           navigate("/login");
           return;
         }
-        
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('name')
-          .eq('id', data.session.user.id)
-          .single();
-          
+        const {
+          data: profileData,
+          error: profileError
+        } = await supabase.from('profiles').select('name').eq('id', data.session.user.id).single();
         if (profileError) {
           throw profileError;
         }
-        
         if (profileData) {
           setUserName(profileData.name || "Patient");
         }
@@ -66,33 +65,27 @@ const Dashboard = () => {
         setIsLoading(false);
       }
     };
-    
     checkAuth();
-    
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: authListener
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         navigate("/login");
       }
     });
-    
     return () => {
       if (authListener && authListener.subscription) {
         authListener.subscription.unsubscribe();
       }
     };
   }, [navigate, toast]);
-
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2 text-lg">Loading your dashboard...</span>
-      </div>
-    );
+      </div>;
   }
-
-  const DashboardHome = () => (
-    <div className="max-w-6xl mx-auto px-6 py-10">
+  const DashboardHome = () => <div className="max-w-6xl mx-auto px-6 py-10">
       <div className="mb-8 bg-gradient-to-r from-health-100 to-health-50 p-8 rounded-xl shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <div>
@@ -152,7 +145,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="border rounded-xl shadow-sm hover:shadow-md transition-all">
           <CardContent className="p-6">
-            <h2 className="text-xl font-medium mb-4">Upcoming & Past Appointments</h2>
+            <h2 className="text-xl font-medium mb-4">Upcoming Appointments</h2>
             <AppointmentHistory />
           </CardContent>
         </Card>
@@ -191,11 +184,8 @@ const Dashboard = () => {
           </Card>
         </div>
       </div>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-white">
+    </div>;
+  return <div className="min-h-screen bg-white">
       <DashboardNavbar userName={userName} />
       
       <Routes>
@@ -208,8 +198,6 @@ const Dashboard = () => {
         <Route path="/treatment-options" element={<TreatmentOptionsPage />} />
         <Route path="/health-records" element={<HealthRecordsPage />} />
       </Routes>
-    </div>
-  );
+    </div>;
 };
-
 export default Dashboard;
