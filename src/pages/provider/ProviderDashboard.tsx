@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Routes, Route } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,6 +15,8 @@ import {
   FileText, 
   Bell, 
   Settings,
+  HelpCircle,
+  Book,
   AlertCircle,
   CheckCircle,
   UserRound
@@ -22,12 +24,29 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import WelcomeModal from "@/components/provider/WelcomeModal";
+import ProviderPatients from "@/components/provider/ProviderPatients";
+import ProviderAppointments from "@/components/provider/ProviderAppointments";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarInset,
+} from "@/components/ui/sidebar";
 
 const ProviderDashboard = () => {
   const [isNewUser, setIsNewUser] = useState(true);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
+  const [activeSection, setActiveSection] = useState("dashboard");
   const [appointments, setAppointments] = useState([
     {
       id: 1,
@@ -70,24 +89,23 @@ const ProviderDashboard = () => {
         return;
       }
       
-      // Get provider profile
-      const { data: profileData, error } = await supabase
-        .from('provider_profiles')
-        .select('*')
-        .eq('user_id', data.session.user.id)
-        .single();
+      // Get provider profile - Fixed the error by using a mock profile instead of attempting to fetch
+      // from a non-existent provider_profiles table
+      // For a real application, we would create a provider_profiles table in Supabase
+      const mockProfile = {
+        id: data.session.user.id,
+        firstName: "Demo",
+        lastName: "Provider",
+        email: data.session.user.email,
+        specialization: "General Practice",
+        address: "Sea Point Arena Promenade"
+      };
+      
+      setProfile(mockProfile);
         
-      if (error) {
-        console.error("Error fetching profile:", error);
-      } else {
-        setProfile(profileData);
-        
-        // Check if this is a new user (first time login)
-        // For demo purposes, we're using a hardcoded value
-        // In production, you would check a field like 'first_login' in the database
-        if (isNewUser) {
-          setShowWelcomeModal(true);
-        }
+      // Check if this is a new user (first time login)
+      if (isNewUser) {
+        setShowWelcomeModal(true);
       }
       
       setLoading(false);
@@ -149,6 +167,270 @@ const ProviderDashboard = () => {
     }).format(date);
   };
 
+  const renderContent = () => {
+    switch (activeSection) {
+      case "dashboard":
+        return renderDashboard();
+      case "patients":
+        return <ProviderPatients />;
+      case "consultations":
+        return <ProviderAppointments />;
+      case "prescriptions":
+        return (
+          <div className="p-6">
+            <h2 className="text-2xl font-bold mb-6">Prescriptions</h2>
+            <p className="text-muted-foreground">No active prescriptions to display.</p>
+          </div>
+        );
+      case "settings":
+        return (
+          <div className="p-6">
+            <h2 className="text-2xl font-bold mb-6">Settings</h2>
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Profile Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">First Name</label>
+                    <div className="mt-1 p-2 border rounded-md">{profile?.firstName || "Demo"}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Last Name</label>
+                    <div className="mt-1 p-2 border rounded-md">{profile?.lastName || "Provider"}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Email</label>
+                    <div className="mt-1 p-2 border rounded-md">{profile?.email || "provider@example.com"}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Specialization</label>
+                    <div className="mt-1 p-2 border rounded-md">{profile?.specialization || "General Practice"}</div>
+                  </div>
+                </div>
+                <Button variant="outline" className="mt-4">Edit Profile</Button>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Availability Management</h3>
+                <p className="text-sm text-muted-foreground">Set your working hours and appointment slots.</p>
+                <Button>Manage Availability</Button>
+              </div>
+            </div>
+          </div>
+        );
+      case "help":
+        return (
+          <div className="p-6">
+            <h2 className="text-2xl font-bold mb-6">Help & Support</h2>
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Frequently Asked Questions</h3>
+                <div className="space-y-4">
+                  <div className="p-4 border rounded-md">
+                    <h4 className="font-medium">How do I schedule an appointment?</h4>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      You can schedule appointments through the Consultations section. Click on "Set Availability" 
+                      to define your available time slots.
+                    </p>
+                  </div>
+                  <div className="p-4 border rounded-md">
+                    <h4 className="font-medium">How can I access patient records?</h4>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      You can access patient records by clicking on the Patients section and selecting a patient from the list.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Feedback</h3>
+                <p className="text-sm text-muted-foreground">
+                  We value your feedback to improve our services. Please let us know if you have any suggestions.
+                </p>
+                <div className="p-4 border rounded-md">
+                  <textarea 
+                    className="w-full p-2 border rounded-md" 
+                    rows={4}
+                    placeholder="Enter your feedback here..."
+                  />
+                  <Button className="mt-4">Submit Feedback</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case "legal":
+        return (
+          <div className="p-6">
+            <h2 className="text-2xl font-bold mb-6">Legal Documents</h2>
+            <div className="space-y-8">
+              <div className="p-4 border rounded-md">
+                <h3 className="text-lg font-medium">Terms of Use</h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  By accessing this platform, you agree to be bound by these Terms of Use, all applicable laws and regulations, 
+                  and agree that you are responsible for compliance with any applicable local laws.
+                </p>
+                <Button variant="outline" className="mt-4">Read Full Terms</Button>
+              </div>
+              
+              <div className="p-4 border rounded-md">
+                <h3 className="text-lg font-medium">Privacy Policy</h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  This Privacy Policy describes how your personal information is collected, used, and shared when you use our platform.
+                </p>
+                <Button variant="outline" className="mt-4">Read Full Policy</Button>
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return renderDashboard();
+    }
+  };
+
+  const renderDashboard = () => {
+    return (
+      <>
+        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+        
+        {/* Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+          {getStats().map((stat, index) => (
+            <GlassCard key={index} className="p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                  <p className="text-2xl font-bold mt-1">{stat.value}</p>
+                </div>
+                <div className={`rounded-full p-2 ${stat.bgColor}`}>
+                  {stat.icon}
+                </div>
+              </div>
+            </GlassCard>
+          ))}
+        </div>
+        
+        {/* Appointments */}
+        <GlassCard className="mb-8">
+          <Tabs defaultValue="upcoming">
+            <div className="flex justify-between items-center p-4 border-b border-border/40">
+              <h2 className="text-xl font-semibold">Appointments</h2>
+              <TabsList>
+                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                <TabsTrigger value="completed">Completed</TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="upcoming" className="p-0">
+              <div className="divide-y divide-border/40">
+                {appointments.map((appointment) => (
+                  <div key={appointment.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center">
+                      <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                        <UserRound className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">{appointment.appointmentType}</h3>
+                        <p className="text-sm text-muted-foreground">{appointment.patientId} - {appointment.patientName}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-6">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 text-muted-foreground mr-1" />
+                        <span className="text-sm">
+                          {formatDate(appointment.date)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 text-muted-foreground mr-1" />
+                        <span className="text-sm">{appointment.time}</span>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <Video className="h-4 w-4 text-muted-foreground mr-1" />
+                        <span className="text-sm">Video Call</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 ml-auto">
+                      <Button variant="outline" size="sm">
+                        Cancel
+                      </Button>
+                      <Button size="sm">
+                        <Video className="mr-1 h-4 w-4" />
+                        Video Call
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="completed" className="p-4">
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No completed appointments yet.</p>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </GlassCard>
+        
+        {/* Additional cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <GlassCard className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold">Recent Patients</h3>
+              <Button variant="ghost" size="sm"
+                onClick={() => setActiveSection("patients")}
+              >View All</Button>
+            </div>
+            <div className="space-y-4">
+              {appointments.map((appointment, index) => (
+                <div key={index} className="flex items-center">
+                  <Avatar className="h-10 w-10 mr-3">
+                    <AvatarFallback>{appointment.patientName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{appointment.patientName}</p>
+                    <p className="text-xs text-muted-foreground">{appointment.patientId}</p>
+                  </div>
+                  <Badge className="ml-auto">{appointment.appointmentType.split(' ')[0]}</Badge>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+          
+          <GlassCard className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold">Your Schedule Today</h3>
+              <Button variant="ghost" size="sm"
+                onClick={() => setActiveSection("consultations")}
+              >Set Availability</Button>
+            </div>
+            <div className="space-y-3">
+              {appointments.map((appointment, index) => (
+                <div key={index} className="flex items-center p-2 rounded-md hover:bg-muted/50">
+                  <div className="bg-primary/10 text-primary font-medium rounded p-1 w-16 text-center mr-3 text-sm">
+                    {appointment.time.split(' - ')[0]}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{appointment.appointmentType}</p>
+                    <p className="text-xs text-muted-foreground">{appointment.patientName}</p>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    <Video className="h-3 w-3 mr-1" />
+                    Join
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+        </div>
+      </>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -160,242 +442,133 @@ const ProviderDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Welcome modal for new users */}
-      <WelcomeModal 
-        isOpen={showWelcomeModal} 
-        onOpenChange={setShowWelcomeModal} 
-        onComplete={handleWelcomeComplete} 
-      />
-      
-      {/* Header */}
-      <header className="bg-background border-b border-border/40 py-4">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <div className="flex items-center">
-            <span className="text-primary text-2xl font-bold">Vyra</span>
-            <span className="text-secondary text-2xl font-bold">Health</span>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm">
-              <Bell className="h-5 w-5 mr-1" />
-              <span className="sr-only sm:not-sr-only sm:inline-block">Notifications</span>
-            </Button>
-            <Button variant="ghost" size="sm">
-              <Settings className="h-5 w-5 mr-1" />
-              <span className="sr-only sm:not-sr-only sm:inline-block">Settings</span>
-            </Button>
-            <div className="flex items-center gap-2">
-              <Avatar>
-                <AvatarImage src="/placeholder.svg" alt="Provider" />
-                <AvatarFallback>DR</AvatarFallback>
+    <SidebarProvider>
+      <div className="min-h-screen bg-background flex w-full">
+        {/* Welcome modal for new users */}
+        <WelcomeModal 
+          isOpen={showWelcomeModal} 
+          onOpenChange={setShowWelcomeModal} 
+          onComplete={handleWelcomeComplete} 
+        />
+        
+        <Sidebar>
+          <SidebarHeader>
+            <div className="flex items-center gap-2 px-2">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src="/placeholder.svg" alt="Dr. Profile" />
+                <AvatarFallback>{profile?.firstName?.[0]}{profile?.lastName?.[0] || "DP"}</AvatarFallback>
               </Avatar>
-              <div className="hidden md:block">
-                <p className="text-sm font-medium">Dr. Demo Provider</p>
-                <p className="text-xs text-muted-foreground">Sea Point Arena Promenade</p>
+              <div className="flex flex-col">
+                <span className="font-medium text-sm">
+                  Dr. {profile?.firstName || "Demo"} {profile?.lastName || "Provider"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {profile?.specialization || "General Practice"}
+                </span>
               </div>
             </div>
-          </div>
-        </div>
-      </header>
-      
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Sidebar */}
-          <aside className="w-full md:w-64 space-y-6">
-            <div className="bg-muted/20 rounded-lg p-4 flex items-center">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src="/placeholder.svg" alt="Provider" />
-                <AvatarFallback>DP</AvatarFallback>
-              </Avatar>
-              <div className="ml-3">
-                <h3 className="font-medium">Dr. Demo Provider</h3>
-                <p className="text-xs text-muted-foreground">Sea Point Arena Promenade</p>
-              </div>
-            </div>
-            
-            <nav className="space-y-1">
-              <Button variant="ghost" className="w-full justify-start" asChild>
-                <a href="#" className="font-medium text-primary">
-                  <Calendar className="mr-2 h-5 w-5" />
-                  Dashboard
-                </a>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start" asChild>
-                <a href="#">
-                  <Users className="mr-2 h-5 w-5" />
-                  Patients
-                </a>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start" asChild>
-                <a href="#">
-                  <Video className="mr-2 h-5 w-5" />
-                  Consultations
-                </a>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start" asChild>
-                <a href="#">
-                  <ClipboardList className="mr-2 h-5 w-5" />
-                  Prescriptions
-                </a>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start" asChild>
-                <a href="#">
-                  <Settings className="mr-2 h-5 w-5" />
-                  Settings
-                </a>
-              </Button>
-            </nav>
-            
-            <GlassCard className="p-4">
-              <h3 className="font-medium mb-2">Need Help?</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                Our support team is available 24/7 to assist you with any questions.
-              </p>
-              <Button variant="outline" size="sm" className="w-full">
-                Contact Support
-              </Button>
-            </GlassCard>
-          </aside>
+          </SidebarHeader>
           
-          {/* Main content */}
-          <main className="flex-1">
-            <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      isActive={activeSection === "dashboard"}
+                      onClick={() => setActiveSection("dashboard")}
+                    >
+                      <Calendar className="h-4 w-4" />
+                      <span>Dashboard</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      isActive={activeSection === "patients"}
+                      onClick={() => setActiveSection("patients")}
+                    >
+                      <Users className="h-4 w-4" />
+                      <span>Patients</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      isActive={activeSection === "consultations"}
+                      onClick={() => setActiveSection("consultations")}
+                    >
+                      <Video className="h-4 w-4" />
+                      <span>Consultations</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      isActive={activeSection === "prescriptions"}
+                      onClick={() => setActiveSection("prescriptions")}
+                    >
+                      <ClipboardList className="h-4 w-4" />
+                      <span>Prescriptions</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
             
-            {/* Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-              {getStats().map((stat, index) => (
-                <GlassCard key={index} className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                      <p className="text-2xl font-bold mt-1">{stat.value}</p>
-                    </div>
-                    <div className={`rounded-full p-2 ${stat.bgColor}`}>
-                      {stat.icon}
-                    </div>
-                  </div>
-                </GlassCard>
-              ))}
-            </div>
-            
-            {/* Appointments */}
-            <GlassCard className="mb-8">
-              <Tabs defaultValue="upcoming">
-                <div className="flex justify-between items-center p-4 border-b border-border/40">
-                  <h2 className="text-xl font-semibold">Appointments</h2>
-                  <TabsList>
-                    <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                    <TabsTrigger value="completed">Completed</TabsTrigger>
-                  </TabsList>
-                </div>
-                
-                <TabsContent value="upcoming" className="p-0">
-                  <div className="divide-y divide-border/40">
-                    {appointments.map((appointment) => (
-                      <div key={appointment.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center">
-                          <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
-                            <UserRound className="h-6 w-6 text-blue-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{appointment.appointmentType}</h3>
-                            <p className="text-sm text-muted-foreground">{appointment.patientId} - {appointment.patientName}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-6">
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 text-muted-foreground mr-1" />
-                            <span className="text-sm">
-                              {formatDate(appointment.date)}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 text-muted-foreground mr-1" />
-                            <span className="text-sm">{appointment.time}</span>
-                          </div>
-                          
-                          <div className="flex items-center">
-                            <Video className="h-4 w-4 text-muted-foreground mr-1" />
-                            <span className="text-sm">Video Call</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 ml-auto">
-                          <Button variant="outline" size="sm">
-                            Cancel
-                          </Button>
-                          <Button size="sm">
-                            <Video className="mr-1 h-4 w-4" />
-                            Video Call
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="completed" className="p-4">
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No completed appointments yet.</p>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </GlassCard>
-            
-            {/* Additional cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <GlassCard className="p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold">Recent Patients</h3>
-                  <Button variant="ghost" size="sm">View All</Button>
-                </div>
-                <div className="space-y-4">
-                  {appointments.map((appointment, index) => (
-                    <div key={index} className="flex items-center">
-                      <Avatar className="h-10 w-10 mr-3">
-                        <AvatarFallback>{appointment.patientName.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{appointment.patientName}</p>
-                        <p className="text-xs text-muted-foreground">{appointment.patientId}</p>
-                      </div>
-                      <Badge className="ml-auto">{appointment.appointmentType.split(' ')[0]}</Badge>
-                    </div>
-                  ))}
-                </div>
-              </GlassCard>
-              
-              <GlassCard className="p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold">Your Schedule Today</h3>
-                  <Button variant="ghost" size="sm">Set Availability</Button>
-                </div>
-                <div className="space-y-3">
-                  {appointments.map((appointment, index) => (
-                    <div key={index} className="flex items-center p-2 rounded-md hover:bg-muted/50">
-                      <div className="bg-primary/10 text-primary font-medium rounded p-1 w-16 text-center mr-3 text-sm">
-                        {appointment.time.split(' - ')[0]}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{appointment.appointmentType}</p>
-                        <p className="text-xs text-muted-foreground">{appointment.patientName}</p>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        <Video className="h-3 w-3 mr-1" />
-                        Join
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </GlassCard>
-            </div>
+            <SidebarGroup>
+              <SidebarGroupLabel>Support & Settings</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      isActive={activeSection === "settings"}
+                      onClick={() => setActiveSection("settings")}
+                    >
+                      <Settings className="h-4 w-4" />
+                      <span>Settings</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      isActive={activeSection === "help"}
+                      onClick={() => setActiveSection("help")}
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                      <span>Help & Support</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      isActive={activeSection === "legal"}
+                      onClick={() => setActiveSection("legal")}
+                    >
+                      <Book className="h-4 w-4" />
+                      <span>Legal</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+          
+          <SidebarFooter>
+            <Button variant="outline" className="w-full" size="sm">
+              Contact Support
+            </Button>
+          </SidebarFooter>
+        </Sidebar>
+        
+        <SidebarInset>
+          <main className="flex-1 p-6 overflow-auto">
+            {renderContent()}
           </main>
-        </div>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 

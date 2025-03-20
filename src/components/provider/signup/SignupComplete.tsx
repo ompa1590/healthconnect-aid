@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SignupCompleteProps {
   formData: ProviderFormData;
@@ -13,9 +14,39 @@ interface SignupCompleteProps {
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
   const navigate = useNavigate();
   
-  const handleComplete = () => {
-    onComplete();
-    navigate('/provider/dashboard');
+  const handleComplete = async () => {
+    try {
+      // Attempt to sign up the provider
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            role: 'provider',
+            specialization: formData.specialization || '',
+            registrationNumber: formData.registrationNumber || '',
+            address: formData.address || '',
+            city: formData.city || '',
+            province: formData.province || '',
+            postalCode: formData.postalCode || '',
+            phoneNumber: formData.phoneNumber || '',
+          }
+        }
+      });
+      
+      if (error) {
+        console.error("Error during sign up:", error);
+        // You would typically show this error to the user with a toast
+      } else {
+        // Success - complete the signup process
+        onComplete();
+        navigate('/provider/dashboard');
+      }
+    } catch (error) {
+      console.error("Unexpected error during sign up:", error);
+    }
   };
   
   return (

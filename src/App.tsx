@@ -4,16 +4,16 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PatientLogin from './pages/login/PatientLogin';
 import PatientSignup from './pages/login/PatientSignup';
 import Dashboard from './pages/dashboard/Dashboard';
-import ProfileSettings from './components/dashboard/ProfileSettings';
-import MedicalHistory from './components/dashboard/MedicalHistory';
 import HealthRecordsPage from './pages/dashboard/HealthRecordsPage';
 import TreatmentOptionsPage from './pages/dashboard/TreatmentOptionsPage';
-import DashboardServices from './components/dashboard/DashboardServices';
 import PastAppointmentsPage from './pages/dashboard/PastAppointmentsPage';
-import BookAppointment from './components/dashboard/BookAppointment';
 import ProviderSignup from './pages/login/ProviderSignup';
 import ProviderLogin from './pages/login/ProviderLogin';
 import ProviderDashboard from './pages/provider/ProviderDashboard';
+import ProfileSettings from '@/components/dashboard/ProfileSettings';
+import MedicalHistory from '@/components/dashboard/MedicalHistory';
+import DashboardServices from '@/components/dashboard/DashboardServices';
+import BookAppointment from '@/components/dashboard/BookAppointment';
 
 function App() {
   return (
@@ -33,6 +33,12 @@ function App() {
         <Route path="/provider-registration" element={<ProviderSignup />} />
         <Route path="/provider-login" element={<ProviderLogin />} />
         <Route path="/provider/dashboard" element={<ProviderDashboard />} />
+        <Route path="/provider/patients" element={<ProviderDashboard />} />
+        <Route path="/provider/consultations" element={<ProviderDashboard />} />
+        <Route path="/provider/prescriptions" element={<ProviderDashboard />} />
+        <Route path="/provider/settings" element={<ProviderDashboard />} />
+        <Route path="/provider/help" element={<ProviderDashboard />} />
+        <Route path="/provider/legal" element={<ProviderDashboard />} />
       </Routes>
     </Router>
   );
