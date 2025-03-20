@@ -14,7 +14,6 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const captchaRef = useRef<HTMLDivElement>(null);
-  const scriptRef = useRef<HTMLScriptElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
   
@@ -39,6 +38,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     // Set mounted flag
     mountedRef.current = true;
     
+    // Inner function to render captcha
     const renderCaptcha = () => {
       // Only proceed if component is still mounted and container exists
       if (!mountedRef.current || !captchaRef.current) return;
@@ -113,7 +113,6 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       };
       
       document.head.appendChild(script);
-      scriptRef.current = script;
     };
     
     // Start the loading process

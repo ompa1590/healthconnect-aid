@@ -21,7 +21,13 @@ const DashboardNavbar = ({
   
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Sign out error:", error);
+        throw error;
+      }
+      
       toast({
         title: "Sign out successful",
         description: "You have been signed out from Vyra Health"
@@ -42,11 +48,6 @@ const DashboardNavbar = ({
     return name.split(' ').map(part => part[0]).join('').toUpperCase().substring(0, 2);
   };
 
-  // Handle logo click - direct to homepage after signout
-  const handleLogoClick = () => {
-    handleSignOut();
-  };
-
   // Check if the current path is active
   const isActive = (path: string) => {
     if (path === '/dashboard' && location.pathname === '/dashboard') {
@@ -62,7 +63,7 @@ const DashboardNavbar = ({
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-10">
-            <div onClick={handleLogoClick} className="flex items-center cursor-pointer">
+            <div className="flex items-center cursor-pointer">
               <span className="text-primary text-xl font-bold tracking-tight">Vyra</span>
               <span className="text-secondary text-xl font-bold tracking-tight">Health</span>
             </div>

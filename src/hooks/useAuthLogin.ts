@@ -86,7 +86,6 @@ export const useAuthLogin = () => {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
-          // Fix: captchaToken not sent in options for OAuth
         },
       });
       
@@ -102,7 +101,9 @@ export const useAuthLogin = () => {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
       toast({
         title: "Sign out successful",
         description: "You have been signed out from Vyra Health",

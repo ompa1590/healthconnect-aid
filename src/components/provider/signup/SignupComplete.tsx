@@ -39,6 +39,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   }, []);
   
   const handleCaptchaVerify = (token: string) => {
+    console.log("Captcha verified, setting token:", token);
     setCaptchaToken(token);
   };
   
