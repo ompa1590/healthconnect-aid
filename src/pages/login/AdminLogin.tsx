@@ -1,54 +1,98 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
-import { Lock, Mail, Shield, LogOut, Stethoscope, CalendarDays, Users, ClipboardList } from "lucide-react";
+import { AlertCircle, Lock, Mail, Shield, LogOut, Loader2, Stethoscope, CalendarDays, Users, ClipboardList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import CaptchaComponent from "@/components/auth/CaptchaComponent";
+
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const {
-    toast
-  } = useToast();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
-      const {
-        data
-      } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
       if (data.session) {
-        // User is already logged in, redirect to dashboard
         navigate('/provider/dashboard');
       }
     };
     checkSession();
+    
+    // Set up auth state listener
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        navigate("/provider/dashboard");
+      }
+    });
+    
+    return () => {
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+      }
+    };
   }, [navigate]);
-  const handleLogin = (e: React.FormEvent) => {
+
+  const handleCaptchaVerify = (token: string) => {
+    setCaptchaToken(token);
+    setCaptchaVerified(true);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
-    // Simulate authentication - in a real app, this would call an API
-    setTimeout(() => {
-      // For demo purposes, any login works
-      toast({
-        title: "Login successful",
-        description: "Welcome to Vyra Health Provider Portal!"
-      });
-      navigate("/provider/dashboard");
+    setErrorMessage(null);
+    
+    if (!captchaVerified || !captchaToken) {
+      setErrorMessage("Please complete the captcha verification before signing in.");
       setIsLoading(false);
-    }, 1000);
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: {
+          captchaToken: captchaToken,
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data.user) {
+        toast({
+          title: "Login successful",
+          description: "Welcome to Vyra Health Provider Portal!",
+        });
+        navigate("/provider/dashboard");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setErrorMessage(error.message || "Failed to sign in. Please check your credentials.");
+    } finally {
+      setIsLoading(false);
+    }
   };
+  
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
       toast({
         title: "Sign out successful",
-        description: "You have been signed out from Vyra Health"
+        description: "You have been signed out from Vyra Health",
       });
       navigate("/admin-login");
     } catch (error) {
@@ -56,11 +100,13 @@ const AdminLogin = () => {
       toast({
         title: "Sign out failed",
         description: "There was an error signing out",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
-  return <div className="min-h-screen flex flex-col md:flex-row bg-gradient-to-b from-background to-muted/30">
+
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row bg-gradient-to-b from-background to-muted/30">
       {/* Left side - Provider benefits and statistics */}
       <div className="w-full md:w-1/2 bg-gradient-to-br from-primary/10 to-secondary/10 hidden md:flex items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 bg-opacity-10 z-0">
@@ -70,7 +116,11 @@ const AdminLogin = () => {
         
         <div className="max-w-lg p-8 z-10">
           <div className="rounded-2xl overflow-hidden shadow-2xl mb-8 transform transition-all hover:scale-105 duration-300">
-            
+            <img 
+              src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop" 
+              alt="Healthcare provider" 
+              className="w-full h-auto object-cover"
+            />
           </div>
           
           <GlassCard className="mb-8">
@@ -121,17 +171,44 @@ const AdminLogin = () => {
 
           <GlassCard className="px-6 py-8 mt-8">
             <form className="space-y-6" onSubmit={handleLogin}>
+              {errorMessage && (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{errorMessage}</AlertDescription>
+                </Alert>
+              )}
+              
               <div className="space-y-2">
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
-                  <Input id="email" name="email" type="email" placeholder="Professional email address" autoComplete="email" required className="pl-10" value={email} onChange={e => setEmail(e.target.value)} />
+                  <Input 
+                    id="email" 
+                    name="email" 
+                    type="email" 
+                    placeholder="Professional email address" 
+                    autoComplete="email" 
+                    required 
+                    className="pl-10" 
+                    value={email} 
+                    onChange={e => setEmail(e.target.value)} 
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
-                  <Input id="password" name="password" type="password" placeholder="Password" autoComplete="current-password" required className="pl-10" value={password} onChange={e => setPassword(e.target.value)} />
+                  <Input 
+                    id="password" 
+                    name="password" 
+                    type="password" 
+                    placeholder="Password" 
+                    autoComplete="current-password" 
+                    required 
+                    className="pl-10" 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="text-sm">
@@ -142,9 +219,35 @@ const AdminLogin = () => {
                 </div>
               </div>
 
+              {/* hCaptcha container */}
+              <div className="flex justify-center mt-4">
+                <CaptchaComponent 
+                  captchaId="provider-login-captcha"
+                  onVerify={handleCaptchaVerify}
+                  callbackName="providerLoginCaptchaCallback"
+                />
+              </div>
+              
+              {captchaVerified && (
+                <p className="text-green-500 text-sm font-medium text-center">
+                  ✓ Captcha verification complete
+                </p>
+              )}
+
               <div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Signing in..." : "Sign in"}
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading || !captchaVerified}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign in"
+                  )}
                 </Button>
               </div>
             </form>
@@ -176,6 +279,8 @@ const AdminLogin = () => {
           </GlassCard>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default AdminLogin;
