@@ -26,7 +26,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setCaptchaToken(token);
   };
   
-  const handleComplete = async () => {
+  const handleCreateAccount = async () => {
     if (!captchaToken) {
       toast({
         title: "Verification required",
@@ -77,16 +77,26 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           variant: "destructive"
         });
       } else {
-        // Success - complete the signup process
+        // Success - notify user and redirect to sign-in page
         toast({
           title: "Account created",
-          description: "Your provider account has been successfully created!",
+          description: "Your provider account has been successfully created! Please sign in with your credentials.",
         });
+        
+        // Sign out the user first (in case they were automatically signed in)
+        await supabase.auth.signOut();
+        
+        // Call the onComplete callback and navigate to the sign-in page
         onComplete();
-        navigate('/provider/dashboard');
+        navigate('/provider-login');
       }
     } catch (error) {
       console.error("Unexpected error during sign up:", error);
+      toast({
+        title: "Sign up failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setSubmitting(false);
     }
@@ -110,6 +120,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       <div className="bg-muted/30 p-4 rounded-md text-left">
         <p className="text-sm font-medium mb-2">Next Steps:</p>
         <ol className="list-decimal list-inside text-sm space-y-2">
+          <li>Create your account by clicking the button below</li>
           <li>Our team will review your registration information</li>
           <li>We'll verify your professional credentials</li>
           <li>Once verified, you'll receive access to the provider dashboard</li>
@@ -147,11 +158,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       </div>
       
       <Button 
-        onClick={handleComplete} 
+        onClick={handleCreateAccount} 
         className="w-full mt-6"
         disabled={!captchaToken || !agreedToTerms || submitting}
       >
-        {submitting ? "Creating Account..." : "Go to Dashboard"} 
+        {submitting ? "Creating Account..." : "Create Account"} 
         {!submitting && <ArrowRight className="ml-2 h-4 w-4" />}
       </Button>
     </div>

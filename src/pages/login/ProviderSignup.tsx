@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -80,12 +79,10 @@ const ProviderSignup = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        // User is already logged in, redirect to dashboard
         navigate('/provider/dashboard');
       }
     };
@@ -93,12 +90,11 @@ const ProviderSignup = () => {
     checkSession();
   }, [navigate]);
 
-  // Validate current step
   const validateCurrentStep = (): boolean => {
     setStepErrors(null);
     
     switch (currentStep) {
-      case 0: // General Info
+      case 0:
         if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
           setStepErrors("Please fill in all required fields");
           return false;
@@ -109,14 +105,14 @@ const ProviderSignup = () => {
         }
         break;
         
-      case 1: // Provider Type
+      case 1:
         if (!formData.providerType) {
           setStepErrors("Please select a provider type");
           return false;
         }
         break;
         
-      case 2: // Registration Number
+      case 2:
         if (!formData.registrationNumber) {
           setStepErrors("Registration number is required");
           return false;
@@ -127,28 +123,28 @@ const ProviderSignup = () => {
         }
         break;
         
-      case 3: // Specialization
+      case 3:
         if (formData.providerType === "physician" && formData.specializations.length === 0) {
           setStepErrors("Please select at least one specialization");
           return false;
         }
         break;
         
-      case 4: // Services Offered
+      case 4:
         if (formData.servicesOffered.length === 0) {
           setStepErrors("Please select at least one service");
           return false;
         }
         break;
         
-      case 5: // Biography
+      case 5:
         if (!formData.biography || formData.biography.trim().length < 50) {
           setStepErrors("Please provide a biography (minimum 50 characters)");
           return false;
         }
         break;
         
-      case 6: // Availability
+      case 6:
         const hasAvailability = Object.values(formData.availability).some(day => day.isAvailable);
         if (!hasAvailability) {
           setStepErrors("Please set availability for at least one day");
@@ -156,7 +152,7 @@ const ProviderSignup = () => {
         }
         break;
         
-      case 7: // Document Upload
+      case 7:
         if (!formData.profilePicture) {
           setStepErrors("Please upload a profile picture");
           return false;
@@ -171,7 +167,6 @@ const ProviderSignup = () => {
     return true;
   };
 
-  // Define the steps in the sign-up process
   const steps = [
     {
       title: "General Information",
@@ -248,16 +243,15 @@ const ProviderSignup = () => {
       ),
     },
     {
-      title: "All Set!",
+      title: "Complete Registration",
       component: (
         <SignupComplete 
           formData={formData}
           onComplete={() => {
             toast({
-              title: "Registration submitted successfully",
-              description: "Your provider account is under review. We will notify you once approved.",
+              title: "Registration process completed",
+              description: "You can now sign in with your provider account.",
             });
-            navigate("/provider/dashboard");
           }}
         />
       ),
