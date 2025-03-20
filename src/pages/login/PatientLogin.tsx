@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -54,6 +53,15 @@ const PatientLogin = () => {
               handleLogin={handleLogin}
               handleGoogleLogin={handleGoogleLogin}
             />
+
+            <div className="text-center mt-4">
+              <p className="text-sm text-muted-foreground">
+                Are you a healthcare provider?{" "}
+                <Link to="/provider-registration" className="text-primary font-medium hover:underline">
+                  Register here
+                </Link>
+              </p>
+            </div>
 
             <LoginFooter />
           </GlassCard>
