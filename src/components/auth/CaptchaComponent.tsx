@@ -14,6 +14,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
 }) => {
   const captchaLoaded = useRef(false);
   const [captchaInstance, setCaptchaInstance] = useState<any>(null);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
   
   // Define window function for hCaptcha callback
   useEffect(() => {
@@ -56,6 +57,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     const loadCaptchaScript = () => {
       // Skip if we already loaded or are still loading the script
       if (document.getElementById('hcaptcha-script')) {
+        setScriptLoaded(true);
         renderCaptcha();
         return;
       }
@@ -67,37 +69,64 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       script.async = true;
       script.defer = true;
       
+      // Add event listeners to track script loading
+      script.onload = () => {
+        console.log("hCaptcha script loaded successfully");
+        setScriptLoaded(true);
+      };
+      
+      script.onerror = () => {
+        console.error("Failed to load hCaptcha script");
+      };
+      
       document.head.appendChild(script);
     };
     
     // Function to render the captcha once the script is loaded
-    const renderCaptcha = () => {
-      if (window.hcaptcha && document.getElementById(captchaId) && !captchaLoaded.current) {
-        console.log(`Rendering captcha with ID: ${captchaId}`);
-        try {
-          // First, ensure the container is empty
-          const container = document.getElementById(captchaId);
-          if (container) {
-            container.innerHTML = "";
+    window.renderCaptcha = () => {
+      console.log("Render captcha function called");
+      setTimeout(() => {
+        if (window.hcaptcha && document.getElementById(captchaId) && !captchaLoaded.current) {
+          console.log(`Rendering captcha with ID: ${captchaId}`);
+          try {
+            // First, ensure the container is empty
+            const container = document.getElementById(captchaId);
+            if (container) {
+              container.innerHTML = "";
+            }
+            
+            // Render a new captcha with explicit sitekey
+            const widgetId = window.hcaptcha.render(captchaId, {
+              sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
+              callback: callbackName,
+              'error-callback': () => {
+                console.error("hCaptcha widget encountered an error");
+                captchaLoaded.current = false;
+                // Try to re-render after a short delay
+                setTimeout(() => {
+                  if (!captchaLoaded.current) {
+                    window.renderCaptcha();
+                  }
+                }, 1000);
+              }
+            });
+            setCaptchaInstance(widgetId);
+            captchaLoaded.current = true;
+            console.log("Captcha rendered successfully with widget ID:", widgetId);
+          } catch (error) {
+            console.error(`Error rendering captcha:`, error);
+            // If we get an error, we may need to retry
+            captchaLoaded.current = false;
           }
-          
-          // Render a new captcha
-          const widgetId = window.hcaptcha.render(captchaId, {
-            sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
-            callback: callbackName
+        } else {
+          console.log("Cannot render captcha yet:", {
+            hcaptchaExists: !!window.hcaptcha,
+            containerExists: !!document.getElementById(captchaId),
+            alreadyLoaded: captchaLoaded.current
           });
-          setCaptchaInstance(widgetId);
-          captchaLoaded.current = true;
-        } catch (error) {
-          console.error(`Error rendering captcha:`, error);
-          // If we get an error, we may need to retry
-          captchaLoaded.current = false;
         }
-      }
+      }, 100); // Small delay to ensure DOM is ready
     };
-    
-    // Define the global renderCaptcha function that hCaptcha will call when loaded
-    window.renderCaptcha = renderCaptcha;
     
     // Try to load the script
     loadCaptchaScript();
@@ -105,28 +134,53 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     // Clean up function
     return () => {
       // No need to remove the script as it might be used by other components
-      delete window.renderCaptcha;
+      if (window.renderCaptcha) {
+        const tempFunc = window.renderCaptcha;
+        window.renderCaptcha = () => {
+          console.log("Captcha render prevented during cleanup");
+        };
+        
+        // Restore the original function after a short delay
+        // This prevents issues with concurrent unmounts/mounts
+        setTimeout(() => {
+          window.renderCaptcha = tempFunc;
+        }, 50);
+      }
     };
   }, [captchaId, callbackName]);
 
-  // Additional function to manually reset the captcha when needed
-  const resetCaptcha = () => {
-    if (window.hcaptcha && captchaInstance) {
-      try {
-        window.hcaptcha.reset(captchaInstance);
-        console.log("Captcha manually reset");
-      } catch (error) {
-        console.error("Error manually resetting captcha:", error);
-      }
+  // Force render captcha when script is confirmed loaded
+  useEffect(() => {
+    if (scriptLoaded && window.hcaptcha && !captchaLoaded.current) {
+      console.log("Script confirmed loaded, attempting to render captcha");
+      window.renderCaptcha();
     }
-  };
+  }, [scriptLoaded]);
+
+  // Manually attempt to render the captcha if not loaded after a delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!captchaLoaded.current && window.hcaptcha) {
+        console.log("Captcha not loaded after delay, attempting to force render");
+        window.renderCaptcha();
+      }
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, [captchaId]);
 
   return (
     <div className="captcha-container">
       <div 
         id={captchaId} 
-        className="h-[78px] min-w-[300px] flex items-center justify-center"
-      ></div>
+        className="h-[78px] min-w-[300px] flex items-center justify-center border border-border/20 rounded-md"
+      >
+        {!scriptLoaded && (
+          <div className="text-sm text-muted-foreground animate-pulse">
+            Loading captcha...
+          </div>
+        )}
+      </div>
     </div>
   );
 };
