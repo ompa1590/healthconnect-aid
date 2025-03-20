@@ -5,6 +5,7 @@ import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface SignupCompleteProps {
   formData: ProviderFormData;
@@ -13,6 +14,7 @@ interface SignupCompleteProps {
 
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const handleComplete = async () => {
     try {
@@ -25,22 +27,31 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             firstName: formData.firstName,
             lastName: formData.lastName,
             role: 'provider',
-            specialization: formData.specialization || '',
+            specialization: formData.specializations || '', // Fixed property name
             registrationNumber: formData.registrationNumber || '',
             address: formData.address || '',
             city: formData.city || '',
             province: formData.province || '',
             postalCode: formData.postalCode || '',
             phoneNumber: formData.phoneNumber || '',
+            isNewUser: true // Add flag to identify new users for welcome modal
           }
         }
       });
       
       if (error) {
         console.error("Error during sign up:", error);
-        // You would typically show this error to the user with a toast
+        toast({
+          title: "Sign up failed",
+          description: error.message,
+          variant: "destructive"
+        });
       } else {
         // Success - complete the signup process
+        toast({
+          title: "Account created",
+          description: "Your provider account has been successfully created!",
+        });
         onComplete();
         navigate('/provider/dashboard');
       }

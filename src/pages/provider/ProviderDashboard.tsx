@@ -1,11 +1,24 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate, Routes, Route } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Calendar, 
   Clock, 
@@ -19,13 +32,15 @@ import {
   Book,
   AlertCircle,
   CheckCircle,
-  UserRound
+  UserRound,
+  X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import WelcomeModal from "@/components/provider/WelcomeModal";
 import ProviderPatients from "@/components/provider/ProviderPatients";
 import ProviderAppointments from "@/components/provider/ProviderAppointments";
+import CancelAppointmentDialog from "@/components/provider/CancelAppointmentDialog";
 import {
   Sidebar,
   SidebarContent,
@@ -42,7 +57,6 @@ import {
 } from "@/components/ui/sidebar";
 
 const ProviderDashboard = () => {
-  const [isNewUser, setIsNewUser] = useState(true);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
@@ -76,6 +90,32 @@ const ProviderDashboard = () => {
       status: "upcoming"
     }
   ]);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      title: "New appointment",
+      description: "Sarah Johnson scheduled a consultation for today at 6:00 PM",
+      time: "10 minutes ago",
+      read: false
+    },
+    {
+      id: 2,
+      title: "Appointment reminder",
+      description: "You have an appointment with Michael Chen in 30 minutes",
+      time: "30 minutes ago",
+      read: false
+    },
+    {
+      id: 3,
+      title: "Document shared",
+      description: "Emma Williams shared her medical history with you",
+      time: "2 hours ago",
+      read: true
+    }
+  ]);
+  
+  const [appointmentToCancel, setAppointmentToCancel] = useState<number | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -89,30 +129,40 @@ const ProviderDashboard = () => {
         return;
       }
       
-      // Get provider profile - Fixed the error by using a mock profile instead of attempting to fetch
-      // from a non-existent provider_profiles table
-      // For a real application, we would create a provider_profiles table in Supabase
-      const mockProfile = {
+      // Get the user's metadata from the session
+      const userMetadata = data.session.user.user_metadata;
+      
+      // Create a profile from the user metadata
+      const providerProfile = {
         id: data.session.user.id,
-        firstName: "Demo",
-        lastName: "Provider",
+        firstName: userMetadata?.firstName || "Demo",
+        lastName: userMetadata?.lastName || "Provider",
         email: data.session.user.email,
-        specialization: "General Practice",
-        address: "Sea Point Arena Promenade"
+        specialization: userMetadata?.specialization || "General Practice",
+        address: userMetadata?.address || "Sea Point Arena Promenade",
+        isNewUser: userMetadata?.isNewUser || false
       };
       
-      setProfile(mockProfile);
-        
+      setProfile(providerProfile);
+      
       // Check if this is a new user (first time login)
-      if (isNewUser) {
+      if (providerProfile.isNewUser) {
         setShowWelcomeModal(true);
+        
+        // Update the user metadata to remove the isNewUser flag
+        await supabase.auth.updateUser({
+          data: { 
+            ...userMetadata,
+            isNewUser: false 
+          }
+        });
       }
       
       setLoading(false);
     };
     
     checkSession();
-  }, [navigate, isNewUser]);
+  }, [navigate]);
 
   const getStats = () => {
     return [
@@ -151,12 +201,35 @@ const ProviderDashboard = () => {
 
   const handleWelcomeComplete = () => {
     setShowWelcomeModal(false);
-    setIsNewUser(false);
     
     toast({
       title: "Welcome to Vyra Health Provider Dashboard",
       description: "Your account is now set up and ready to go.",
     });
+  };
+
+  const handleCancelAppointment = (appointmentId: number) => {
+    setAppointmentToCancel(appointmentId);
+  };
+
+  const handleConfirmCancel = (reason: string, details?: string) => {
+    // In a real app, you would make an API call to cancel the appointment
+    setAppointments(appointments.map(appointment => 
+      appointment.id === appointmentToCancel 
+        ? { ...appointment, status: "cancelled" } 
+        : appointment
+    ));
+    
+    setAppointmentToCancel(null);
+    
+    toast({
+      title: "Appointment Cancelled",
+      description: `The appointment has been cancelled successfully.`,
+    });
+  };
+
+  const markAllNotificationsAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
 
   const formatDate = (date) => {
@@ -291,12 +364,12 @@ const ProviderDashboard = () => {
   const renderDashboard = () => {
     return (
       <>
-        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-6">Welcome, Dr. {profile?.lastName || "Provider"}</h1>
         
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           {getStats().map((stat, index) => (
-            <GlassCard key={index} className="p-4">
+            <GlassCard key={index} className="p-4 hover:shadow-md transition-all">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
@@ -314,7 +387,7 @@ const ProviderDashboard = () => {
         <GlassCard className="mb-8">
           <Tabs defaultValue="upcoming">
             <div className="flex justify-between items-center p-4 border-b border-border/40">
-              <h2 className="text-xl font-semibold">Appointments</h2>
+              <h2 className="text-xl font-semibold">Today's Appointments</h2>
               <TabsList>
                 <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
                 <TabsTrigger value="completed">Completed</TabsTrigger>
@@ -323,8 +396,8 @@ const ProviderDashboard = () => {
             
             <TabsContent value="upcoming" className="p-0">
               <div className="divide-y divide-border/40">
-                {appointments.map((appointment) => (
-                  <div key={appointment.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                {appointments.filter(a => a.status !== "cancelled").map((appointment) => (
+                  <div key={appointment.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-muted/20 transition-colors">
                     <div className="flex items-center">
                       <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
                         <UserRound className="h-6 w-6 text-blue-600" />
@@ -355,12 +428,16 @@ const ProviderDashboard = () => {
                     </div>
                     
                     <div className="flex items-center gap-2 ml-auto">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleCancelAppointment(appointment.id)}
+                      >
                         Cancel
                       </Button>
-                      <Button size="sm">
+                      <Button size="sm" className="bg-primary hover:bg-primary/90">
                         <Video className="mr-1 h-4 w-4" />
-                        Video Call
+                        Join Call
                       </Button>
                     </div>
                   </div>
@@ -370,7 +447,7 @@ const ProviderDashboard = () => {
             
             <TabsContent value="completed" className="p-4">
               <div className="text-center py-8">
-                <p className="text-muted-foreground">No completed appointments yet.</p>
+                <p className="text-muted-foreground">No completed appointments today.</p>
               </div>
             </TabsContent>
           </Tabs>
@@ -378,7 +455,7 @@ const ProviderDashboard = () => {
         
         {/* Additional cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <GlassCard className="p-4">
+          <GlassCard className="p-4 hover:shadow-md transition-all">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold">Recent Patients</h3>
               <Button variant="ghost" size="sm"
@@ -387,7 +464,7 @@ const ProviderDashboard = () => {
             </div>
             <div className="space-y-4">
               {appointments.map((appointment, index) => (
-                <div key={index} className="flex items-center">
+                <div key={index} className="flex items-center p-2 hover:bg-muted/20 rounded-md transition-colors">
                   <Avatar className="h-10 w-10 mr-3">
                     <AvatarFallback>{appointment.patientName.charAt(0)}</AvatarFallback>
                   </Avatar>
@@ -401,7 +478,7 @@ const ProviderDashboard = () => {
             </div>
           </GlassCard>
           
-          <GlassCard className="p-4">
+          <GlassCard className="p-4 hover:shadow-md transition-all">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold">Your Schedule Today</h3>
               <Button variant="ghost" size="sm"
@@ -409,8 +486,8 @@ const ProviderDashboard = () => {
               >Set Availability</Button>
             </div>
             <div className="space-y-3">
-              {appointments.map((appointment, index) => (
-                <div key={index} className="flex items-center p-2 rounded-md hover:bg-muted/50">
+              {appointments.filter(a => a.status !== "cancelled").map((appointment, index) => (
+                <div key={index} className="flex items-center p-2 rounded-md hover:bg-muted/20 transition-colors">
                   <div className="bg-primary/10 text-primary font-medium rounded p-1 w-16 text-center mr-3 text-sm">
                     {appointment.time.split(' - ')[0]}
                   </div>
@@ -430,6 +507,12 @@ const ProviderDashboard = () => {
       </>
     );
   };
+
+  const getActiveAppointment = () => {
+    return appointments.find(a => a.id === appointmentToCancel);
+  };
+
+  const unreadNotificationsCount = notifications.filter(n => !n.read).length;
 
   if (loading) {
     return (
@@ -451,11 +534,20 @@ const ProviderDashboard = () => {
           onComplete={handleWelcomeComplete} 
         />
         
+        {/* Cancel appointment dialog */}
+        <CancelAppointmentDialog
+          isOpen={appointmentToCancel !== null}
+          onClose={() => setAppointmentToCancel(null)}
+          appointmentId={appointmentToCancel || 0}
+          patientName={getActiveAppointment()?.patientName || ""}
+          onConfirmCancel={handleConfirmCancel}
+        />
+        
         <Sidebar>
           <SidebarHeader>
             <div className="flex items-center gap-2 px-2">
               <Avatar className="h-10 w-10">
-                <AvatarImage src="/placeholder.svg" alt="Dr. Profile" />
+                <AvatarImage src="/placeholder.svg" alt={`Dr. ${profile?.lastName || 'Provider'}`} />
                 <AvatarFallback>{profile?.firstName?.[0]}{profile?.lastName?.[0] || "DP"}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
@@ -563,9 +655,63 @@ const ProviderDashboard = () => {
         </Sidebar>
         
         <SidebarInset>
-          <main className="flex-1 p-6 overflow-auto">
-            {renderContent()}
-          </main>
+          <div className="flex flex-col h-full">
+            {/* Top navigation bar with notifications */}
+            <header className="p-4 border-b flex justify-end items-center">
+              <div className="flex items-center gap-2">
+                <Popover open={showNotifications} onOpenChange={setShowNotifications}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="relative">
+                      <Bell className="h-5 w-5" />
+                      {unreadNotificationsCount > 0 && (
+                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                          {unreadNotificationsCount}
+                        </span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" align="end">
+                    <div className="flex items-center justify-between p-2 border-b">
+                      <h3 className="font-medium">Notifications</h3>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={markAllNotificationsAsRead}
+                        className="text-xs"
+                      >
+                        Mark all as read
+                      </Button>
+                    </div>
+                    <div className="max-h-80 overflow-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-4 text-center text-muted-foreground">
+                          No notifications
+                        </div>
+                      ) : (
+                        notifications.map(notification => (
+                          <div 
+                            key={notification.id} 
+                            className={`p-3 border-b last:border-0 ${notification.read ? "" : "bg-muted/30"}`}
+                          >
+                            <div className="flex justify-between">
+                              <h4 className="text-sm font-medium">{notification.title}</h4>
+                              <span className="text-xs text-muted-foreground">{notification.time}</span>
+                            </div>
+                            <p className="text-xs mt-1">{notification.description}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </header>
+            
+            {/* Main content */}
+            <main className="flex-1 p-6 overflow-auto">
+              {renderContent()}
+            </main>
+          </div>
         </SidebarInset>
       </div>
     </SidebarProvider>
