@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -413,54 +412,54 @@ const ProviderDashboard = () => {
           ))}
         </div>
         
-        <GlassCard className="mb-8">
+        <GlassCard className="mb-12">
           <Tabs defaultValue="upcoming">
-            <div className="flex justify-between items-center p-4 border-b border-border/40">
+            <div className="flex justify-between items-center p-6 border-b border-border/40">
               <h2 className="text-xl font-semibold">Today's Appointments</h2>
-              <TabsList>
+              <TabsList className="bg-background/50 backdrop-blur-sm">
                 <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
                 <TabsTrigger value="completed">Completed</TabsTrigger>
               </TabsList>
             </div>
             
             <TabsContent value="upcoming" className="p-0">
-              <div className="divide-y divide-border/40">
+              <div className="divide-y divide-border/30">
                 {appointments.filter(a => a.status !== "cancelled").map((appointment) => (
-                  <div key={appointment.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-muted/20 transition-colors">
+                  <div key={appointment.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-5 hover:bg-muted/10 transition-colors">
                     <div className="flex items-center">
-                      <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
-                        <UserRound className="h-6 w-6 text-blue-600" />
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mr-4">
+                        <UserRound className="h-6 w-6 text-primary" />
                       </div>
                       <div>
                         <h3 className="font-medium">{appointment.appointmentType}</h3>
-                        <p className="text-sm text-muted-foreground">{appointment.patientId} - {appointment.patientName}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{appointment.patientId} - {appointment.patientName}</p>
                       </div>
                     </div>
                     
-                    <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-6">
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-8 mt-3 md:mt-0">
                       <div className="flex items-center">
-                        <Calendar className="h-4 w-4 text-muted-foreground mr-1" />
+                        <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
                         <span className="text-sm">
                           {formatDate(appointment.date)}
                         </span>
                       </div>
                       
                       <div className="flex items-center">
-                        <Clock className="h-4 w-4 text-muted-foreground mr-1" />
+                        <Clock className="h-4 w-4 text-muted-foreground mr-2" />
                         <span className="text-sm">{appointment.time}</span>
                       </div>
                       
                       <div className="flex items-center">
-                        <Video className="h-4 w-4 text-muted-foreground mr-1" />
+                        <Video className="h-4 w-4 text-muted-foreground mr-2" />
                         <span className="text-sm">Video Call</span>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2 ml-auto">
+                    <div className="flex items-center gap-3 mt-4 md:mt-0">
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1 border-primary/20 hover:border-primary/40"
                         onClick={() => handleShowVisitReason(appointment.id)}
                       >
                         <FileText className="h-4 w-4" />
@@ -469,6 +468,7 @@ const ProviderDashboard = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
+                        className="border-muted hover:border-muted/80"
                         onClick={() => handleCancelAppointment(appointment.id)}
                       >
                         Cancel
@@ -484,14 +484,14 @@ const ProviderDashboard = () => {
             </TabsContent>
             
             <TabsContent value="completed" className="p-4">
-              <div className="text-center py-8">
+              <div className="text-center py-10">
                 <p className="text-muted-foreground">No completed appointments today.</p>
               </div>
             </TabsContent>
           </Tabs>
         </GlassCard>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <GlassCard className="p-4 hover:shadow-md transition-all">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold">Recent Patients</h3>
