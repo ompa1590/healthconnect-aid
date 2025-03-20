@@ -89,7 +89,7 @@ const Navbar = ({ className }: NavbarProps) => {
             className="font-medium rounded-full px-6 bg-primary hover:bg-primary/90"
             asChild
           >
-            <Link to="/admin-login">{t('providerLogin')}</Link>
+            <Link to="/provider-login">{t('providerLogin')}</Link>
           </Button>
         </div>
 
@@ -126,7 +126,7 @@ const Navbar = ({ className }: NavbarProps) => {
                 <Link to="/login">{t('patientLogin')}</Link>
               </Button>
               <Button className="w-full justify-center rounded-full" asChild>
-                <Link to="/admin-login">{t('providerLogin')}</Link>
+                <Link to="/provider-login">{t('providerLogin')}</Link>
               </Button>
             </div>
           </div>

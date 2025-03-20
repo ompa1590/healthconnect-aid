@@ -33,7 +33,8 @@ import {
   AlertCircle,
   CheckCircle,
   UserRound,
-  X
+  X,
+  LogOut
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -140,7 +141,7 @@ const ProviderDashboard = () => {
         email: data.session.user.email,
         specialization: userMetadata?.specialization || "General Practice",
         address: userMetadata?.address || "Sea Point Arena Promenade",
-        isNewUser: userMetadata?.isNewUser || false
+        isNewUser: userMetadata?.isNewUser !== false // Show welcome modal only if isNewUser is not explicitly false
       };
       
       setProfile(providerProfile);
@@ -163,6 +164,24 @@ const ProviderDashboard = () => {
     
     checkSession();
   }, [navigate]);
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Sign out successful",
+        description: "You have been signed out from Vyra Health"
+      });
+      navigate("/provider-login");
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast({
+        title: "Sign out failed",
+        description: "There was an error signing out",
+        variant: "destructive"
+      });
+    }
+  };
 
   const getStats = () => {
     return [
@@ -526,7 +545,7 @@ const ProviderDashboard = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-background flex w-full">
+      <div className="min-h-screen bg-background flex w-full font-poppins">
         {/* Welcome modal for new users */}
         <WelcomeModal 
           isOpen={showWelcomeModal} 
@@ -552,10 +571,10 @@ const ProviderDashboard = () => {
               </Avatar>
               <div className="flex flex-col">
                 <span className="font-medium text-sm">
-                  Dr. {profile?.firstName || "Demo"} {profile?.lastName || "Provider"}
+                  Dr. {profile?.firstName} {profile?.lastName}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {profile?.specialization || "General Practice"}
+                  {profile?.specialization}
                 </span>
               </div>
             </div>
@@ -648,16 +667,44 @@ const ProviderDashboard = () => {
           </SidebarContent>
           
           <SidebarFooter>
-            <Button variant="outline" className="w-full" size="sm">
-              Contact Support
-            </Button>
+            <div className="space-y-2 w-full px-2">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start" 
+                size="sm"
+              >
+                <HelpCircle className="h-4 w-4 mr-2" />
+                Contact Support
+              </Button>
+              <Button 
+                variant="destructive" 
+                className="w-full justify-start" 
+                size="sm"
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           </SidebarFooter>
         </Sidebar>
         
         <SidebarInset>
           <div className="flex flex-col h-full">
             {/* Top navigation bar with notifications */}
-            <header className="p-4 border-b flex justify-end items-center">
+            <header className="p-4 border-b flex justify-between items-center">
+              <div 
+                className="flex items-center cursor-pointer"
+                onClick={() => {
+                  toast({
+                    title: "Sign out required",
+                    description: "Please sign out first to return to the homepage"
+                  });
+                }}
+              >
+                <span className="text-primary text-xl font-bold tracking-tight">Vyra</span>
+                <span className="text-secondary text-xl font-bold tracking-tight">Health</span>
+              </div>
               <div className="flex items-center gap-2">
                 <Popover open={showNotifications} onOpenChange={setShowNotifications}>
                   <PopoverTrigger asChild>
@@ -704,6 +751,15 @@ const ProviderDashboard = () => {
                     </div>
                   </PopoverContent>
                 </Popover>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleSignOut}
+                  className="hidden md:flex items-center"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
               </div>
             </header>
             

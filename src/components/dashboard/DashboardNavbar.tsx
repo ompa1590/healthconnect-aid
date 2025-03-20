@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -6,18 +7,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
-import { ClipboardList, Home, Stethoscope, Award, User, CalendarClock } from "lucide-react";
+import { ClipboardList, Home, Stethoscope, User, CalendarClock } from "lucide-react";
+
 interface DashboardNavbarProps {
   userName: string;
 }
+
 const DashboardNavbar = ({
   userName
 }: DashboardNavbarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+  
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -41,6 +43,15 @@ const DashboardNavbar = ({
     return name.split(' ').map(part => part[0]).join('').toUpperCase().substring(0, 2);
   };
 
+  // Handle logo click - user must sign out first before going to homepage
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    toast({
+      title: "Sign out required",
+      description: "Please sign out first to return to the homepage"
+    });
+  };
+
   // Check if the current path is active
   const isActive = (path: string) => {
     if (path === '/dashboard' && location.pathname === '/dashboard') {
@@ -51,14 +62,15 @@ const DashboardNavbar = ({
     }
     return false;
   };
+  
   return <nav className="bg-white border-b border-gray-100 py-4 sticky top-0 z-20 shadow-sm">
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-10">
-            <Link to="/dashboard" className="flex items-center">
+            <div onClick={handleLogoClick} className="flex items-center cursor-pointer">
               <span className="text-primary text-xl font-bold tracking-tight">Vyra</span>
               <span className="text-secondary text-xl font-bold tracking-tight">Health</span>
-            </Link>
+            </div>
             
             <div className="hidden md:flex items-center space-x-8">
               <Link to="/dashboard" className={`${isActive('/dashboard') && location.pathname === '/dashboard' ? 'text-primary border-b-2 border-primary' : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
@@ -76,7 +88,6 @@ const DashboardNavbar = ({
                 <CalendarClock className="h-4 w-4" />
                 Past Appointments
               </Link>
-              
             </div>
           </div>
           
@@ -123,4 +134,5 @@ const DashboardNavbar = ({
       </div>
     </nav>;
 };
+
 export default DashboardNavbar;
