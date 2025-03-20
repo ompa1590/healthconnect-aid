@@ -27,14 +27,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             firstName: formData.firstName,
             lastName: formData.lastName,
             role: 'provider',
-            specialization: formData.specializations || '', // Fixed property name
+            specialization: formData.specializations || '',
             registrationNumber: formData.registrationNumber || '',
             address: formData.address || '',
             city: formData.city || '',
             province: formData.province || '',
             postalCode: formData.postalCode || '',
             phoneNumber: formData.phoneNumber || '',
-            isNewUser: true // Add flag to identify new users for welcome modal
+            isNewUser: true // Flag to identify new users for welcome modal
           }
         }
       });

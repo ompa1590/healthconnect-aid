@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -130,10 +129,8 @@ const ProviderDashboard = () => {
         return;
       }
       
-      // Get the user's metadata from the session
       const userMetadata = data.session.user.user_metadata;
       
-      // Create a profile from the user metadata
       const providerProfile = {
         id: data.session.user.id,
         firstName: userMetadata?.firstName || "Demo",
@@ -141,22 +138,23 @@ const ProviderDashboard = () => {
         email: data.session.user.email,
         specialization: userMetadata?.specialization || "General Practice",
         address: userMetadata?.address || "Sea Point Arena Promenade",
-        isNewUser: userMetadata?.isNewUser !== false // Show welcome modal only if isNewUser is not explicitly false
       };
       
       setProfile(providerProfile);
       
-      // Check if this is a new user (first time login)
-      if (providerProfile.isNewUser) {
+      const hasSeenWelcomeModal = localStorage.getItem(`welcome_modal_shown_${data.session.user.id}`);
+      
+      if (userMetadata?.isNewUser === true && !hasSeenWelcomeModal) {
         setShowWelcomeModal(true);
         
-        // Update the user metadata to remove the isNewUser flag
         await supabase.auth.updateUser({
           data: { 
             ...userMetadata,
             isNewUser: false 
           }
         });
+        
+        localStorage.setItem(`welcome_modal_shown_${data.session.user.id}`, 'true');
       }
       
       setLoading(false);
@@ -232,7 +230,6 @@ const ProviderDashboard = () => {
   };
 
   const handleConfirmCancel = (reason: string, details?: string) => {
-    // In a real app, you would make an API call to cancel the appointment
     setAppointments(appointments.map(appointment => 
       appointment.id === appointmentToCancel 
         ? { ...appointment, status: "cancelled" } 
@@ -385,7 +382,6 @@ const ProviderDashboard = () => {
       <>
         <h1 className="text-3xl font-bold mb-6">Welcome, Dr. {profile?.lastName || "Provider"}</h1>
         
-        {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           {getStats().map((stat, index) => (
             <GlassCard key={index} className="p-4 hover:shadow-md transition-all">
@@ -402,7 +398,6 @@ const ProviderDashboard = () => {
           ))}
         </div>
         
-        {/* Appointments */}
         <GlassCard className="mb-8">
           <Tabs defaultValue="upcoming">
             <div className="flex justify-between items-center p-4 border-b border-border/40">
@@ -472,7 +467,6 @@ const ProviderDashboard = () => {
           </Tabs>
         </GlassCard>
         
-        {/* Additional cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <GlassCard className="p-4 hover:shadow-md transition-all">
             <div className="flex justify-between items-center mb-4">
@@ -546,14 +540,12 @@ const ProviderDashboard = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen bg-background flex w-full font-poppins">
-        {/* Welcome modal for new users */}
         <WelcomeModal 
           isOpen={showWelcomeModal} 
           onOpenChange={setShowWelcomeModal} 
           onComplete={handleWelcomeComplete} 
         />
         
-        {/* Cancel appointment dialog */}
         <CancelAppointmentDialog
           isOpen={appointmentToCancel !== null}
           onClose={() => setAppointmentToCancel(null)}
@@ -691,16 +683,10 @@ const ProviderDashboard = () => {
         
         <SidebarInset>
           <div className="flex flex-col h-full">
-            {/* Top navigation bar with notifications */}
             <header className="p-4 border-b flex justify-between items-center">
               <div 
                 className="flex items-center cursor-pointer"
-                onClick={() => {
-                  toast({
-                    title: "Sign out required",
-                    description: "Please sign out first to return to the homepage"
-                  });
-                }}
+                onClick={handleSignOut}
               >
                 <span className="text-primary text-xl font-bold tracking-tight">Vyra</span>
                 <span className="text-secondary text-xl font-bold tracking-tight">Health</span>
@@ -763,7 +749,6 @@ const ProviderDashboard = () => {
               </div>
             </header>
             
-            {/* Main content */}
             <main className="flex-1 p-6 overflow-auto">
               {renderContent()}
             </main>
