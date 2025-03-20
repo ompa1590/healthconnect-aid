@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
@@ -66,7 +67,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             firstName: formData.firstName,
             lastName: formData.lastName,
             role: 'provider',
-            specialization: formData.specializations || '',
+            specialization: formData.specializations ? formData.specializations.join(',') : '',
             registrationNumber: formData.registrationNumber || '',
             address: formData.address || '',
             city: formData.city || '',
@@ -88,6 +89,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         });
         setSubmitting(false);
       } else {
+        console.log("Provider signup successful:", data);
+        
         // Success - show the success dialog
         setShowSuccessDialog(true);
         

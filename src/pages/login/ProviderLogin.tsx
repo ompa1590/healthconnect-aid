@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -16,9 +17,18 @@ const ProviderLogin = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [captchaKey, setCaptchaKey] = useState(Date.now().toString()); // Add unique key for captcha
   
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Force re-render of captcha on component mount to ensure it's visible
+  useEffect(() => {
+    // Reset and regenerate captcha with unique key
+    setCaptchaKey(Date.now().toString());
+    setCaptchaVerified(false);
+    setCaptchaToken(null);
+  }, []);
 
   // Check if user is already logged in
   useEffect(() => {
@@ -45,6 +55,7 @@ const ProviderLogin = () => {
   }, [navigate]);
 
   const handleCaptchaVerify = (token: string) => {
+    console.log("Captcha verified with token:", token);
     setCaptchaToken(token);
     setCaptchaVerified(true);
   };
@@ -61,6 +72,8 @@ const ProviderLogin = () => {
     }
     
     try {
+      console.log("Attempting login with captcha token:", captchaToken);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -81,6 +94,11 @@ const ProviderLogin = () => {
     } catch (error) {
       console.error("Login error:", error);
       setErrorMessage(error.message || "Failed to sign in. Please check your credentials.");
+      
+      // Reset captcha after failed login attempt
+      setCaptchaKey(Date.now().toString());
+      setCaptchaVerified(false);
+      setCaptchaToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -221,7 +239,7 @@ const ProviderLogin = () => {
               {/* hCaptcha container */}
               <div className="flex justify-center mt-4">
                 <CaptchaComponent 
-                  captchaId="provider-login-captcha"
+                  captchaId={`provider-login-captcha-${captchaKey}`}
                   onVerify={handleCaptchaVerify}
                   callbackName="providerLoginCaptchaCallback"
                 />
