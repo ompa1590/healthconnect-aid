@@ -15,6 +15,7 @@ import MedicalHistory from '@/components/dashboard/MedicalHistory';
 import DashboardServices from '@/components/dashboard/DashboardServices';
 import BookAppointment from '@/components/dashboard/BookAppointment';
 import { LanguageProvider } from './contexts/LanguageContext';
+import Index from './pages/Index';
 
 const App = () => {
   React.useEffect(() => {
@@ -46,7 +47,7 @@ const App = () => {
     <LanguageProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<PatientLogin />} />
+          <Route path="/" element={<Index />} />
           <Route path="/login" element={<PatientLogin />} />
           <Route path="/signup" element={<PatientSignup />} />
           <Route path="/dashboard" element={<Dashboard />} />

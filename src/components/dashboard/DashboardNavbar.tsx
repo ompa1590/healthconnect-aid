@@ -1,11 +1,10 @@
 
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { ClipboardList, Home, Stethoscope, User, CalendarClock } from "lucide-react";
 
@@ -27,7 +26,7 @@ const DashboardNavbar = ({
         title: "Sign out successful",
         description: "You have been signed out from Vyra Health"
       });
-      navigate("/login");
+      navigate("/");
     } catch (error) {
       console.error("Sign out error:", error);
       toast({
@@ -43,13 +42,9 @@ const DashboardNavbar = ({
     return name.split(' ').map(part => part[0]).join('').toUpperCase().substring(0, 2);
   };
 
-  // Handle logo click - user must sign out first before going to homepage
-  const handleLogoClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    toast({
-      title: "Sign out required",
-      description: "Please sign out first to return to the homepage"
-    });
+  // Handle logo click - direct to homepage after signout
+  const handleLogoClick = () => {
+    handleSignOut();
   };
 
   // Check if the current path is active
