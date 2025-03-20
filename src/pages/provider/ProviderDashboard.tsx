@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -33,7 +34,8 @@ import {
   CheckCircle,
   UserRound,
   X,
-  LogOut
+  LogOut,
+  Info
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -41,6 +43,7 @@ import WelcomeModal from "@/components/provider/WelcomeModal";
 import ProviderPatients from "@/components/provider/ProviderPatients";
 import ProviderAppointments from "@/components/provider/ProviderAppointments";
 import CancelAppointmentDialog from "@/components/provider/CancelAppointmentDialog";
+import VisitReasonDialog from "@/components/provider/VisitReasonDialog";
 import {
   Sidebar,
   SidebarContent,
@@ -69,25 +72,28 @@ const ProviderDashboard = () => {
       appointmentType: "Specialist consultation",
       date: new Date(2023, 2, 21),
       time: "06:00 - 06:30 PM",
-      status: "upcoming"
+      status: "upcoming",
+      visitReason: "Patient presents with recurrent migraine headaches that have increased in frequency over the past month. Reports visual aura before onset and nausea during episodes. Pain typically lasts 4-6 hours and is unresponsive to OTC pain relievers. Has family history of migraines. Currently taking propranolol for hypertension and has penicillin allergy."
     },
     {
       id: 2,
       patientName: "Michael Chen",
-      patientId: "PTN-CE550N",
+      patientId: "PTN-CH442M",
       appointmentType: "Psychiatry consultation",
       date: new Date(2023, 2, 21),
       time: "03:00 - 03:30 PM",
-      status: "upcoming"
+      status: "upcoming",
+      visitReason: "Patient seeking consultation for increasing anxiety and difficulty sleeping. Reports experiencing panic attacks 2-3 times weekly, with symptoms including racing heart, shortness of breath, and feeling of impending doom. Notes work-related stress as a trigger. No previous psychiatric diagnosis. Currently taking lisinopril for hypertension and has tried melatonin for sleep without significant improvement."
     },
     {
       id: 3,
       patientName: "Emma Williams",
-      patientId: "PTN-CE550N",
+      patientId: "PTN-WL339E",
       appointmentType: "Family Planning counseling",
       date: new Date(2023, 2, 21),
       time: "05:00 - 05:30 PM",
-      status: "upcoming"
+      status: "upcoming",
+      visitReason: "Patient seeking family planning counseling. Currently using hormonal contraception (oral) but experiencing side effects including mood changes and breakthrough bleeding. Interested in discussing long-term contraceptive options. No current plans for pregnancy but may want children in 3-5 years. Has history of mild endometriosis diagnosed 2 years ago. No known drug allergies."
     }
   ]);
   const [notifications, setNotifications] = useState([
@@ -116,6 +122,7 @@ const ProviderDashboard = () => {
   
   const [appointmentToCancel, setAppointmentToCancel] = useState<number | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<number | null>(null);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -242,6 +249,14 @@ const ProviderDashboard = () => {
       title: "Appointment Cancelled",
       description: `The appointment has been cancelled successfully.`,
     });
+  };
+
+  const handleShowVisitReason = (appointmentId: number) => {
+    setSelectedAppointment(appointmentId);
+  };
+
+  const closeVisitReasonDialog = () => {
+    setSelectedAppointment(null);
   };
 
   const markAllNotificationsAsRead = () => {
@@ -445,6 +460,15 @@ const ProviderDashboard = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
+                        className="flex items-center gap-1"
+                        onClick={() => handleShowVisitReason(appointment.id)}
+                      >
+                        <FileText className="h-4 w-4" />
+                        Visit Reason
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
                         onClick={() => handleCancelAppointment(appointment.id)}
                       >
                         Cancel
@@ -524,6 +548,10 @@ const ProviderDashboard = () => {
   const getActiveAppointment = () => {
     return appointments.find(a => a.id === appointmentToCancel);
   };
+  
+  const getSelectedAppointment = () => {
+    return appointments.find(a => a.id === selectedAppointment);
+  };
 
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
 
@@ -553,6 +581,21 @@ const ProviderDashboard = () => {
           patientName={getActiveAppointment()?.patientName || ""}
           onConfirmCancel={handleConfirmCancel}
         />
+        
+        {selectedAppointment && (
+          <VisitReasonDialog 
+            isOpen={selectedAppointment !== null}
+            onClose={closeVisitReasonDialog}
+            appointment={getSelectedAppointment() || {
+              id: 0,
+              patientName: "",
+              patientId: "",
+              appointmentType: "",
+              date: new Date(),
+              time: ""
+            }}
+          />
+        )}
         
         <Sidebar>
           <SidebarHeader>
