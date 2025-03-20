@@ -1,7 +1,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, FileText, Calendar, Phone, Pill, Stethoscope, AlertCircle, Shield } from "lucide-react";
+import { Search, FileText, Calendar, Phone, Pill, Stethoscope, AlertCircle, Shield, Users } from "lucide-react";
 import { useState } from "react";
 import { 
   Sheet, 
