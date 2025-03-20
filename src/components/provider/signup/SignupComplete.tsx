@@ -1,11 +1,14 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import CaptchaComponent from "@/components/auth/CaptchaComponent";
+import { Checkbox } from "@/components/ui/checkbox";
+import { TermsDialog, PrivacyDialog } from "@/components/signup/LegalPopups";
 
 interface SignupCompleteProps {
   formData: ProviderFormData;
@@ -15,8 +18,35 @@ interface SignupCompleteProps {
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
+  const handleCaptchaVerify = (token: string) => {
+    setCaptchaToken(token);
+  };
   
   const handleComplete = async () => {
+    if (!captchaToken) {
+      toast({
+        title: "Verification required",
+        description: "Please complete the captcha verification.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!agreedToTerms) {
+      toast({
+        title: "Terms agreement required",
+        description: "You must agree to the Terms & Conditions and Privacy Policy.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSubmitting(true);
+    
     try {
       // Attempt to sign up the provider
       const { data, error } = await supabase.auth.signUp({
@@ -57,6 +87,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       }
     } catch (error) {
       console.error("Unexpected error during sign up:", error);
+    } finally {
+      setSubmitting(false);
     }
   };
   
@@ -85,8 +117,42 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </ol>
       </div>
       
-      <Button onClick={handleComplete} className="w-full mt-6">
-        Go to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
+      <div className="py-4 flex justify-center">
+        <CaptchaComponent 
+          captchaId="provider-signup-captcha" 
+          onVerify={handleCaptchaVerify}
+          callbackName="handleProviderSignupCaptcha"
+        />
+      </div>
+      
+      <div className="flex items-center space-x-2 mb-6">
+        <Checkbox 
+          id="terms" 
+          checked={agreedToTerms} 
+          onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+        />
+        <label 
+          htmlFor="terms" 
+          className="text-sm text-muted-foreground cursor-pointer"
+        >
+          I agree to the {' '}
+          <TermsDialog>
+            <span className="text-primary hover:underline cursor-pointer">Terms & Conditions</span>
+          </TermsDialog>
+          {' '} and {' '}
+          <PrivacyDialog>
+            <span className="text-primary hover:underline cursor-pointer">Privacy Policy</span>
+          </PrivacyDialog>
+        </label>
+      </div>
+      
+      <Button 
+        onClick={handleComplete} 
+        className="w-full mt-6"
+        disabled={!captchaToken || !agreedToTerms || submitting}
+      >
+        {submitting ? "Creating Account..." : "Go to Dashboard"} 
+        {!submitting && <ArrowRight className="ml-2 h-4 w-4" />}
       </Button>
     </div>
   );

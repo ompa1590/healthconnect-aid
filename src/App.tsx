@@ -16,6 +16,10 @@ import DashboardServices from '@/components/dashboard/DashboardServices';
 import BookAppointment from '@/components/dashboard/BookAppointment';
 import { LanguageProvider } from './contexts/LanguageContext';
 import Index from './pages/Index';
+import ServicesPage from './pages/ServicesPage';
+import HowItWorksPage from './pages/HowItWorksPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 
 const App = () => {
   React.useEffect(() => {
@@ -48,6 +52,10 @@ const App = () => {
       <Router>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
           <Route path="/login" element={<PatientLogin />} />
           <Route path="/signup" element={<PatientSignup />} />
           <Route path="/dashboard" element={<Dashboard />} />

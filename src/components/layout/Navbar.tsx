@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -16,6 +16,7 @@ const Navbar = ({ className }: NavbarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useLanguage();
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -33,6 +34,10 @@ const Navbar = ({ className }: NavbarProps) => {
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
+
+  const handleLogoClick = () => {
+    navigate('/');
+  };
 
   const navItems = [
     { title: t('home'), href: "/" },
@@ -53,10 +58,10 @@ const Navbar = ({ className }: NavbarProps) => {
       )}
     >
       <div className="container mx-auto px-6 flex items-center justify-between">
-        <Link to="/" className="flex items-center">
+        <div onClick={handleLogoClick} className="flex items-center cursor-pointer">
           <span className="text-primary text-2xl font-bold tracking-tight">Vyra</span>
           <span className="text-secondary text-2xl font-bold tracking-tight">Health</span>
-        </Link>
+        </div>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
