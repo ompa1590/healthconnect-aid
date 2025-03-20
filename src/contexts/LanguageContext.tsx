@@ -115,7 +115,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, translations, t }}>
-      {children}
+      <div className="font-poppins">
+        {children}
+      </div>
     </LanguageContext.Provider>
   );
 };

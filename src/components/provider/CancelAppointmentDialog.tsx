@@ -80,11 +80,11 @@ const CancelAppointmentDialog: React.FC<CancelAppointmentDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md font-poppins">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold font-poppins">Cancel Appointment</DialogTitle>
-          <DialogDescription>
-            Please provide a reason for cancelling the appointment with <span className="font-medium">{patientName}</span>. 
+          <DialogTitle className="text-xl font-bold">Cancel Appointment</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            Please provide a reason for cancelling the appointment with <span className="font-medium text-primary">{patientName}</span>. 
             The patient will be notified of this cancellation.
           </DialogDescription>
         </DialogHeader>

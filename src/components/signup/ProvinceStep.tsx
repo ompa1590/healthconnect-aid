@@ -34,7 +34,7 @@ const ProvinceStep: React.FC<ProvinceStepProps> = ({ formData, updateFormData })
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-poppins">
       <div className="bg-muted/20 p-4 rounded-lg border border-border/30 mb-6">
         <h3 className="text-lg font-medium mb-2">Why we need your province</h3>
         <p className="text-muted-foreground text-sm">

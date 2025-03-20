@@ -223,7 +223,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   };
 
   return (
-    <div className="space-y-6 text-center">
+    <div className="space-y-6 text-center font-poppins">
       <div className="flex justify-center">
         <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
           <CheckCircle className="h-10 w-10 text-primary" />
