@@ -1,36 +1,29 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { ClipboardList, Home, Stethoscope, Award, User, CalendarClock } from "lucide-react";
-
 interface DashboardNavbarProps {
   userName: string;
 }
-
-const DashboardNavbar = ({ userName }: DashboardNavbarProps) => {
+const DashboardNavbar = ({
+  userName
+}: DashboardNavbarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
-  
+  const {
+    toast
+  } = useToast();
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
       toast({
         title: "Sign out successful",
-        description: "You have been signed out from Vyra Health",
+        description: "You have been signed out from Vyra Health"
       });
       navigate("/login");
     } catch (error) {
@@ -38,19 +31,14 @@ const DashboardNavbar = ({ userName }: DashboardNavbarProps) => {
       toast({
         title: "Sign out failed",
         description: "There was an error signing out",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
 
   // Get initials for avatar fallback
   const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
+    return name.split(' ').map(part => part[0]).join('').toUpperCase().substring(0, 2);
   };
 
   // Check if the current path is active
@@ -63,9 +51,7 @@ const DashboardNavbar = ({ userName }: DashboardNavbarProps) => {
     }
     return false;
   };
-
-  return (
-    <nav className="bg-white border-b border-gray-100 py-4 sticky top-0 z-20 shadow-sm">
+  return <nav className="bg-white border-b border-gray-100 py-4 sticky top-0 z-20 shadow-sm">
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-10">
@@ -75,46 +61,22 @@ const DashboardNavbar = ({ userName }: DashboardNavbarProps) => {
             </Link>
             
             <div className="hidden md:flex items-center space-x-8">
-              <Link 
-                to="/dashboard" 
-                className={`${isActive('/dashboard') && location.pathname === '/dashboard' 
-                  ? 'text-primary border-b-2 border-primary' 
-                  : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
-                  transition-colors flex items-center gap-1.5 pb-1`}
-              >
+              <Link to="/dashboard" className={`${isActive('/dashboard') && location.pathname === '/dashboard' ? 'text-primary border-b-2 border-primary' : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
+                  transition-colors flex items-center gap-1.5 pb-1`}>
                 <Home className="h-4 w-4" />
                 Home
               </Link>
-              <Link 
-                to="/dashboard/services" 
-                className={`${isActive('/dashboard/services') 
-                  ? 'text-primary border-b-2 border-primary' 
-                  : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
-                  transition-colors flex items-center gap-1.5 pb-1`}
-              >
+              <Link to="/dashboard/services" className={`${isActive('/dashboard/services') ? 'text-primary border-b-2 border-primary' : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
+                  transition-colors flex items-center gap-1.5 pb-1`}>
                 <Stethoscope className="h-4 w-4" />
                 Our Services
               </Link>
-              <Link 
-                to="/dashboard/past-appointments" 
-                className={`${isActive('/dashboard/past-appointments') 
-                  ? 'text-primary border-b-2 border-primary' 
-                  : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
-                  transition-colors flex items-center gap-1.5 pb-1`}
-              >
+              <Link to="/dashboard/past-appointments" className={`${isActive('/dashboard/past-appointments') ? 'text-primary border-b-2 border-primary' : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
+                  transition-colors flex items-center gap-1.5 pb-1`}>
                 <CalendarClock className="h-4 w-4" />
                 Past Appointments
               </Link>
-              <Link 
-                to="/dashboard/rewards" 
-                className={`${isActive('/dashboard/rewards') 
-                  ? 'text-primary border-b-2 border-primary' 
-                  : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
-                  transition-colors flex items-center gap-1.5 pb-1`}
-              >
-                <Award className="h-4 w-4" />
-                Rewards
-              </Link>
+              
             </div>
           </div>
           
@@ -159,8 +121,6 @@ const DashboardNavbar = ({ userName }: DashboardNavbarProps) => {
           </div>
         </div>
       </div>
-    </nav>
-  );
+    </nav>;
 };
-
 export default DashboardNavbar;
