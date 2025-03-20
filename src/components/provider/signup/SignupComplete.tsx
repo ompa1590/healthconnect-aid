@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight } from "lucide-react";
@@ -31,9 +31,21 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
+  
+  // Refresh the captcha when the component mounts or when we need a fresh token
+  useEffect(() => {
+    setCaptchaKey(Date.now().toString());
+  }, []);
   
   const handleCaptchaVerify = (token: string) => {
     setCaptchaToken(token);
+  };
+  
+  const resetCaptcha = () => {
+    // Generate a new captcha key to force a complete re-render
+    setCaptchaKey(Date.now().toString());
+    setCaptchaToken(null);
   };
   
   const handleCreateAccount = async () => {
@@ -87,6 +99,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           description: error.message,
           variant: "destructive"
         });
+        // Reset captcha for a fresh attempt
+        resetCaptcha();
         setSubmitting(false);
       } else {
         console.log("Provider signup successful:", data);
@@ -107,6 +121,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
+      // Reset captcha for a fresh attempt
+      resetCaptcha();
       setSubmitting(false);
     }
   };
@@ -146,9 +162,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         <div className="py-4 flex justify-center">
           <CaptchaComponent 
-            captchaId="provider-signup-captcha" 
+            captchaId={`provider-signup-captcha-${captchaKey}`}
             onVerify={handleCaptchaVerify}
-            callbackName="handleProviderSignupCaptcha"
+            callbackName={`handleProviderSignupCaptcha${captchaKey}`}
           />
         </div>
         

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface CaptchaComponentProps {
   captchaId: string;
@@ -13,6 +13,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
   callbackName 
 }) => {
   const captchaLoaded = useRef(false);
+  const [captchaInstance, setCaptchaInstance] = useState<any>(null);
   
   // Define window function for hCaptcha callback
   useEffect(() => {
@@ -33,15 +34,22 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     captchaLoaded.current = false;
     
     // If hCaptcha is already initialized but we have a new ID, try to reset
-    if (window.hcaptcha) {
+    if (window.hcaptcha && captchaInstance) {
       try {
-        // Remove any existing captcha instances first
-        window.hcaptcha.reset();
+        // Reset the specific captcha instance if available
+        window.hcaptcha.reset(captchaInstance);
       } catch (error) {
-        console.log("Error resetting captcha:", error);
+        console.error("Error resetting captcha:", error);
       }
     }
-  }, [captchaId]);
+
+    // Clean up the container
+    const container = document.getElementById(captchaId);
+    if (container) {
+      container.innerHTML = "";
+    }
+    
+  }, [captchaId, captchaInstance]);
 
   // Load hCaptcha script
   useEffect(() => {
@@ -67,10 +75,18 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       if (window.hcaptcha && document.getElementById(captchaId) && !captchaLoaded.current) {
         console.log(`Rendering captcha with ID: ${captchaId}`);
         try {
-          window.hcaptcha.render(captchaId, {
+          // First, ensure the container is empty
+          const container = document.getElementById(captchaId);
+          if (container) {
+            container.innerHTML = "";
+          }
+          
+          // Render a new captcha
+          const widgetId = window.hcaptcha.render(captchaId, {
             sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
             callback: callbackName
           });
+          setCaptchaInstance(widgetId);
           captchaLoaded.current = true;
         } catch (error) {
           console.error(`Error rendering captcha:`, error);
@@ -93,7 +109,26 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     };
   }, [captchaId, callbackName]);
 
-  return <div id={captchaId} className="h-[78px] min-w-[300px] flex items-center justify-center"></div>;
+  // Additional function to manually reset the captcha when needed
+  const resetCaptcha = () => {
+    if (window.hcaptcha && captchaInstance) {
+      try {
+        window.hcaptcha.reset(captchaInstance);
+        console.log("Captcha manually reset");
+      } catch (error) {
+        console.error("Error manually resetting captcha:", error);
+      }
+    }
+  };
+
+  return (
+    <div className="captcha-container">
+      <div 
+        id={captchaId} 
+        className="h-[78px] min-w-[300px] flex items-center justify-center"
+      ></div>
+    </div>
+  );
 };
 
 export default CaptchaComponent;
