@@ -8,6 +8,7 @@ import HealthPrograms from "@/components/home/HealthPrograms";
 import PopularTreatments from "@/components/home/PopularTreatments";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import LanguageSelector from "@/components/ui/LanguageSelector";
+import CTASection from "@/components/home/CTASection";
 
 const Index = () => {
   return (
@@ -19,6 +20,7 @@ const Index = () => {
         <PopularTreatments />
         <HealthPrograms />
         <FeaturesSection />
+        <CTASection />
       </main>
       <Footer />
       

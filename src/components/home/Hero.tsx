@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { ArrowRight, Video, Calendar, Shield, MessageCircle, Stethoscope, Clock } from "lucide-react";
+import { ArrowRight, Video, Calendar, Shield, MessageCircle, Stethoscope, Clock, Headphones, Pill, Lock, ClipboardCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -11,10 +11,10 @@ const Hero = () => {
   const { t } = useLanguage();
   
   const benefits = [
-    { text: "24/7 access to healthcare professionals", icon: "clock", color: "primary" },
-    { text: "Secure, HIPAA-compliant telehealth platform", icon: "shield", color: "secondary" },
-    { text: "Prescription management & delivery", icon: "pill", color: "primary" },
-    { text: "Follow-up care & monitoring", icon: "heart", color: "secondary" }
+    { text: "24/7 access to healthcare professionals", icon: <Headphones className="h-5 w-5 text-primary" />, iconBg: "bg-primary/20" },
+    { text: "Secure, HIPAA-compliant telehealth platform", icon: <Lock className="h-5 w-5 text-secondary" />, iconBg: "bg-secondary/20" },
+    { text: "Prescription management & delivery", icon: <Pill className="h-5 w-5 text-primary" />, iconBg: "bg-primary/20" },
+    { text: "Follow-up care & monitoring", icon: <ClipboardCheck className="h-5 w-5 text-secondary" />, iconBg: "bg-secondary/20" }
   ];
   
   return (
@@ -47,13 +47,8 @@ const Hero = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
               {benefits.map((benefit, index) => (
                 <div key={index} className="flex items-start group p-3 rounded-lg transition-colors hover:bg-muted/30">
-                  <div className="mr-4">
-                    <MedicalIcon3D 
-                      type={benefit.icon as any} 
-                      size="sm" 
-                      color={benefit.color as any}
-                      animate={true}
-                    />
+                  <div className={`mr-4 w-10 h-10 rounded-full ${benefit.iconBg} flex items-center justify-center shadow-sm`}>
+                    {benefit.icon}
                   </div>
                   <span className="pt-3 font-medium">{benefit.text}</span>
                 </div>
