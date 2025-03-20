@@ -101,13 +101,29 @@ export const useAuthLogin = () => {
 
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      console.log("Signing out...");
+      
+      // First check if we have a valid session
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log("Current session:", sessionData);
+      
+      // Proceed with sign out
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      
+      if (error) {
+        console.error("Sign out error details:", error);
+        throw error;
+      }
+      
+      // Clear any auth state in localStorage 
+      localStorage.removeItem('supabase.auth.token');
       
       toast({
         title: "Sign out successful",
         description: "You have been signed out from Vyra Health",
       });
+      
+      // Navigate to home/login page after successful sign out
       navigate("/login");
     } catch (error) {
       console.error("Sign out error:", error);
@@ -116,6 +132,9 @@ export const useAuthLogin = () => {
         description: "There was an error signing out",
         variant: "destructive",
       });
+      
+      // Even if there's an error, try to navigate away
+      navigate("/login");
     }
   };
 

@@ -21,17 +21,25 @@ const DashboardNavbar = ({
   
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      console.log("Dashboard navbar: Signing out...");
+      
+      // Use local scope for sign out instead of global to avoid 403 errors
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
       
       if (error) {
-        console.error("Sign out error:", error);
+        console.error("Sign out error details:", error);
         throw error;
       }
+      
+      // Clear any auth data that might be in localStorage
+      localStorage.removeItem('supabase.auth.token');
       
       toast({
         title: "Sign out successful",
         description: "You have been signed out from Vyra Health"
       });
+      
+      // Navigate to home page after sign out
       navigate("/");
     } catch (error) {
       console.error("Sign out error:", error);
@@ -40,6 +48,9 @@ const DashboardNavbar = ({
         description: "There was an error signing out",
         variant: "destructive"
       });
+      
+      // Even on error, attempt to navigate away
+      navigate("/");
     }
   };
 
