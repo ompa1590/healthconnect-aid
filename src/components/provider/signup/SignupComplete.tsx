@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
@@ -75,7 +74,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             postalCode: formData.postalCode || '',
             phoneNumber: formData.phoneNumber || '',
             isNewUser: true // Flag to identify new users for welcome modal
-          }
+          },
+          captchaToken: captchaToken  // Pass the captcha token to Supabase
         }
       });
       
