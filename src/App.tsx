@@ -12,7 +12,8 @@ import DashboardServices from './components/dashboard/DashboardServices';
 import PastAppointmentsPage from './pages/dashboard/PastAppointmentsPage';
 import BookAppointment from './components/dashboard/BookAppointment';
 import ProviderSignup from './pages/login/ProviderSignup';
-import AdminLogin from './pages/login/AdminLogin';
+import ProviderLogin from './pages/login/ProviderLogin';
+import ProviderDashboard from './pages/provider/ProviderDashboard';
 
 function App() {
   return (
@@ -30,7 +31,8 @@ function App() {
         <Route path="/dashboard/past-appointments" element={<PastAppointmentsPage />} />
         <Route path="/dashboard/book-appointment" element={<BookAppointment />} />
         <Route path="/provider-registration" element={<ProviderSignup />} />
-        <Route path="/admin-login" element={<AdminLogin />} />
+        <Route path="/provider-login" element={<ProviderLogin />} />
+        <Route path="/provider/dashboard" element={<ProviderDashboard />} />
       </Routes>
     </Router>
   );

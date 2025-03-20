@@ -338,7 +338,7 @@ const ProviderSignup = () => {
           <div className="text-center mt-4">
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link to="/login" className="text-primary font-medium hover:underline">
+              <Link to="/provider-login" className="text-primary font-medium hover:underline">
                 Sign in
               </Link>
             </p>

@@ -1,267 +1,400 @@
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { GlassCard } from "@/components/ui/GlassCard";
-import { CalendarDays, ClipboardList, Users, Clock, Stethoscope, Award, User, Building, LogOut, Activity, PieChart, Bell, BarChart } from "lucide-react";
-import ProviderAppointments from "@/components/provider/ProviderAppointments";
-import ProviderSchedule from "@/components/provider/ProviderSchedule";
-import ProviderPatients from "@/components/provider/ProviderPatients";
-import { MedicalIcon3D } from "@/components/ui/MedicalIcons3D";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Calendar, 
+  Clock, 
+  Users, 
+  Video, 
+  ClipboardList, 
+  FileText, 
+  Bell, 
+  Settings,
+  AlertCircle,
+  CheckCircle,
+  UserRound
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+import WelcomeModal from "@/components/provider/WelcomeModal";
 
 const ProviderDashboard = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({
-        title: "Sign out successful",
-        description: "You have been signed out from Vyra Health",
-      });
-      navigate("/admin-login");
-    } catch (error) {
-      console.error("Sign out error:", error);
-      toast({
-        title: "Sign out failed",
-        description: "There was an error signing out",
-        variant: "destructive",
-      });
+  const [isNewUser, setIsNewUser] = useState(true);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
+  const [appointments, setAppointments] = useState([
+    {
+      id: 1,
+      patientName: "Sarah Johnson",
+      patientId: "PTN-CE550N",
+      appointmentType: "Specialist consultation",
+      date: new Date(2023, 2, 21),
+      time: "06:00 - 06:30 PM",
+      status: "upcoming"
+    },
+    {
+      id: 2,
+      patientName: "Michael Chen",
+      patientId: "PTN-CE550N",
+      appointmentType: "Psychiatry consultation",
+      date: new Date(2023, 2, 21),
+      time: "03:00 - 03:30 PM",
+      status: "upcoming"
+    },
+    {
+      id: 3,
+      patientName: "Emma Williams",
+      patientId: "PTN-CE550N",
+      appointmentType: "Family Planning counseling",
+      date: new Date(2023, 2, 21),
+      time: "05:00 - 05:30 PM",
+      status: "upcoming"
     }
+  ]);
+  
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      
+      if (!data.session) {
+        navigate("/provider-login");
+        return;
+      }
+      
+      // Get provider profile
+      const { data: profileData, error } = await supabase
+        .from('provider_profiles')
+        .select('*')
+        .eq('user_id', data.session.user.id)
+        .single();
+        
+      if (error) {
+        console.error("Error fetching profile:", error);
+      } else {
+        setProfile(profileData);
+        
+        // Check if this is a new user (first time login)
+        // For demo purposes, we're using a hardcoded value
+        // In production, you would check a field like 'first_login' in the database
+        if (isNewUser) {
+          setShowWelcomeModal(true);
+        }
+      }
+      
+      setLoading(false);
+    };
+    
+    checkSession();
+  }, [navigate, isNewUser]);
+
+  const getStats = () => {
+    return [
+      { 
+        title: "Total Appointments", 
+        value: 16, 
+        icon: <Calendar className="h-5 w-5 text-blue-500" />, 
+        bgColor: "bg-blue-50" 
+      },
+      { 
+        title: "Upcoming Appointments", 
+        value: 8, 
+        icon: <Clock className="h-5 w-5 text-green-500" />, 
+        bgColor: "bg-green-50" 
+      },
+      { 
+        title: "Completed Appointments", 
+        value: 8, 
+        icon: <CheckCircle className="h-5 w-5 text-indigo-500" />, 
+        bgColor: "bg-indigo-50" 
+      },
+      { 
+        title: "Follow-Up Appointments", 
+        value: 0, 
+        icon: <Bell className="h-5 w-5 text-amber-500" />, 
+        bgColor: "bg-amber-50" 
+      },
+      { 
+        title: "Extension Requests", 
+        value: 0, 
+        icon: <FileText className="h-5 w-5 text-rose-500" />, 
+        bgColor: "bg-rose-50" 
+      }
+    ];
   };
 
-  return (
-    <div className="min-h-screen pt-20 pb-16 px-4 md:px-6 max-w-7xl mx-auto">
-      {/* Background Elements */}
-      <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-secondary/5 to-transparent -z-10"></div>
-      <div className="fixed top-40 right-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10 blob-animation"></div>
-      <div className="fixed bottom-40 left-10 w-40 h-40 bg-secondary/5 rounded-full blur-3xl -z-10 blob-animation-slow"></div>
-      
-      {/* Header Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Provider Info Card */}
-        <GlassCard className="p-6 col-span-2 flex flex-col md:flex-row items-center justify-between">
-          <div className="flex items-center">
-            <Avatar className="h-16 w-16 mr-4 border-2 border-secondary/20">
-              <AvatarImage src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=2070&auto=format&fit=crop" />
-              <AvatarFallback>DR</AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Dr. Sarah Johnson</h1>
-              <div className="flex items-center text-muted-foreground">
-                <Stethoscope className="h-4 w-4 mr-1" />
-                <span>General Practitioner</span>
-              </div>
-            </div>
-          </div>
-          <Button variant="outline" onClick={handleSignOut} className="mt-4 md:mt-0 flex items-center gap-2">
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </Button>
-        </GlassCard>
-        
-        {/* Quick Stats */}
-        <GlassCard className="p-6">
-          <h3 className="text-lg font-medium mb-4">Today's Overview</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-muted/50 p-3 rounded-lg flex flex-col items-center">
-              <CalendarDays className="h-6 w-6 text-secondary mb-1" />
-              <span className="text-sm font-medium">Appointments</span>
-              <span className="text-xl font-bold">8 today</span>
-            </div>
-            <div className="bg-muted/50 p-3 rounded-lg flex flex-col items-center">
-              <Users className="h-6 w-6 text-secondary mb-1" />
-              <span className="text-sm font-medium">Patients</span>
-              <span className="text-xl font-bold">42 total</span>
-            </div>
-            <div className="bg-muted/50 p-3 rounded-lg flex flex-col items-center">
-              <Activity className="h-6 w-6 text-secondary mb-1" />
-              <span className="text-sm font-medium">Hours</span>
-              <span className="text-xl font-bold">6h left</span>
-            </div>
-            <div className="bg-muted/50 p-3 rounded-lg flex flex-col items-center">
-              <Bell className="h-6 w-6 text-secondary mb-1" />
-              <span className="text-sm font-medium">Tasks</span>
-              <span className="text-xl font-bold">3 pending</span>
-            </div>
-          </div>
-        </GlassCard>
+  const handleWelcomeComplete = () => {
+    setShowWelcomeModal(false);
+    setIsNewUser(false);
+    
+    toast({
+      title: "Welcome to Vyra Health Provider Dashboard",
+      description: "Your account is now set up and ready to go.",
+    });
+  };
+
+  const formatDate = (date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    }).format(date);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-center">
+          <div className="text-2xl font-semibold">Loading your dashboard...</div>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Welcome modal for new users */}
+      <WelcomeModal 
+        isOpen={showWelcomeModal} 
+        onOpenChange={setShowWelcomeModal} 
+        onComplete={handleWelcomeComplete} 
+      />
       
-      <Tabs defaultValue="appointments" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 gap-4 mb-8 bg-transparent">
-          <TabsTrigger value="appointments" className="w-full data-[state=active]:bg-secondary/10 group transition-all duration-300">
-            <div className="relative">
-              <div className="absolute -top-1 -left-1 h-8 w-8 rounded-full bg-muted opacity-0 group-data-[state=active]:opacity-100 transition-opacity duration-300"></div>
-              <CalendarDays className="mr-2 h-5 w-5 relative z-10 group-data-[state=active]:text-secondary group-hover:scale-110 transition-transform duration-300" />
-            </div>
-            Appointments
-          </TabsTrigger>
-          <TabsTrigger value="schedule" className="w-full data-[state=active]:bg-secondary/10 group transition-all duration-300">
-            <div className="relative">
-              <div className="absolute -top-1 -left-1 h-8 w-8 rounded-full bg-muted opacity-0 group-data-[state=active]:opacity-100 transition-opacity duration-300"></div>
-              <Clock className="mr-2 h-5 w-5 relative z-10 group-data-[state=active]:text-secondary group-hover:scale-110 transition-transform duration-300" />
-            </div>
-            My Schedule
-          </TabsTrigger>
-          <TabsTrigger value="patients" className="w-full data-[state=active]:bg-secondary/10 group transition-all duration-300">
-            <div className="relative">
-              <div className="absolute -top-1 -left-1 h-8 w-8 rounded-full bg-muted opacity-0 group-data-[state=active]:opacity-100 transition-opacity duration-300"></div>
-              <Users className="mr-2 h-5 w-5 relative z-10 group-data-[state=active]:text-secondary group-hover:scale-110 transition-transform duration-300" />
-            </div>
-            Patients
-          </TabsTrigger>
-          <TabsTrigger value="treatments" className="w-full data-[state=active]:bg-secondary/10 group transition-all duration-300">
-            <div className="relative">
-              <div className="absolute -top-1 -left-1 h-8 w-8 rounded-full bg-muted opacity-0 group-data-[state=active]:opacity-100 transition-opacity duration-300"></div>
-              <Stethoscope className="mr-2 h-5 w-5 relative z-10 group-data-[state=active]:text-secondary group-hover:scale-110 transition-transform duration-300" />
-            </div>
-            Services
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="appointments">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <GlassCard className="lg:col-span-3 transform transition-all duration-500 hover:translate-y-[-4px] hover:shadow-xl relative overflow-hidden">
-              <div className="absolute -top-6 -right-6 w-16 h-16 bg-secondary/10 rounded-full blur-md"></div>
-              <div className="flex items-center mb-4">
-                <MedicalIcon3D type="patient" size="sm" color="secondary" className="mr-3" />
-                <h2 className="text-2xl font-semibold">Upcoming Appointments</h2>
-              </div>
-              <ProviderAppointments />
-            </GlassCard>
-            
-            <GlassCard className="lg:col-span-2 p-6 transform transition-all duration-500 hover:translate-y-[-4px] hover:shadow-xl relative overflow-hidden">
-              <div className="absolute -top-6 -left-6 w-16 h-16 bg-primary/10 rounded-full blur-md"></div>
-              <h2 className="text-2xl font-semibold mb-4 flex items-center">
-                <BarChart className="mr-2 h-6 w-6 text-secondary" />
-                Weekly Stats
-              </h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-1 text-sm">
-                    <span>Appointments Completed</span>
-                    <span className="font-medium">32/35</span>
-                  </div>
-                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="bg-secondary h-full rounded-full" style={{ width: '91%' }}></div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between mb-1 text-sm">
-                    <span>Patient Satisfaction</span>
-                    <span className="font-medium">4.8/5</span>
-                  </div>
-                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="bg-secondary h-full rounded-full" style={{ width: '96%' }}></div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between mb-1 text-sm">
-                    <span>Schedule Efficiency</span>
-                    <span className="font-medium">87%</span>
-                  </div>
-                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="bg-secondary h-full rounded-full" style={{ width: '87%' }}></div>
-                  </div>
-                </div>
-                
-                <div className="mt-6 pt-4 border-t border-border/30">
-                  <h3 className="font-medium mb-2">Appointment Types</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="p-3 bg-muted/50 rounded-lg text-center">
-                      <span className="text-sm">Video Calls</span>
-                      <div className="text-xl font-bold text-secondary">65%</div>
-                    </div>
-                    <div className="p-3 bg-muted/50 rounded-lg text-center">
-                      <span className="text-sm">In-person</span>
-                      <div className="text-xl font-bold text-secondary">35%</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
+      {/* Header */}
+      <header className="bg-background border-b border-border/40 py-4">
+        <div className="container mx-auto px-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <span className="text-primary text-2xl font-bold">Vyra</span>
+            <span className="text-secondary text-2xl font-bold">Health</span>
           </div>
-        </TabsContent>
-
-        <TabsContent value="schedule">
-          <GlassCard className="transform transition-all duration-500 hover:translate-y-[-4px] hover:shadow-xl relative overflow-hidden">
-            <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-secondary/5 to-transparent rounded-tr-full"></div>
-            <div className="flex items-center mb-4">
-              <MedicalIcon3D type="monitor" size="sm" color="secondary" className="mr-3" />
-              <h2 className="text-2xl font-semibold">Manage Schedule</h2>
+          
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm">
+              <Bell className="h-5 w-5 mr-1" />
+              <span className="sr-only sm:not-sr-only sm:inline-block">Notifications</span>
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Settings className="h-5 w-5 mr-1" />
+              <span className="sr-only sm:not-sr-only sm:inline-block">Settings</span>
+            </Button>
+            <div className="flex items-center gap-2">
+              <Avatar>
+                <AvatarImage src="/placeholder.svg" alt="Provider" />
+                <AvatarFallback>DR</AvatarFallback>
+              </Avatar>
+              <div className="hidden md:block">
+                <p className="text-sm font-medium">Dr. Demo Provider</p>
+                <p className="text-xs text-muted-foreground">Sea Point Arena Promenade</p>
+              </div>
             </div>
-            <ProviderSchedule />
-          </GlassCard>
-        </TabsContent>
-
-        <TabsContent value="patients">
-          <GlassCard className="transform transition-all duration-500 hover:translate-y-[-4px] hover:shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-secondary/5 to-transparent rounded-bl-full"></div>
-            <div className="flex items-center mb-4">
-              <MedicalIcon3D type="heart" size="sm" color="secondary" className="mr-3" />
-              <h2 className="text-2xl font-semibold">My Patients</h2>
-            </div>
-            <ProviderPatients />
-          </GlassCard>
-        </TabsContent>
-
-        <TabsContent value="treatments">
-          <GlassCard className="transform transition-all duration-500 hover:translate-y-[-4px] hover:shadow-xl relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-secondary/5 rounded-full blur-md"></div>
-            <div className="flex items-center mb-4">
-              <MedicalIcon3D type="pill" size="sm" color="secondary" className="mr-3" />
-              <h2 className="text-2xl font-semibold">My Services</h2>
+          </div>
+        </div>
+      </header>
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Sidebar */}
+          <aside className="w-full md:w-64 space-y-6">
+            <div className="bg-muted/20 rounded-lg p-4 flex items-center">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src="/placeholder.svg" alt="Provider" />
+                <AvatarFallback>DP</AvatarFallback>
+              </Avatar>
+              <div className="ml-3">
+                <h3 className="font-medium">Dr. Demo Provider</h3>
+                <p className="text-xs text-muted-foreground">Sea Point Arena Promenade</p>
+              </div>
             </div>
             
-            <div className="relative">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="p-4 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
-                  <div className="flex items-center mb-2">
-                    <Stethoscope className="h-5 w-5 text-secondary mr-2" />
-                    <h3 className="font-medium">General Consultations</h3>
+            <nav className="space-y-1">
+              <Button variant="ghost" className="w-full justify-start" asChild>
+                <a href="#" className="font-medium text-primary">
+                  <Calendar className="mr-2 h-5 w-5" />
+                  Dashboard
+                </a>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" asChild>
+                <a href="#">
+                  <Users className="mr-2 h-5 w-5" />
+                  Patients
+                </a>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" asChild>
+                <a href="#">
+                  <Video className="mr-2 h-5 w-5" />
+                  Consultations
+                </a>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" asChild>
+                <a href="#">
+                  <ClipboardList className="mr-2 h-5 w-5" />
+                  Prescriptions
+                </a>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" asChild>
+                <a href="#">
+                  <Settings className="mr-2 h-5 w-5" />
+                  Settings
+                </a>
+              </Button>
+            </nav>
+            
+            <GlassCard className="p-4">
+              <h3 className="font-medium mb-2">Need Help?</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Our support team is available 24/7 to assist you with any questions.
+              </p>
+              <Button variant="outline" size="sm" className="w-full">
+                Contact Support
+              </Button>
+            </GlassCard>
+          </aside>
+          
+          {/* Main content */}
+          <main className="flex-1">
+            <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+            
+            {/* Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+              {getStats().map((stat, index) => (
+                <GlassCard key={index} className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                      <p className="text-2xl font-bold mt-1">{stat.value}</p>
+                    </div>
+                    <div className={`rounded-full p-2 ${stat.bgColor}`}>
+                      {stat.icon}
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">Basic healthcare consults for common illnesses</p>
-                </div>
-                <div className="p-4 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
-                  <div className="flex items-center mb-2">
-                    <Award className="h-5 w-5 text-secondary mr-2" />
-                    <h3 className="font-medium">Specializations</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Advanced specialized healthcare services</p>
-                </div>
-                <div className="p-4 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
-                  <div className="flex items-center mb-2">
-                    <Building className="h-5 w-5 text-secondary mr-2" />
-                    <h3 className="font-medium">Facilities</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Locations and equipment available</p>
-                </div>
-              </div>
-              
-              <div className="relative h-64 rounded-lg bg-gradient-to-r from-secondary/5 to-primary/5 overflow-hidden">
-                <img 
-                  src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=2880&auto=format&fit=crop" 
-                  alt="Medical services" 
-                  className="w-full h-full object-cover opacity-30"
-                />
-                <div className="absolute inset-0 flex items-center justify-center flex-col p-6 text-center">
-                  <User className="h-16 w-16 text-secondary/70 mb-4" />
-                  <p className="text-lg font-medium">Select a category above to manage your services</p>
-                  <p className="text-sm text-muted-foreground mt-2">Configure the healthcare services you provide</p>
-                </div>
-              </div>
+                </GlassCard>
+              ))}
             </div>
-          </GlassCard>
-        </TabsContent>
-      </Tabs>
+            
+            {/* Appointments */}
+            <GlassCard className="mb-8">
+              <Tabs defaultValue="upcoming">
+                <div className="flex justify-between items-center p-4 border-b border-border/40">
+                  <h2 className="text-xl font-semibold">Appointments</h2>
+                  <TabsList>
+                    <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                    <TabsTrigger value="completed">Completed</TabsTrigger>
+                  </TabsList>
+                </div>
+                
+                <TabsContent value="upcoming" className="p-0">
+                  <div className="divide-y divide-border/40">
+                    {appointments.map((appointment) => (
+                      <div key={appointment.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center">
+                          <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                            <UserRound className="h-6 w-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium">{appointment.appointmentType}</h3>
+                            <p className="text-sm text-muted-foreground">{appointment.patientId} - {appointment.patientName}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-6">
+                          <div className="flex items-center">
+                            <Calendar className="h-4 w-4 text-muted-foreground mr-1" />
+                            <span className="text-sm">
+                              {formatDate(appointment.date)}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center">
+                            <Clock className="h-4 w-4 text-muted-foreground mr-1" />
+                            <span className="text-sm">{appointment.time}</span>
+                          </div>
+                          
+                          <div className="flex items-center">
+                            <Video className="h-4 w-4 text-muted-foreground mr-1" />
+                            <span className="text-sm">Video Call</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 ml-auto">
+                          <Button variant="outline" size="sm">
+                            Cancel
+                          </Button>
+                          <Button size="sm">
+                            <Video className="mr-1 h-4 w-4" />
+                            Video Call
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="completed" className="p-4">
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No completed appointments yet.</p>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </GlassCard>
+            
+            {/* Additional cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <GlassCard className="p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold">Recent Patients</h3>
+                  <Button variant="ghost" size="sm">View All</Button>
+                </div>
+                <div className="space-y-4">
+                  {appointments.map((appointment, index) => (
+                    <div key={index} className="flex items-center">
+                      <Avatar className="h-10 w-10 mr-3">
+                        <AvatarFallback>{appointment.patientName.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{appointment.patientName}</p>
+                        <p className="text-xs text-muted-foreground">{appointment.patientId}</p>
+                      </div>
+                      <Badge className="ml-auto">{appointment.appointmentType.split(' ')[0]}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </GlassCard>
+              
+              <GlassCard className="p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold">Your Schedule Today</h3>
+                  <Button variant="ghost" size="sm">Set Availability</Button>
+                </div>
+                <div className="space-y-3">
+                  {appointments.map((appointment, index) => (
+                    <div key={index} className="flex items-center p-2 rounded-md hover:bg-muted/50">
+                      <div className="bg-primary/10 text-primary font-medium rounded p-1 w-16 text-center mr-3 text-sm">
+                        {appointment.time.split(' - ')[0]}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{appointment.appointmentType}</p>
+                        <p className="text-xs text-muted-foreground">{appointment.patientName}</p>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        <Video className="h-3 w-3 mr-1" />
+                        Join
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </GlassCard>
+            </div>
+          </main>
+        </div>
+      </div>
     </div>
   );
 };

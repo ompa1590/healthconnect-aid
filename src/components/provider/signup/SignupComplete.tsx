@@ -3,6 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface SignupCompleteProps {
   formData: ProviderFormData;
@@ -10,6 +11,13 @@ interface SignupCompleteProps {
 }
 
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
+  const navigate = useNavigate();
+  
+  const handleComplete = () => {
+    onComplete();
+    navigate('/provider/dashboard');
+  };
+  
   return (
     <div className="text-center space-y-6">
       <div className="flex justify-center">
@@ -35,7 +43,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </ol>
       </div>
       
-      <Button onClick={onComplete} className="w-full mt-6">
+      <Button onClick={handleComplete} className="w-full mt-6">
         Go to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
       </Button>
     </div>

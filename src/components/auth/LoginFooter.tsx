@@ -29,7 +29,7 @@ const LoginFooter: React.FC = () => {
       
       <div className="mt-4 text-center">
         <Link
-          to="/admin-login"
+          to="/provider-login"
           className="text-sm font-medium text-primary hover:text-primary/90"
         >
           Healthcare Provider? Login here

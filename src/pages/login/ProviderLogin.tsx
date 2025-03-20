@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -10,7 +9,7 @@ import { AlertCircle, Lock, Mail, Shield, LogOut, Loader2, Stethoscope, Calendar
 import { supabase } from "@/integrations/supabase/client";
 import CaptchaComponent from "@/components/auth/CaptchaComponent";
 
-const AdminLogin = () => {
+const ProviderLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -94,7 +93,7 @@ const AdminLogin = () => {
         title: "Sign out successful",
         description: "You have been signed out from Vyra Health",
       });
-      navigate("/admin-login");
+      navigate("/provider-login");
     } catch (error) {
       console.error("Sign out error:", error);
       toast({
@@ -283,4 +282,4 @@ const AdminLogin = () => {
   );
 };
 
-export default AdminLogin;
+export default ProviderLogin;
