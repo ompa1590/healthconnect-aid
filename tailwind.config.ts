@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -156,7 +155,8 @@ export default {
         sans: ['Inter var', 'SF Pro Display', 'system-ui', 'sans-serif'],
         mono: ['SF Mono', 'monospace'],
         display: ['Montserrat', 'system-ui', 'sans-serif'],
-        medical: ['Inter', 'SF Pro Display', 'system-ui', 'sans-serif']
+        medical: ['Inter', 'SF Pro Display', 'system-ui', 'sans-serif'],
+        poppins: ['Poppins', 'system-ui', 'sans-serif']
       }
 		}
 	},

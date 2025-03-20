@@ -7,11 +7,14 @@ import {
   MessageSquareText, 
   Pill, 
   User2, 
-  X 
+  X,
+  Search 
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { format } from "date-fns";
 
 type Appointment = {
   id: number;
@@ -28,6 +31,7 @@ type Appointment = {
 
 const PastAppointmentsPage = () => {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   
   const pastAppointments: Appointment[] = [
     {
@@ -96,50 +100,72 @@ const PastAppointmentsPage = () => {
     setSelectedAppointment(appointment);
   };
 
+  const filteredAppointments = pastAppointments.filter(appointment => 
+    appointment.doctor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    appointment.specialty.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <main className="max-w-5xl mx-auto px-6 py-10 animate-fade-in">
-      <h1 className="text-3xl font-normal mb-8">Past Appointments</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <h1 className="text-3xl font-normal font-poppins">Past Appointments</h1>
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search appointments..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      </div>
       
       <div className="space-y-4">
-        {pastAppointments.map((appointment) => (
-          <div 
-            key={appointment.id}
-            className="border rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-all duration-300 animate-slide-up"
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-xl font-medium">{appointment.doctor}</h3>
-                <p className="text-primary/80">{appointment.specialty}</p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 hover:bg-primary/10 transition-colors duration-200"
-                onClick={() => openAppointmentDetails(appointment)}
-              >
-                <FileText className="h-4 w-4" />
-                View Details
-              </Button>
-            </div>
-            
-            <div className="flex gap-6 mt-3 text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <CalendarClock className="h-4 w-4" />
-                <span>{appointment.date}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span>{appointment.time}</span>
-              </div>
-            </div>
+        {filteredAppointments.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-lg">
+            No appointments found matching your search
           </div>
-        ))}
+        ) : (
+          filteredAppointments.map((appointment) => (
+            <div 
+              key={appointment.id}
+              className="border rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-all duration-300 animate-slide-up cursor-pointer"
+              onClick={() => openAppointmentDetails(appointment)}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-medium font-poppins">{appointment.doctor}</h3>
+                  <p className="text-primary/80">{appointment.specialty}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 hover:bg-primary/10 transition-colors duration-200"
+                >
+                  <FileText className="h-4 w-4" />
+                  View Details
+                </Button>
+              </div>
+              
+              <div className="flex gap-6 mt-3 text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4" />
+                  <span>{appointment.date}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  <span>{appointment.time}</span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       <Dialog open={!!selectedAppointment} onOpenChange={(open) => !open && setSelectedAppointment(null)}>
         <DialogContent className="max-w-md sm:max-w-lg animate-in fade-in-0 zoom-in-90">
           <div className="flex justify-between items-start">
-            <h2 className="text-xl font-medium">Appointment Details</h2>
+            <h2 className="text-xl font-medium font-poppins">Appointment Details</h2>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -157,7 +183,7 @@ const PastAppointmentsPage = () => {
                   <User2 className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-lg">{selectedAppointment.doctor}</h3>
+                  <h3 className="font-medium text-lg font-poppins">{selectedAppointment.doctor}</h3>
                   <p className="text-primary/80">{selectedAppointment.specialty}</p>
                 </div>
               </div>
@@ -175,7 +201,7 @@ const PastAppointmentsPage = () => {
 
               {selectedAppointment.summary && (
                 <div className="space-y-2">
-                  <h4 className="font-medium flex items-center gap-2">
+                  <h4 className="font-medium flex items-center gap-2 font-poppins">
                     <FileText className="h-4 w-4 text-primary" />
                     Summary
                   </h4>
@@ -185,7 +211,7 @@ const PastAppointmentsPage = () => {
 
               {selectedAppointment.recommendations && (
                 <div className="space-y-2">
-                  <h4 className="font-medium flex items-center gap-2">
+                  <h4 className="font-medium flex items-center gap-2 font-poppins">
                     <MessageSquareText className="h-4 w-4 text-primary" />
                     Recommendations
                   </h4>
@@ -195,7 +221,7 @@ const PastAppointmentsPage = () => {
 
               {selectedAppointment.medications && selectedAppointment.medications.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="font-medium flex items-center gap-2">
+                  <h4 className="font-medium flex items-center gap-2 font-poppins">
                     <Pill className="h-4 w-4 text-primary" />
                     Prescribed Medications
                   </h4>
@@ -209,7 +235,7 @@ const PastAppointmentsPage = () => {
 
               {selectedAppointment.followUp && (
                 <div className="space-y-2">
-                  <h4 className="font-medium flex items-center gap-2">
+                  <h4 className="font-medium flex items-center gap-2 font-poppins">
                     <CalendarClock className="h-4 w-4 text-primary" />
                     Follow-up
                   </h4>

@@ -15,7 +15,20 @@ import MedicalHistory from '@/components/dashboard/MedicalHistory';
 import DashboardServices from '@/components/dashboard/DashboardServices';
 import BookAppointment from '@/components/dashboard/BookAppointment';
 
-function App() {
+// Add Poppins font
+const App = () => {
+  React.useEffect(() => {
+    // Add Poppins font to the document head
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
+
   return (
     <Router>
       <Routes>
@@ -42,6 +55,6 @@ function App() {
       </Routes>
     </Router>
   );
-}
+};
 
 export default App;
