@@ -17,6 +17,8 @@ import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import VisitReasonDialog from "./VisitReasonDialog";
+import ConsultationNotesDialog from "./ConsultationNotesDialog";
 
 interface Appointment {
   id: number;
@@ -84,11 +86,21 @@ const ProviderAppointments = () => {
   ]);
   
   const [cancelAppointment, setCancelAppointment] = useState<number | null>(null);
+  const [visitReasonAppointment, setVisitReasonAppointment] = useState<number | null>(null);
+  const [notesAppointment, setNotesAppointment] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const { toast } = useToast();
 
   const handleCancelAppointment = (appointmentId: number) => {
     setCancelAppointment(appointmentId);
+  };
+
+  const handleViewVisitReason = (appointmentId: number) => {
+    setVisitReasonAppointment(appointmentId);
+  };
+
+  const handleViewNotes = (appointmentId: number) => {
+    setNotesAppointment(appointmentId);
   };
 
   const handleConfirmCancel = (reason: string, details?: string) => {
@@ -109,7 +121,7 @@ const ProviderAppointments = () => {
   };
 
   const getActiveAppointment = () => {
-    return appointments.find(a => a.id === cancelAppointment);
+    return appointments.find(a => a.id === cancelAppointment || a.id === visitReasonAppointment || a.id === notesAppointment);
   };
 
   const filteredAppointments = appointments.filter(appointment => 
@@ -212,6 +224,13 @@ const ProviderAppointments = () => {
                           >
                             Cancel
                           </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewVisitReason(appointment.id)}
+                          >
+                            Visit Reason
+                          </Button>
                           <Button size="sm">
                             <Video className="mr-1.5 h-4 w-4" />
                             Join Call
@@ -260,7 +279,12 @@ const ProviderAppointments = () => {
                           </div>
                         </div>
                         
-                        <Button variant="outline" size="sm" className="ml-auto mt-2 md:mt-0">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="ml-auto mt-2 md:mt-0"
+                          onClick={() => handleViewNotes(appointment.id)}
+                        >
                           <FileText className="mr-1.5 h-4 w-4" />
                           View Notes
                         </Button>
@@ -323,6 +347,36 @@ const ProviderAppointments = () => {
         patientName={getActiveAppointment()?.patient || ""}
         onConfirmCancel={handleConfirmCancel}
       />
+
+      {visitReasonAppointment && getActiveAppointment() && (
+        <VisitReasonDialog
+          isOpen={visitReasonAppointment !== null}
+          onClose={() => setVisitReasonAppointment(null)}
+          appointment={{
+            id: getActiveAppointment()?.id || 0,
+            patientName: getActiveAppointment()?.patient || "",
+            patientId: getActiveAppointment()?.patientId || "",
+            appointmentType: getActiveAppointment()?.reason || "",
+            date: getActiveAppointment()?.date || new Date(),
+            time: getActiveAppointment()?.time || "",
+          }}
+        />
+      )}
+
+      {notesAppointment && getActiveAppointment() && (
+        <ConsultationNotesDialog
+          isOpen={notesAppointment !== null}
+          onClose={() => setNotesAppointment(null)}
+          appointment={{
+            id: getActiveAppointment()?.id || 0,
+            patient: getActiveAppointment()?.patient || "",
+            patientId: getActiveAppointment()?.patientId || "",
+            reason: getActiveAppointment()?.reason || "",
+            date: getActiveAppointment()?.date || new Date(),
+            time: getActiveAppointment()?.time || "",
+          }}
+        />
+      )}
     </div>
   );
 };
