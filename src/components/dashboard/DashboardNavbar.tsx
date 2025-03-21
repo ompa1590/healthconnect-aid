@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -6,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { ClipboardList, Home, Stethoscope, User, CalendarClock } from "lucide-react";
+import { ClipboardList, Home, Stethoscope, User, CalendarClock, Pill } from "lucide-react";
 
 interface DashboardNavbarProps {
   userName: string;
@@ -94,6 +93,11 @@ const DashboardNavbar = ({
                   transition-colors flex items-center gap-1.5 pb-1`}>
                 <CalendarClock className="h-4 w-4" />
                 Past Appointments
+              </Link>
+              <Link to="/dashboard/prescriptions" className={`${isActive('/dashboard/prescriptions') ? 'text-primary border-b-2 border-primary' : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
+                  transition-colors flex items-center gap-1.5 pb-1`}>
+                <Pill className="h-4 w-4" />
+                Prescriptions
               </Link>
             </div>
           </div>

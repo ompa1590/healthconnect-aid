@@ -50,6 +50,86 @@ export type Database = {
           },
         ]
       }
+      prescription_requests: {
+        Row: {
+          created_at: string
+          id: string
+          patient_id: string
+          prescription_id: string
+          reason: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          patient_id: string
+          prescription_id: string
+          reason: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          patient_id?: string
+          prescription_id?: string
+          reason?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_requests_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prescriptions: {
+        Row: {
+          created_at: string
+          dosage: string
+          end_date: string | null
+          frequency: string
+          id: string
+          instructions: string
+          medication_name: string
+          patient_id: string
+          provider_id: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dosage: string
+          end_date?: string | null
+          frequency: string
+          id?: string
+          instructions: string
+          medication_name: string
+          patient_id: string
+          provider_id: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dosage?: string
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          instructions?: string
+          medication_name?: string
+          patient_id?: string
+          provider_id?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -92,6 +172,78 @@ export type Database = {
           phone?: string | null
           province?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      provider_profiles: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          availability: Json | null
+          biography: string | null
+          city: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          email: string | null
+          first_name: string | null
+          gender: string | null
+          id: string
+          landmark: string | null
+          last_name: string | null
+          phone_number: string | null
+          provider_type: string | null
+          registration_expiry: string | null
+          registration_number: string | null
+          specializations: string[] | null
+          state: string | null
+          updated_at: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          availability?: Json | null
+          biography?: string | null
+          city?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          first_name?: string | null
+          gender?: string | null
+          id: string
+          landmark?: string | null
+          last_name?: string | null
+          phone_number?: string | null
+          provider_type?: string | null
+          registration_expiry?: string | null
+          registration_number?: string | null
+          specializations?: string[] | null
+          state?: string | null
+          updated_at?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          availability?: Json | null
+          biography?: string | null
+          city?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          first_name?: string | null
+          gender?: string | null
+          id?: string
+          landmark?: string | null
+          last_name?: string | null
+          phone_number?: string | null
+          provider_type?: string | null
+          registration_expiry?: string | null
+          registration_number?: string | null
+          specializations?: string[] | null
+          state?: string | null
+          updated_at?: string | null
+          zip_code?: string | null
         }
         Relationships: []
       }

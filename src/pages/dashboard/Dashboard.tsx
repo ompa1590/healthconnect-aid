@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import AppointmentScheduler from "@/components/dashboard/AppointmentScheduler";
 import AppointmentHistory from "@/components/dashboard/AppointmentHistory";
-import { CalendarDays, ClipboardList, Stethoscope, Loader2, Tag, PlusCircle } from "lucide-react";
+import { CalendarDays, ClipboardList, Stethoscope, Loader2, Tag, PlusCircle, Pill } from "lucide-react";
 import { useLocation, useNavigate, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -15,8 +15,10 @@ import MedicalHistoryPage from "./MedicalHistoryPage";
 import TreatmentOptionsPage from "./TreatmentOptionsPage";
 import HealthRecordsPage from "./HealthRecordsPage";
 import PastAppointmentsPage from "./PastAppointmentsPage";
+import PrescriptionsPage from "./PrescriptionsPage";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import BookAppointmentFlow from "@/components/dashboard/BookingFlow/BookAppointmentFlow";
+
 const Dashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState("");
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -79,12 +82,14 @@ const Dashboard = () => {
       }
     };
   }, [navigate, toast]);
+
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2 text-lg">Loading your dashboard...</span>
       </div>;
   }
+
   const DashboardHome = () => <div className="max-w-6xl mx-auto px-6 py-10">
       <div className="mb-8 bg-gradient-to-r from-health-100 to-health-50 p-8 rounded-xl shadow-sm">
         <div className="flex justify-between items-center mb-4">
@@ -163,6 +168,10 @@ const Dashboard = () => {
                   <ClipboardList className="mr-2 h-4 w-4" />
                   Access Health Records
                 </Button>
+                <Button variant="outline" className="w-full justify-start text-left hover:bg-health-50 hover:border-health-200 transition-colors" onClick={() => navigate("/dashboard/prescriptions")}>
+                  <Pill className="mr-2 h-4 w-4" />
+                  My Prescriptions
+                </Button>
                 <Button variant="outline" className="w-full justify-start text-left hover:bg-health-50 hover:border-health-200 transition-colors" onClick={() => navigate("/dashboard/treatment-options")}>
                   <Stethoscope className="mr-2 h-4 w-4" />
                   Explore Treatment Options
@@ -185,6 +194,7 @@ const Dashboard = () => {
         </div>
       </div>
     </div>;
+
   return <div className="min-h-screen bg-white">
       <DashboardNavbar userName={userName} />
       
@@ -197,7 +207,9 @@ const Dashboard = () => {
         <Route path="/medical-history" element={<MedicalHistoryPage />} />
         <Route path="/treatment-options" element={<TreatmentOptionsPage />} />
         <Route path="/health-records" element={<HealthRecordsPage />} />
+        <Route path="/prescriptions" element={<PrescriptionsPage />} />
       </Routes>
     </div>;
 };
+
 export default Dashboard;

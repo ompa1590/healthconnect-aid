@@ -7,6 +7,7 @@ import Dashboard from './pages/dashboard/Dashboard';
 import HealthRecordsPage from './pages/dashboard/HealthRecordsPage';
 import TreatmentOptionsPage from './pages/dashboard/TreatmentOptionsPage';
 import PastAppointmentsPage from './pages/dashboard/PastAppointmentsPage';
+import PrescriptionsPage from './pages/dashboard/PrescriptionsPage';
 import ProviderSignup from './pages/login/ProviderSignup';
 import ProviderLogin from './pages/login/ProviderLogin';
 import ProviderDashboard from './pages/provider/ProviderDashboard';
@@ -66,6 +67,7 @@ const App = () => {
           <Route path="/dashboard/services" element={<DashboardServices />} />
           <Route path="/dashboard/past-appointments" element={<PastAppointmentsPage />} />
           <Route path="/dashboard/book-appointment" element={<BookAppointment />} />
+          <Route path="/dashboard/prescriptions" element={<PrescriptionsPage />} />
           <Route path="/provider-registration" element={<ProviderSignup />} />
           <Route path="/provider-login" element={<ProviderLogin />} />
           <Route path="/provider/dashboard" element={<ProviderDashboard />} />
