@@ -6,30 +6,48 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarIcon, Upload, Eye, Trash2, PenLine } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { 
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage 
-} from "@/components/ui/form";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Json } from "@/integrations/supabase/types";
 
-interface ProviderSettingsProps {
-  providerData?: any;
+interface DayAvailability {
+  isAvailable: boolean;
+  isFullDay: boolean;
+  startTime?: string;
+  endTime?: string;
 }
 
-const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => {
+interface WeeklyAvailability {
+  monday: DayAvailability;
+  tuesday: DayAvailability;
+  wednesday: DayAvailability;
+  thursday: DayAvailability;
+  friday: DayAvailability;
+  saturday: DayAvailability;
+  sunday: DayAvailability;
+}
+
+const defaultAvailability: WeeklyAvailability = {
+  monday: { isAvailable: true, isFullDay: true },
+  tuesday: { isAvailable: true, isFullDay: true },
+  wednesday: { isAvailable: true, isFullDay: true },
+  thursday: { isAvailable: true, isFullDay: true },
+  friday: { isAvailable: true, isFullDay: true },
+  saturday: { isAvailable: true, isFullDay: true },
+  sunday: { isAvailable: true, isFullDay: true }
+};
+
+export interface ProviderSettingsProps {
+  providerData?: any;
+  onSettingsSaved?: () => void;
+}
+
+const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData, onSettingsSaved }) => {
   const { toast } = useToast();
   const signatureCanvasRef = useRef<HTMLCanvasElement>(null);
   const [activeTab, setActiveTab] = useState("demographics");
@@ -38,7 +56,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
   const [profileData, setProfileData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Form state
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -47,7 +64,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
     dateOfBirth: new Date(),
     gender: "male",
     
-    // Address information
     addressLine1: "",
     addressLine2: "",
     landmark: "",
@@ -55,40 +71,26 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
     state: "",
     zipCode: "",
     
-    // Professional information
     providerType: "physician",
     registrationNumber: "",
     registrationExpiry: new Date(),
     specializations: [] as string[],
     
-    // Additional information
     biography: "",
     
-    // Availability
-    availability: {
-      monday: { isAvailable: true, isFullDay: true },
-      tuesday: { isAvailable: true, isFullDay: true },
-      wednesday: { isAvailable: true, isFullDay: true },
-      thursday: { isAvailable: true, isFullDay: true },
-      friday: { isAvailable: true, isFullDay: true },
-      saturday: { isAvailable: true, isFullDay: true },
-      sunday: { isAvailable: true, isFullDay: true }
-    },
+    availability: defaultAvailability,
     
-    // Documents
     profilePicture: null,
     certificateFile: null,
     signatureFile: null,
     documents: [] as {id: number, name: string, type: string}[]
   });
 
-  // Fetch provider profile from Supabase
   useEffect(() => {
     const fetchProviderProfile = async () => {
       setIsLoading(true);
       
       try {
-        // Get current user
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
@@ -101,7 +103,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
           return;
         }
         
-        // Get provider profile from the new provider_profiles table
         const { data: providerProfile, error } = await supabase
           .from('provider_profiles')
           .select('*')
@@ -117,13 +118,66 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
           });
         }
         
-        // If we have provider profile data in the database, use it
         if (providerProfile) {
-          // Parse dates
           const dob = providerProfile.date_of_birth ? new Date(providerProfile.date_of_birth) : new Date();
           const regExpiry = providerProfile.registration_expiry ? new Date(providerProfile.registration_expiry) : new Date();
           
-          // Initialize form data from the database
+          let availabilityData: WeeklyAvailability;
+          
+          if (providerProfile.availability && typeof providerProfile.availability === 'object') {
+            try {
+              availabilityData = {
+                monday: { 
+                  isAvailable: !!providerProfile.availability.monday?.isAvailable, 
+                  isFullDay: !!providerProfile.availability.monday?.isFullDay,
+                  startTime: providerProfile.availability.monday?.startTime || '',
+                  endTime: providerProfile.availability.monday?.endTime || ''
+                },
+                tuesday: { 
+                  isAvailable: !!providerProfile.availability.tuesday?.isAvailable, 
+                  isFullDay: !!providerProfile.availability.tuesday?.isFullDay,
+                  startTime: providerProfile.availability.tuesday?.startTime || '',
+                  endTime: providerProfile.availability.tuesday?.endTime || ''
+                },
+                wednesday: { 
+                  isAvailable: !!providerProfile.availability.wednesday?.isAvailable, 
+                  isFullDay: !!providerProfile.availability.wednesday?.isFullDay,
+                  startTime: providerProfile.availability.wednesday?.startTime || '',
+                  endTime: providerProfile.availability.wednesday?.endTime || ''
+                },
+                thursday: { 
+                  isAvailable: !!providerProfile.availability.thursday?.isAvailable, 
+                  isFullDay: !!providerProfile.availability.thursday?.isFullDay,
+                  startTime: providerProfile.availability.thursday?.startTime || '',
+                  endTime: providerProfile.availability.thursday?.endTime || ''
+                },
+                friday: { 
+                  isAvailable: !!providerProfile.availability.friday?.isAvailable, 
+                  isFullDay: !!providerProfile.availability.friday?.isFullDay,
+                  startTime: providerProfile.availability.friday?.startTime || '',
+                  endTime: providerProfile.availability.friday?.endTime || ''
+                },
+                saturday: { 
+                  isAvailable: !!providerProfile.availability.saturday?.isAvailable, 
+                  isFullDay: !!providerProfile.availability.saturday?.isFullDay,
+                  startTime: providerProfile.availability.saturday?.startTime || '',
+                  endTime: providerProfile.availability.saturday?.endTime || ''
+                },
+                sunday: { 
+                  isAvailable: !!providerProfile.availability.sunday?.isAvailable, 
+                  isFullDay: !!providerProfile.availability.sunday?.isFullDay,
+                  startTime: providerProfile.availability.sunday?.startTime || '',
+                  endTime: providerProfile.availability.sunday?.endTime || ''
+                }
+              };
+            } catch (err) {
+              console.error("Error parsing availability:", err);
+              availabilityData = defaultAvailability;
+            }
+          } else {
+            availabilityData = defaultAvailability;
+          }
+          
           setFormData({
             firstName: providerProfile.first_name || "",
             lastName: providerProfile.last_name || "",
@@ -132,7 +186,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
             dateOfBirth: dob,
             gender: providerProfile.gender || "male",
             
-            // Address information
             addressLine1: providerProfile.address_line1 || "",
             addressLine2: providerProfile.address_line2 || "",
             landmark: providerProfile.landmark || "",
@@ -140,27 +193,15 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
             state: providerProfile.state || "",
             zipCode: providerProfile.zip_code || "",
             
-            // Professional information
             providerType: providerProfile.provider_type || "physician",
             registrationNumber: providerProfile.registration_number || "",
             registrationExpiry: regExpiry,
             specializations: providerProfile.specializations || [],
             
-            // Additional information
             biography: providerProfile.biography || "",
             
-            // Availability
-            availability: providerProfile.availability || {
-              monday: { isAvailable: true, isFullDay: true },
-              tuesday: { isAvailable: true, isFullDay: true },
-              wednesday: { isAvailable: true, isFullDay: true },
-              thursday: { isAvailable: true, isFullDay: true },
-              friday: { isAvailable: true, isFullDay: true },
-              saturday: { isAvailable: true, isFullDay: true },
-              sunday: { isAvailable: true, isFullDay: true }
-            },
+            availability: availabilityData,
             
-            // Documents (just demo data for now)
             profilePicture: null,
             certificateFile: null,
             signatureFile: null,
@@ -170,7 +211,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
             ]
           });
         } 
-        // Otherwise use the data passed via props or fallback to demo data
         else if (providerData) {
           const userMetadata = providerData;
           
@@ -179,7 +219,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
             firstName: userMetadata.firstName || "Demo",
             lastName: userMetadata.lastName || "Provider",
             email: userMetadata.email || "demo-provider@vyzahealth.ca",
-            // Keep other demo values
           }));
         }
         
@@ -199,7 +238,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
     fetchProviderProfile();
   }, [toast, providerData]);
 
-  // Handle input change
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -207,7 +245,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
     }));
   };
 
-  // Handle checkbox change for specializations
   const toggleSpecialization = (specializationId: string) => {
     setFormData(prev => {
       const currentSpecializations = [...prev.specializations];
@@ -226,7 +263,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
     });
   };
 
-  // Handle availability change
   const toggleDayAvailability = (day: string, checked: boolean) => {
     setFormData(prev => ({
       ...prev,
@@ -253,7 +289,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
     }));
   };
 
-  // File upload handlers
   const handleFileUpload = (field: string, file: File) => {
     setFormData(prev => ({
       ...prev,
@@ -268,7 +303,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
     }));
   };
 
-  // Signature pad related functions
   const initializeSignaturePad = () => {
     const canvas = signatureCanvasRef.current;
     if (!canvas) return;
@@ -331,7 +365,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
     const canvas = signatureCanvasRef.current;
     if (!canvas) return;
     
-    // Convert canvas to file
     canvas.toBlob((blob) => {
       if (blob) {
         const file = new File([blob], "signature.png", { type: "image/png" });
@@ -344,12 +377,10 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
     }, "image/png");
   };
 
-  // Save all settings
   const handleSaveSettings = async () => {
     setIsSaving(true);
     
     try {
-      // Get current user
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -362,7 +393,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
         return;
       }
       
-      // Prepare data for database
       const providerProfileData = {
         id: session.user.id,
         first_name: formData.firstName,
@@ -372,7 +402,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
         date_of_birth: formData.dateOfBirth.toISOString().split('T')[0],
         gender: formData.gender,
         
-        // Address information
         address_line1: formData.addressLine1,
         address_line2: formData.addressLine2,
         landmark: formData.landmark,
@@ -380,20 +409,16 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
         state: formData.state,
         zip_code: formData.zipCode,
         
-        // Professional information
         provider_type: formData.providerType,
         registration_number: formData.registrationNumber,
         registration_expiry: formData.registrationExpiry.toISOString().split('T')[0],
         specializations: formData.specializations,
         
-        // Additional information
         biography: formData.biography,
         
-        // Availability
         availability: formData.availability
       };
       
-      // Update the provider profile in the database with upsert
       const { error } = await supabase
         .from('provider_profiles')
         .upsert(providerProfileData);
@@ -409,7 +434,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
         return;
       }
       
-      // Update user metadata in Supabase auth to reflect changes
       await supabase.auth.updateUser({
         data: {
           firstName: formData.firstName,
@@ -418,19 +442,18 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
         }
       });
       
-      // If signature has been updated, you would upload it to storage here
-      // Similarly for other files
-      
       toast({
         title: "Settings saved",
         description: "Your settings have been updated successfully.",
       });
       
-      // Refresh profile data
       setProfileData(providerProfileData);
       
-      // Update user session to reflect changes
       await supabase.auth.refreshSession();
+      
+      if (onSettingsSaved) {
+        onSettingsSaved();
+      }
       
       setIsEditMode(false);
     } catch (error) {
@@ -445,7 +468,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
     }
   };
 
-  // Initialize signature pad on component mount
   useEffect(() => {
     initializeSignaturePad();
   }, []);
@@ -491,7 +513,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
 
-        {/* Demographics Tab */}
         <TabsContent value="demographics" className="space-y-6">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-medium mb-4 text-blue-600">Demographics</h2>
@@ -587,7 +608,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
             <h2 className="text-lg font-medium mb-4 text-blue-600">Profile Picture</h2>
             <div className="flex items-center space-x-4">
               <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-                {/* If there's a profile picture, show it here */}
                 <PenLine className="h-12 w-12 text-gray-500" />
               </div>
               <Button disabled={!isEditMode}>
@@ -658,7 +678,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
           </div>
         </TabsContent>
 
-        {/* Specialization Tab */}
         <TabsContent value="specialization" className="space-y-6">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-medium mb-4 text-blue-600">Specialization</h2>
@@ -768,7 +787,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
           </div>
         </TabsContent>
 
-        {/* Short Bio Tab */}
         <TabsContent value="shortBio" className="space-y-6">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-medium mb-4 text-blue-600">Short Bio</h2>
@@ -811,7 +829,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
           </div>
         </TabsContent>
 
-        {/* Availability Tab */}
         <TabsContent value="availability" className="space-y-6">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-medium mb-4 text-blue-600">Manage Availability</h2>
@@ -882,7 +899,6 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
           </div>
         </TabsContent>
 
-        {/* Documents Tab */}
         <TabsContent value="documents" className="space-y-6">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-medium mb-4 text-blue-600">Documents</h2>
@@ -943,4 +959,3 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
 };
 
 export default ProviderSettings;
-

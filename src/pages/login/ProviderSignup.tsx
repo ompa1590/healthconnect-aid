@@ -1,77 +1,95 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { GlassCard } from "@/components/ui/GlassCard";
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import GeneralInfoStep from "@/components/provider/signup/GeneralInfoStep";
-import ProviderTypeStep from "@/components/provider/signup/ProviderTypeStep";
 import RegistrationNumberStep from "@/components/provider/signup/RegistrationNumberStep";
+import ProviderTypeStep from "@/components/provider/signup/ProviderTypeStep";
 import SpecializationStep from "@/components/provider/signup/SpecializationStep";
 import ServicesOfferedStep from "@/components/provider/signup/ServicesOfferedStep";
-import BiographyStep from "@/components/provider/signup/BiographyStep";
-import AvailabilityStep from "@/components/provider/signup/AvailabilityStep";
 import DocumentUploadStep from "@/components/provider/signup/DocumentUploadStep";
+import BiographyStep from "@/components/provider/signup/BiographyStep";
 import SignupComplete from "@/components/provider/signup/SignupComplete";
+import AvailabilityStep from "@/components/provider/signup/AvailabilityStep";
+import { CheckIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-export type ProviderFormData = {
-  email: string;
-  password: string;
+interface DayAvailability {
+  isAvailable: boolean;
+  isFullDay: boolean;
+  startTime?: string;
+  endTime?: string;
+}
+
+interface WeeklyAvailability {
+  [key: string]: DayAvailability;
+  monday: DayAvailability;
+  tuesday: DayAvailability;
+  wednesday: DayAvailability;
+  thursday: DayAvailability;
+  friday: DayAvailability;
+  saturday: DayAvailability;
+  sunday: DayAvailability;
+}
+
+export interface ProviderFormData {
   firstName: string;
   lastName: string;
-  dateOfBirth: Date | undefined;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phoneNumber: string;
+  dateOfBirth?: string;
+  gender?: string;
+
   address: string;
   city: string;
   province: string;
   postalCode: string;
-  phoneNumber: string;
+
   providerType: string;
   registrationNumber: string;
-  registrationExpiry: Date | undefined;
-  specializations: string[];
+  specializations: string[] | string;
   servicesOffered: string[];
   biography: string;
-  availability: {
-    [key: string]: {
-      isAvailable: boolean;
-      startTime: string;
-      endTime: string;
-    };
-  };
-  profilePicture?: File;
-  certificateFile?: File;
-};
+  
+  documents: File[];
+  
+  availability: WeeklyAvailability;
+}
 
 const defaultAvailability = {
-  monday: { isAvailable: false, startTime: "09:00", endTime: "17:00" },
-  tuesday: { isAvailable: false, startTime: "09:00", endTime: "17:00" },
-  wednesday: { isAvailable: false, startTime: "09:00", endTime: "17:00" },
-  thursday: { isAvailable: false, startTime: "09:00", endTime: "17:00" },
-  friday: { isAvailable: false, startTime: "09:00", endTime: "17:00" },
-  saturday: { isAvailable: false, startTime: "09:00", endTime: "17:00" },
-  sunday: { isAvailable: false, startTime: "09:00", endTime: "17:00" },
+  monday: { isAvailable: false, isFullDay: false, startTime: "09:00", endTime: "17:00" },
+  tuesday: { isAvailable: false, isFullDay: false, startTime: "09:00", endTime: "17:00" },
+  wednesday: { isAvailable: false, isFullDay: false, startTime: "09:00", endTime: "17:00" },
+  thursday: { isAvailable: false, isFullDay: false, startTime: "09:00", endTime: "17:00" },
+  friday: { isAvailable: false, isFullDay: false, startTime: "09:00", endTime: "17:00" },
+  saturday: { isAvailable: false, isFullDay: false, startTime: "09:00", endTime: "17:00" },
+  sunday: { isAvailable: false, isFullDay: false, startTime: "09:00", endTime: "17:00" },
 };
 
 const ProviderSignup = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<ProviderFormData>({
-    email: "",
-    password: "",
     firstName: "",
     lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    phoneNumber: "",
     dateOfBirth: undefined,
+    gender: undefined,
     address: "",
     city: "",
     province: "",
     postalCode: "",
-    phoneNumber: "",
     providerType: "",
     registrationNumber: "",
-    registrationExpiry: undefined,
     specializations: [],
     servicesOffered: [],
     biography: "",
+    documents: [],
     availability: defaultAvailability,
   });
   const [stepErrors, setStepErrors] = useState<string | null>(null);

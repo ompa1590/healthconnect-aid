@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
@@ -24,6 +23,33 @@ interface SignupCompleteProps {
   onComplete: () => void;
 }
 
+interface DayAvailability {
+  isAvailable: boolean;
+  isFullDay: boolean;
+  startTime?: string;
+  endTime?: string;
+}
+
+interface WeeklyAvailability {
+  monday: DayAvailability;
+  tuesday: DayAvailability;
+  wednesday: DayAvailability;
+  thursday: DayAvailability;
+  friday: DayAvailability;
+  saturday: DayAvailability;
+  sunday: DayAvailability;
+}
+
+const defaultAvailability: WeeklyAvailability = {
+  monday: { isAvailable: true, isFullDay: true },
+  tuesday: { isAvailable: true, isFullDay: true },
+  wednesday: { isAvailable: true, isFullDay: true },
+  thursday: { isAvailable: true, isFullDay: true },
+  friday: { isAvailable: true, isFullDay: true },
+  saturday: { isAvailable: true, isFullDay: true },
+  sunday: { isAvailable: true, isFullDay: true }
+};
+
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -33,7 +59,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   
-  // Refresh the captcha when the component mounts or when we need a fresh token
   useEffect(() => {
     setCaptchaKey(Date.now().toString());
   }, []);
@@ -44,7 +69,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   };
   
   const resetCaptcha = () => {
-    // Generate a new captcha key to force a complete re-render
     setCaptchaKey(Date.now().toString());
     setCaptchaToken(null);
   };
@@ -71,12 +95,10 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setSubmitting(true);
     
     try {
-      // Convert specializations to array if it's a string
       const specializations = typeof formData.specializations === 'string' 
         ? formData.specializations.split(',') 
         : formData.specializations || [];
       
-      // Attempt to sign up the provider
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -92,9 +114,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             province: formData.province || '',
             postalCode: formData.postalCode || '',
             phoneNumber: formData.phoneNumber || '',
-            isNewUser: true // Flag to identify new users for welcome modal
+            isNewUser: true
           },
-          captchaToken: captchaToken  // Pass the captcha token to Supabase
+          captchaToken: captchaToken
         }
       });
       
@@ -105,13 +127,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           description: error.message,
           variant: "destructive"
         });
-        // Reset captcha for a fresh attempt
         resetCaptcha();
         setSubmitting(false);
       } else {
         console.log("Provider signup successful:", data);
         
-        // Create initial provider profile in the database
         if (data.user) {
           try {
             const dateOfBirth = formData.dateOfBirth ? new Date(formData.dateOfBirth) : null;
@@ -134,18 +154,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
               registration_number: formData.registrationNumber || '',
               specializations: specializations,
               biography: formData.biography || '',
-              availability: {
-                monday: { isAvailable: true, isFullDay: true },
-                tuesday: { isAvailable: true, isFullDay: true },
-                wednesday: { isAvailable: true, isFullDay: true },
-                thursday: { isAvailable: true, isFullDay: true },
-                friday: { isAvailable: true, isFullDay: true },
-                saturday: { isAvailable: true, isFullDay: true },
-                sunday: { isAvailable: true, isFullDay: true }
-              }
+              availability: defaultAvailability
             };
             
-            // Insert into provider_profiles table
             const { error: profileError } = await supabase
               .from('provider_profiles')
               .insert(providerProfileData);
@@ -158,13 +169,10 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           }
         }
         
-        // Success - show the success dialog
         setShowSuccessDialog(true);
         
-        // Sign out the user first (in case they were automatically signed in)
         await supabase.auth.signOut();
         
-        // Call the onComplete callback
         onComplete();
       }
     } catch (error) {
@@ -174,7 +182,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
-      // Reset captcha for a fresh attempt
       resetCaptcha();
       setSubmitting(false);
     }
@@ -182,7 +189,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   
   const handleSuccessDialogClose = () => {
     setShowSuccessDialog(false);
-    // Navigate to provider login page
     navigate('/provider-login');
   };
   
