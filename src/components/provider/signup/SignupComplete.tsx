@@ -71,6 +71,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setSubmitting(true);
     
     try {
+      // Convert specializations to array if it's a string
+      const specializations = typeof formData.specializations === 'string' 
+        ? formData.specializations.split(',') 
+        : formData.specializations || [];
+      
       // Attempt to sign up the provider
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -80,7 +85,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             firstName: formData.firstName,
             lastName: formData.lastName,
             role: 'provider',
-            specialization: formData.specializations ? formData.specializations.join(',') : '',
+            specialization: specializations.length > 0 ? specializations[0] : '',
             registrationNumber: formData.registrationNumber || '',
             address: formData.address || '',
             city: formData.city || '',
@@ -105,6 +110,53 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         setSubmitting(false);
       } else {
         console.log("Provider signup successful:", data);
+        
+        // Create initial provider profile in the database
+        if (data.user) {
+          try {
+            const dateOfBirth = formData.dateOfBirth ? new Date(formData.dateOfBirth) : null;
+            const dob = dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : null;
+            
+            const providerProfileData = {
+              id: data.user.id,
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              email: formData.email,
+              phone_number: formData.phoneNumber || '',
+              date_of_birth: dob,
+              gender: formData.gender || 'male',
+              address_line1: formData.address || '',
+              address_line2: '',
+              city: formData.city || '',
+              state: formData.province || '',
+              zip_code: formData.postalCode || '',
+              provider_type: formData.providerType || 'physician',
+              registration_number: formData.registrationNumber || '',
+              specializations: specializations,
+              biography: formData.biography || '',
+              availability: {
+                monday: { isAvailable: true, isFullDay: true },
+                tuesday: { isAvailable: true, isFullDay: true },
+                wednesday: { isAvailable: true, isFullDay: true },
+                thursday: { isAvailable: true, isFullDay: true },
+                friday: { isAvailable: true, isFullDay: true },
+                saturday: { isAvailable: true, isFullDay: true },
+                sunday: { isAvailable: true, isFullDay: true }
+              }
+            };
+            
+            // Insert into provider_profiles table
+            const { error: profileError } = await supabase
+              .from('provider_profiles')
+              .insert(providerProfileData);
+              
+            if (profileError) {
+              console.error("Error creating provider profile:", profileError);
+            }
+          } catch (profileError) {
+            console.error("Error creating provider profile:", profileError);
+          }
+        }
         
         // Success - show the success dialog
         setShowSuccessDialog(true);

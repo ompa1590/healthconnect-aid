@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -63,6 +64,7 @@ const ProviderDashboard = () => {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
+  const [providerProfile, setProviderProfile] = useState<any>(null);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [appointments, setAppointments] = useState([
     {
@@ -127,8 +129,10 @@ const ProviderDashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const checkSession = async () => {
+  // Fetch user data and provider profile
+  const fetchUserData = async () => {
+    setLoading(true);
+    try {
       const { data } = await supabase.auth.getSession();
       
       if (!data.session) {
@@ -138,16 +142,50 @@ const ProviderDashboard = () => {
       
       const userMetadata = data.session.user.user_metadata;
       
-      const providerProfile = {
-        id: data.session.user.id,
-        firstName: userMetadata?.firstName || "Demo",
-        lastName: userMetadata?.lastName || "Provider",
-        email: data.session.user.email,
-        specialization: userMetadata?.specialization || "General Practice",
-        address: userMetadata?.address || "Sea Point Arena Promenade",
-      };
+      // Fetch provider profile from provider_profiles table
+      const { data: providerProfileData, error: profileError } = await supabase
+        .from('provider_profiles')
+        .select('*')
+        .eq('id', data.session.user.id)
+        .maybeSingle();
+        
+      if (profileError) {
+        console.error("Error fetching provider profile:", profileError);
+      }
       
-      setProfile(providerProfile);
+      let initialProfile;
+      
+      // If we have a provider profile in the database, use that
+      if (providerProfileData) {
+        initialProfile = {
+          id: data.session.user.id,
+          firstName: providerProfileData.first_name || userMetadata?.firstName || "Demo",
+          lastName: providerProfileData.last_name || userMetadata?.lastName || "Provider",
+          email: providerProfileData.email || data.session.user.email,
+          phoneNumber: providerProfileData.phone_number,
+          specialization: providerProfileData.specializations && providerProfileData.specializations.length > 0 
+            ? providerProfileData.specializations[0] 
+            : userMetadata?.specialization || "General Practice",
+          address: providerProfileData.address_line1 || userMetadata?.address || "Sea Point Arena Promenade",
+          city: providerProfileData.city || userMetadata?.city,
+          state: providerProfileData.state,
+          dateOfBirth: providerProfileData.date_of_birth ? new Date(providerProfileData.date_of_birth) : null,
+        };
+        
+        setProviderProfile(providerProfileData);
+      } else {
+        // Fallback to user metadata
+        initialProfile = {
+          id: data.session.user.id,
+          firstName: userMetadata?.firstName || "Demo",
+          lastName: userMetadata?.lastName || "Provider",
+          email: data.session.user.email,
+          specialization: userMetadata?.specialization || "General Practice",
+          address: userMetadata?.address || "Sea Point Arena Promenade",
+        };
+      }
+      
+      setProfile(initialProfile);
       
       const hasSeenWelcomeModal = localStorage.getItem(`welcome_modal_shown_${data.session.user.id}`);
       
@@ -163,12 +201,26 @@ const ProviderDashboard = () => {
         
         localStorage.setItem(`welcome_modal_shown_${data.session.user.id}`, 'true');
       }
-      
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem loading your data",
+        variant: "destructive"
+      });
+    } finally {
       setLoading(false);
-    };
-    
-    checkSession();
-  }, [navigate]);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserData();
+  }, [navigate, toast]);
+
+  // Re-fetch user data when settings are saved
+  const refreshUserData = () => {
+    fetchUserData();
+  };
 
   const handleSignOut = async () => {
     try {
@@ -287,7 +339,7 @@ const ProviderDashboard = () => {
           </div>
         );
       case "settings":
-        return <ProviderSettings providerData={profile} />;
+        return <ProviderSettings providerData={profile} onSettingsSaved={refreshUserData} />;
       case "help":
         return (
           <div className="p-6">

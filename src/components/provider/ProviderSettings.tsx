@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,13 +6,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarIcon, Upload, Eye, Trash2, PenLine } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage 
+} from "@/components/ui/form";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface ProviderSettingsProps {
   providerData?: any;
@@ -25,41 +35,34 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
   const [activeTab, setActiveTab] = useState("demographics");
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Form state
   const [formData, setFormData] = useState({
-    firstName: "Demo",
-    lastName: "Provider",
-    email: "demo-provider@vyzahealth.ca",
-    phoneNumber: "6369255903",
-    dateOfBirth: new Date("1990-01-15"),
+    firstName: "",
+    lastName: "",
+    email: "",
+    phoneNumber: "",
+    dateOfBirth: new Date(),
     gender: "male",
     
     // Address information
-    addressLine1: "Sea Point",
-    addressLine2: "Arena",
-    landmark: "Promenade",
-    city: "Cape Town",
-    state: "WC",
-    zipCode: "8005",
+    addressLine1: "",
+    addressLine2: "",
+    landmark: "",
+    city: "",
+    state: "",
+    zipCode: "",
     
     // Professional information
     providerType: "physician",
-    registrationNumber: "reg5O4KPH1",
-    registrationExpiry: new Date("2023-12-12"),
-    specializations: [
-      "reproductive_health_counselling",
-      "sti_management",
-      "psychological_counselling",
-      "general_practitioner_consultation",
-      "specialist_consultation",
-      "psychiatry_consultation",
-      "genetic_counselling",
-      "family_planning_counselling"
-    ],
+    registrationNumber: "",
+    registrationExpiry: new Date(),
+    specializations: [] as string[],
     
     // Additional information
-    biography: "Lorem Ipsum is simply dummy text of the printing and typesetting industry",
+    biography: "",
     
     // Availability
     availability: {
@@ -76,11 +79,125 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
     profilePicture: null,
     certificateFile: null,
     signatureFile: null,
-    documents: [
-      { id: 1, name: "P-56476957512-wEJD.pdf", type: "pdf" },
-      { id: 2, name: "M-56476947012JD-logo.png", type: "image" }
-    ]
+    documents: [] as {id: number, name: string, type: string}[]
   });
+
+  // Fetch provider profile from Supabase
+  useEffect(() => {
+    const fetchProviderProfile = async () => {
+      setIsLoading(true);
+      
+      try {
+        // Get current user
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          toast({
+            title: "Not authenticated",
+            description: "Please log in to view your profile",
+            variant: "destructive"
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        // Get provider profile from the new provider_profiles table
+        const { data: providerProfile, error } = await supabase
+          .from('provider_profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle();
+          
+        if (error) {
+          console.error("Error fetching provider profile:", error);
+          toast({
+            title: "Error fetching profile",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+        
+        // If we have provider profile data in the database, use it
+        if (providerProfile) {
+          // Parse dates
+          const dob = providerProfile.date_of_birth ? new Date(providerProfile.date_of_birth) : new Date();
+          const regExpiry = providerProfile.registration_expiry ? new Date(providerProfile.registration_expiry) : new Date();
+          
+          // Initialize form data from the database
+          setFormData({
+            firstName: providerProfile.first_name || "",
+            lastName: providerProfile.last_name || "",
+            email: providerProfile.email || session.user.email || "",
+            phoneNumber: providerProfile.phone_number || "",
+            dateOfBirth: dob,
+            gender: providerProfile.gender || "male",
+            
+            // Address information
+            addressLine1: providerProfile.address_line1 || "",
+            addressLine2: providerProfile.address_line2 || "",
+            landmark: providerProfile.landmark || "",
+            city: providerProfile.city || "",
+            state: providerProfile.state || "",
+            zipCode: providerProfile.zip_code || "",
+            
+            // Professional information
+            providerType: providerProfile.provider_type || "physician",
+            registrationNumber: providerProfile.registration_number || "",
+            registrationExpiry: regExpiry,
+            specializations: providerProfile.specializations || [],
+            
+            // Additional information
+            biography: providerProfile.biography || "",
+            
+            // Availability
+            availability: providerProfile.availability || {
+              monday: { isAvailable: true, isFullDay: true },
+              tuesday: { isAvailable: true, isFullDay: true },
+              wednesday: { isAvailable: true, isFullDay: true },
+              thursday: { isAvailable: true, isFullDay: true },
+              friday: { isAvailable: true, isFullDay: true },
+              saturday: { isAvailable: true, isFullDay: true },
+              sunday: { isAvailable: true, isFullDay: true }
+            },
+            
+            // Documents (just demo data for now)
+            profilePicture: null,
+            certificateFile: null,
+            signatureFile: null,
+            documents: [
+              { id: 1, name: "P-56476957512-wEJD.pdf", type: "pdf" },
+              { id: 2, name: "M-56476947012JD-logo.png", type: "image" }
+            ]
+          });
+        } 
+        // Otherwise use the data passed via props or fallback to demo data
+        else if (providerData) {
+          const userMetadata = providerData;
+          
+          setFormData(prev => ({
+            ...prev,
+            firstName: userMetadata.firstName || "Demo",
+            lastName: userMetadata.lastName || "Provider",
+            email: userMetadata.email || "demo-provider@vyzahealth.ca",
+            // Keep other demo values
+          }));
+        }
+        
+        setProfileData(providerProfile);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error in fetchProviderProfile:", error);
+        toast({
+          title: "Error loading profile",
+          description: "Could not load your profile data. Please try again later.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+      }
+    };
+    
+    fetchProviderProfile();
+  }, [toast, providerData]);
 
   // Handle input change
   const handleInputChange = (field: string, value: any) => {
@@ -116,7 +233,7 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
       availability: {
         ...prev.availability,
         [day]: {
-          ...prev.availability[day],
+          ...prev.availability[day as keyof typeof prev.availability],
           isAvailable: checked
         }
       }
@@ -129,7 +246,7 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
       availability: {
         ...prev.availability,
         [day]: {
-          ...prev.availability[day],
+          ...prev.availability[day as keyof typeof prev.availability],
           isFullDay: checked
         }
       }
@@ -231,33 +348,119 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
   const handleSaveSettings = async () => {
     setIsSaving(true);
     
-    // Simulate saving with a delay
-    setTimeout(() => {
-      setIsSaving(false);
-      setIsEditMode(false);
+    try {
+      // Get current user
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Not authenticated",
+          description: "Please log in to save your profile",
+          variant: "destructive"
+        });
+        setIsSaving(false);
+        return;
+      }
+      
+      // Prepare data for database
+      const providerProfileData = {
+        id: session.user.id,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        phone_number: formData.phoneNumber,
+        date_of_birth: formData.dateOfBirth.toISOString().split('T')[0],
+        gender: formData.gender,
+        
+        // Address information
+        address_line1: formData.addressLine1,
+        address_line2: formData.addressLine2,
+        landmark: formData.landmark,
+        city: formData.city,
+        state: formData.state,
+        zip_code: formData.zipCode,
+        
+        // Professional information
+        provider_type: formData.providerType,
+        registration_number: formData.registrationNumber,
+        registration_expiry: formData.registrationExpiry.toISOString().split('T')[0],
+        specializations: formData.specializations,
+        
+        // Additional information
+        biography: formData.biography,
+        
+        // Availability
+        availability: formData.availability
+      };
+      
+      // Update the provider profile in the database with upsert
+      const { error } = await supabase
+        .from('provider_profiles')
+        .upsert(providerProfileData);
+      
+      if (error) {
+        console.error("Error saving provider profile:", error);
+        toast({
+          title: "Error saving profile",
+          description: error.message,
+          variant: "destructive"
+        });
+        setIsSaving(false);
+        return;
+      }
+      
+      // Update user metadata in Supabase auth to reflect changes
+      await supabase.auth.updateUser({
+        data: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          specialization: formData.specializations.length > 0 ? formData.specializations[0] : "General Practice"
+        }
+      });
+      
+      // If signature has been updated, you would upload it to storage here
+      // Similarly for other files
+      
       toast({
         title: "Settings saved",
         description: "Your settings have been updated successfully.",
       });
-    }, 1500);
-    
-    // Here you would normally save to Supabase
-    // try {
-    //   await supabase
-    //     .from('provider_profiles')
-    //     .upsert({
-    //       // Map formData to your provider profile schema
-    //       // ...
-    //     });
-    // } catch (error) {
-    //   console.error('Error saving settings:', error);
-    // }
+      
+      // Refresh profile data
+      setProfileData(providerProfileData);
+      
+      // Update user session to reflect changes
+      await supabase.auth.refreshSession();
+      
+      setIsEditMode(false);
+    } catch (error) {
+      console.error("Error in handleSaveSettings:", error);
+      toast({
+        title: "Error saving settings",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Initialize signature pad on component mount
   useEffect(() => {
     initializeSignaturePad();
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="h-12 w-12 bg-slate-200 rounded-full mb-2"></div>
+          <div className="h-4 w-48 bg-slate-200 rounded mb-2"></div>
+          <div className="h-4 w-36 bg-slate-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-5xl mx-auto p-4">
@@ -349,7 +552,7 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
                     <Calendar
                       mode="single"
                       selected={formData.dateOfBirth}
-                      onSelect={(date) => handleInputChange('dateOfBirth', date)}
+                      onSelect={(date) => date && handleInputChange('dateOfBirth', date)}
                       initialFocus
                     />
                   </PopoverContent>
@@ -519,7 +722,7 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
                     <Calendar
                       mode="single"
                       selected={formData.registrationExpiry}
-                      onSelect={(date) => handleInputChange('registrationExpiry', date)}
+                      onSelect={(date) => date && handleInputChange('registrationExpiry', date)}
                       initialFocus
                     />
                   </PopoverContent>
@@ -631,7 +834,7 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
                   <div className="flex items-center">
                     <Checkbox 
                       id={`${day.id}-available`}
-                      checked={formData.availability[day.id].isAvailable}
+                      checked={formData.availability[day.id as keyof typeof formData.availability]?.isAvailable}
                       onCheckedChange={(checked) => isEditMode && toggleDayAvailability(day.id, !!checked)}
                       disabled={!isEditMode}
                     />
@@ -639,11 +842,11 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
                       {day.label}
                     </Label>
                     
-                    {formData.availability[day.id].isAvailable && (
+                    {formData.availability[day.id as keyof typeof formData.availability]?.isAvailable && (
                       <div className="ml-4 flex items-center">
                         <Checkbox 
                           id={`${day.id}-fullday`}
-                          checked={formData.availability[day.id].isFullDay}
+                          checked={formData.availability[day.id as keyof typeof formData.availability]?.isFullDay}
                           onCheckedChange={(checked) => isEditMode && toggleFullDayAvailability(day.id, !!checked)}
                           disabled={!isEditMode}
                         />
@@ -654,7 +857,7 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
                     )}
                   </div>
                   
-                  {formData.availability[day.id].isAvailable && (
+                  {formData.availability[day.id as keyof typeof formData.availability]?.isAvailable && (
                     <div className="bg-gray-50 p-3 rounded-md">
                       <p className="text-sm">Full day availability</p>
                     </div>
@@ -731,7 +934,7 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
             onClick={handleSaveSettings} 
             disabled={isSaving}
           >
-            {isSaving ? "Saving..." : "Edit profile"}
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       )}
@@ -740,3 +943,4 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ providerData }) => 
 };
 
 export default ProviderSettings;
+
