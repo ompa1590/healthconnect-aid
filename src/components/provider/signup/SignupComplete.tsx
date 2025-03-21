@@ -24,33 +24,6 @@ interface SignupCompleteProps {
   onComplete: () => void;
 }
 
-interface DayAvailability {
-  isAvailable: boolean;
-  isFullDay: boolean;
-  startTime?: string;
-  endTime?: string;
-}
-
-interface WeeklyAvailability {
-  monday: DayAvailability;
-  tuesday: DayAvailability;
-  wednesday: DayAvailability;
-  thursday: DayAvailability;
-  friday: DayAvailability;
-  saturday: DayAvailability;
-  sunday: DayAvailability;
-}
-
-const defaultAvailability: WeeklyAvailability = {
-  monday: { isAvailable: true, isFullDay: true },
-  tuesday: { isAvailable: true, isFullDay: true },
-  wednesday: { isAvailable: true, isFullDay: true },
-  thursday: { isAvailable: true, isFullDay: true },
-  friday: { isAvailable: true, isFullDay: true },
-  saturday: { isAvailable: true, isFullDay: true },
-  sunday: { isAvailable: true, isFullDay: true }
-};
-
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -60,6 +33,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   
+  // Refresh the captcha when the component mounts or when we need a fresh token
   useEffect(() => {
     setCaptchaKey(Date.now().toString());
   }, []);
@@ -70,6 +44,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   };
   
   const resetCaptcha = () => {
+    // Generate a new captcha key to force a complete re-render
     setCaptchaKey(Date.now().toString());
     setCaptchaToken(null);
   };
@@ -96,12 +71,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setSubmitting(true);
     
     try {
-      const specializations = Array.isArray(formData.specializations) 
-        ? formData.specializations 
-        : typeof formData.specializations === 'string' 
-          ? formData.specializations.split(',') 
-          : [];
-      
+      // Attempt to sign up the provider
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -110,16 +80,16 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             firstName: formData.firstName,
             lastName: formData.lastName,
             role: 'provider',
-            specialization: specializations.length > 0 ? specializations[0] : '',
+            specialization: formData.specializations ? formData.specializations.join(',') : '',
             registrationNumber: formData.registrationNumber || '',
             address: formData.address || '',
             city: formData.city || '',
             province: formData.province || '',
             postalCode: formData.postalCode || '',
             phoneNumber: formData.phoneNumber || '',
-            isNewUser: true
+            isNewUser: true // Flag to identify new users for welcome modal
           },
-          captchaToken: captchaToken
+          captchaToken: captchaToken  // Pass the captcha token to Supabase
         }
       });
       
@@ -130,53 +100,19 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           description: error.message,
           variant: "destructive"
         });
+        // Reset captcha for a fresh attempt
         resetCaptcha();
         setSubmitting(false);
       } else {
         console.log("Provider signup successful:", data);
         
-        if (data.user) {
-          try {
-            const dateOfBirth = formData.dateOfBirth ? new Date(formData.dateOfBirth) : null;
-            const dob = dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : null;
-            
-            // Convert the WeeklyAvailability object to a proper Supabase JSONB object
-            const providerProfileData = {
-              id: data.user.id,
-              first_name: formData.firstName,
-              last_name: formData.lastName,
-              email: formData.email,
-              phone_number: formData.phoneNumber || '',
-              date_of_birth: dob,
-              gender: formData.gender || 'male',
-              address_line1: formData.address || '',
-              address_line2: '',
-              city: formData.city || '',
-              state: formData.province || '',
-              zip_code: formData.postalCode || '',
-              provider_type: formData.providerType || 'physician',
-              registration_number: formData.registrationNumber || '',
-              specializations: specializations,
-              biography: formData.biography || '',
-              availability: formData.availability as any // Type cast to any to avoid TypeScript errors
-            };
-            
-            const { error: profileError } = await supabase
-              .from('provider_profiles')
-              .insert(providerProfileData);
-              
-            if (profileError) {
-              console.error("Error creating provider profile:", profileError);
-            }
-          } catch (profileError) {
-            console.error("Error creating provider profile:", profileError);
-          }
-        }
-        
+        // Success - show the success dialog
         setShowSuccessDialog(true);
         
+        // Sign out the user first (in case they were automatically signed in)
         await supabase.auth.signOut();
         
+        // Call the onComplete callback
         onComplete();
       }
     } catch (error) {
@@ -186,6 +122,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
+      // Reset captcha for a fresh attempt
       resetCaptcha();
       setSubmitting(false);
     }
@@ -193,6 +130,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   
   const handleSuccessDialogClose = () => {
     setShowSuccessDialog(false);
+    // Navigate to provider login page
     navigate('/provider-login');
   };
   
