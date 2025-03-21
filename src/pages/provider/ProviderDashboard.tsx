@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Calendar, Clock, Users, Video, ClipboardList, FileText, Bell, Settings, HelpCircle, Book, AlertCircle, CheckCircle, UserRound, X, LogOut, Info } from "lucide-react";
+import { Calendar, Clock, Users, Video, ClipboardList, FileText, Bell, Settings, HelpCircle, Book, AlertCircle, CheckCircle, UserRound, X, LogOut, Info, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import WelcomeModal from "@/components/provider/WelcomeModal";
@@ -15,7 +15,9 @@ import ProviderPatients from "@/components/provider/ProviderPatients";
 import ProviderAppointments from "@/components/provider/ProviderAppointments";
 import CancelAppointmentDialog from "@/components/provider/CancelAppointmentDialog";
 import VisitReasonDialog from "@/components/provider/VisitReasonDialog";
+import ProviderPatientChat from "@/components/provider/ProviderPatientChat";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+
 const ProviderDashboard = () => {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -75,6 +77,7 @@ const ProviderDashboard = () => {
     toast
   } = useToast();
   const navigate = useNavigate();
+
   useEffect(() => {
     const checkSession = async () => {
       const {
@@ -109,6 +112,7 @@ const ProviderDashboard = () => {
     };
     checkSession();
   }, [navigate]);
+
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -126,6 +130,7 @@ const ProviderDashboard = () => {
       });
     }
   };
+
   const getStats = () => {
     return [{
       title: "Total Appointments",
@@ -154,6 +159,7 @@ const ProviderDashboard = () => {
       bgColor: "bg-rose-50"
     }];
   };
+
   const handleWelcomeComplete = () => {
     setShowWelcomeModal(false);
     toast({
@@ -161,9 +167,11 @@ const ProviderDashboard = () => {
       description: "Your account is now set up and ready to go."
     });
   };
+
   const handleCancelAppointment = (appointmentId: number) => {
     setAppointmentToCancel(appointmentId);
   };
+
   const handleConfirmCancel = (reason: string, details?: string) => {
     setAppointments(appointments.map(appointment => appointment.id === appointmentToCancel ? {
       ...appointment,
@@ -175,18 +183,22 @@ const ProviderDashboard = () => {
       description: `The appointment has been cancelled successfully.`
     });
   };
+
   const handleShowVisitReason = (appointmentId: number) => {
     setSelectedAppointment(appointmentId);
   };
+
   const closeVisitReasonDialog = () => {
     setSelectedAppointment(null);
   };
+
   const markAllNotificationsAsRead = () => {
     setNotifications(notifications.map(n => ({
       ...n,
       read: true
     })));
   };
+
   const formatDate = date => {
     return new Intl.DateTimeFormat('en-US', {
       month: 'long',
@@ -194,6 +206,7 @@ const ProviderDashboard = () => {
       year: 'numeric'
     }).format(date);
   };
+
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
@@ -207,6 +220,13 @@ const ProviderDashboard = () => {
             <h2 className="text-2xl font-bold mb-6">Prescriptions</h2>
             <p className="text-muted-foreground">No active prescriptions to display.</p>
           </div>;
+      case "chat":
+        return <ProviderPatientChat patients={appointments.map(a => ({
+            id: a.patientId,
+            name: a.patientName,
+            appointmentType: a.appointmentType,
+            lastSeen: a.date
+          }))} />;
       case "settings":
         return <div className="p-6">
             <h2 className="text-2xl font-bold mb-6">Settings</h2>
@@ -302,6 +322,7 @@ const ProviderDashboard = () => {
         return renderDashboard();
     }
   };
+
   const renderDashboard = () => {
     return <>
         <h1 className="text-3xl font-bold mb-6">Welcome, Dr. {profile?.lastName || "Provider"}</h1>
@@ -431,13 +452,17 @@ const ProviderDashboard = () => {
         </div>
       </>;
   };
+
   const getActiveAppointment = () => {
     return appointments.find(a => a.id === appointmentToCancel);
   };
+
   const getSelectedAppointment = () => {
     return appointments.find(a => a.id === selectedAppointment);
   };
+
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-center">
@@ -445,6 +470,7 @@ const ProviderDashboard = () => {
         </div>
       </div>;
   }
+
   return <SidebarProvider>
       <div className="min-h-screen bg-background flex w-full font-poppins">
         <WelcomeModal isOpen={showWelcomeModal} onOpenChange={setShowWelcomeModal} onComplete={handleWelcomeComplete} />
@@ -508,6 +534,14 @@ const ProviderDashboard = () => {
                     <SidebarMenuButton isActive={activeSection === "prescriptions"} onClick={() => setActiveSection("prescriptions")}>
                       <ClipboardList className="h-4 w-4" />
                       <span>Prescriptions</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton isActive={activeSection === "chat"} onClick={() => setActiveSection("chat")}>
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Patient Chat</span>
+                      <Badge className="ml-auto" variant="outline">New</Badge>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
@@ -609,4 +643,5 @@ const ProviderDashboard = () => {
       </div>
     </SidebarProvider>;
 };
+
 export default ProviderDashboard;
