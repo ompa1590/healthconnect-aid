@@ -93,11 +93,6 @@ const ProviderSettingsTab = () => {
             lastName: providerProfile.last_name || user.user_metadata.lastName,
             fullProfile: providerProfile
           });
-          
-          toast({
-            title: "Profile updated",
-            description: "Your profile has been updated successfully.",
-          });
         }
       } catch (error) {
         console.error("Error refreshing user data:", error);
@@ -109,10 +104,10 @@ const ProviderSettingsTab = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-6">
+      <div className="container mx-auto py-6">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2">Loading profile...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-lg">Loading profile settings...</p>
         </div>
       </div>
     );
