@@ -87,6 +87,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             province: formData.province || '',
             postalCode: formData.postalCode || '',
             phoneNumber: formData.phoneNumber || '',
+            dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth.toISOString() : '',
+            providerType: formData.providerType || '',
+            servicesOffered: formData.servicesOffered ? formData.servicesOffered.join(',') : '',
+            biography: formData.biography || '',
+            availability: JSON.stringify(formData.availability),
             isNewUser: true // Flag to identify new users for welcome modal
           },
           captchaToken: captchaToken  // Pass the captcha token to Supabase
@@ -105,6 +110,42 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         setSubmitting(false);
       } else {
         console.log("Provider signup successful:", data);
+        
+        // Upload profile picture, certificate, and signature if they exist
+        if (formData.profilePicture || formData.certificateFile || formData.signatureFile) {
+          const userId = data.user?.id;
+          
+          if (userId) {
+            // Upload profile picture
+            if (formData.profilePicture) {
+              const fileExt = formData.profilePicture.name.split('.').pop();
+              const filePath = `${userId}/profile-picture.${fileExt}`;
+              
+              await supabase.storage
+                .from('provider-files')
+                .upload(filePath, formData.profilePicture);
+            }
+            
+            // Upload certificate
+            if (formData.certificateFile) {
+              const fileExt = formData.certificateFile.name.split('.').pop();
+              const filePath = `${userId}/certificate.${fileExt}`;
+              
+              await supabase.storage
+                .from('provider-files')
+                .upload(filePath, formData.certificateFile);
+            }
+            
+            // Upload signature
+            if (formData.signatureFile) {
+              const filePath = `${userId}/signature.png`;
+              
+              await supabase.storage
+                .from('provider-files')
+                .upload(filePath, formData.signatureFile);
+            }
+          }
+        }
         
         // Success - show the success dialog
         setShowSuccessDialog(true);
