@@ -43,6 +43,7 @@ import ProviderPatients from "@/components/provider/ProviderPatients";
 import ProviderAppointments from "@/components/provider/ProviderAppointments";
 import CancelAppointmentDialog from "@/components/provider/CancelAppointmentDialog";
 import VisitReasonDialog from "@/components/provider/VisitReasonDialog";
+import ProviderSettings from "@/components/provider/ProviderSettings";
 import {
   Sidebar,
   SidebarContent,
@@ -286,41 +287,7 @@ const ProviderDashboard = () => {
           </div>
         );
       case "settings":
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-6">Settings</h2>
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Profile Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">First Name</label>
-                    <div className="mt-1 p-2 border rounded-md">{profile?.firstName || "Demo"}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Last Name</label>
-                    <div className="mt-1 p-2 border rounded-md">{profile?.lastName || "Provider"}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Email</label>
-                    <div className="mt-1 p-2 border rounded-md">{profile?.email || "provider@example.com"}</div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Specialization</label>
-                    <div className="mt-1 p-2 border rounded-md">{profile?.specialization || "General Practice"}</div>
-                  </div>
-                </div>
-                <Button variant="outline" className="mt-4">Edit Profile</Button>
-              </div>
-              
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Availability Management</h3>
-                <p className="text-sm text-muted-foreground">Set your working hours and appointment slots.</p>
-                <Button>Manage Availability</Button>
-              </div>
-            </div>
-          </div>
-        );
+        return <ProviderSettings providerData={profile} />;
       case "help":
         return (
           <div className="p-6">
