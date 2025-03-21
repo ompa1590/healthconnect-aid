@@ -1,11 +1,12 @@
+
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import { ClipboardList, Home, Stethoscope, User, CalendarClock, Pill } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Bell, CalendarClock, ClipboardList, Home, MessageSquare, Pill, Stethoscope, User } from "lucide-react";
 
 interface DashboardNavbarProps {
   userName: string;
@@ -97,12 +98,21 @@ const DashboardNavbar = ({
               <Link to="/dashboard/prescriptions" className={`${isActive('/dashboard/prescriptions') ? 'text-primary border-b-2 border-primary' : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
                   transition-colors flex items-center gap-1.5 pb-1`}>
                 <Pill className="h-4 w-4" />
-                Prescriptions
+                Healthcare Hub
               </Link>
             </div>
           </div>
           
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5 text-gray-600" />
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">3</span>
+            </Button>
+            
+            <Button variant="ghost" size="icon">
+              <MessageSquare className="h-5 w-5 text-gray-600" />
+            </Button>
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-muted/20">
