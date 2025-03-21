@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DashboardNavbar } from "@/components/dashboard/DashboardNavbar";
+import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Calendar, Stethoscope, UserRound, Settings, FileClock } from "lucide-react";
@@ -106,8 +106,9 @@ const ProviderDashboard = () => {
       </div>
       
       <WelcomeModal 
-        open={showWelcomeModal} 
-        onClose={() => setShowWelcomeModal(false)} 
+        isOpen={showWelcomeModal} 
+        onOpenChange={setShowWelcomeModal} 
+        onComplete={() => setShowWelcomeModal(false)} 
       />
     </div>
   );

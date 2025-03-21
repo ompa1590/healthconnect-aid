@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,7 @@ const ProviderSettings = () => {
   const [profilePictureURL, setProfilePictureURL] = useState<string | null>(null);
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [certificateFileName, setCertificateFileName] = useState<string | null>(null);
-  const [signatureRef, setSignatureRef] = useState<SignatureCanvas | null>(null);
+  const signatureRef = useRef<SignatureCanvas | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const [registrationExpiry, setRegistrationExpiry] = useState<Date | undefined>(undefined);
@@ -186,9 +185,9 @@ const ProviderSettings = () => {
   };
 
   const handleSaveSignature = () => {
-    if (signatureRef && !signatureRef.isEmpty()) {
+    if (signatureRef.current && !signatureRef.current.isEmpty()) {
       // Get the signature as a PNG data URL
-      const dataURL = signatureRef.toDataURL('image/png');
+      const dataURL = signatureRef.current.toDataURL('image/png');
       
       // Convert data URL to a File object
       const byteString = atob(dataURL.split(',')[1]);
@@ -212,8 +211,8 @@ const ProviderSettings = () => {
   };
 
   const handleClearSignature = () => {
-    if (signatureRef) {
-      signatureRef.clear();
+    if (signatureRef.current) {
+      signatureRef.current.clear();
       setSignaturePreview(null);
       setSignatureFile(null);
     }
@@ -255,7 +254,6 @@ const ProviderSettings = () => {
     }
   };
 
-  // Define specializations based on provider type
   const getSpecializations = () => {
     switch (providerType) {
       case "physician":
@@ -300,7 +298,6 @@ const ProviderSettings = () => {
     }
   };
 
-  // Define services based on provider type
   const getServices = () => {
     const commonServices = [
       { id: "virtual_consultation", label: "Virtual Consultation" },
@@ -825,7 +822,7 @@ const ProviderSettings = () => {
                     <div className="space-y-4">
                       <div className="border-2 border-dashed border-muted-foreground/20 rounded-md p-4 bg-white">
                         <SignatureCanvas
-                          ref={(ref) => setSignatureRef(ref)}
+                          ref={signatureRef}
                           canvasProps={{
                             className: 'w-full h-48',
                           }}
