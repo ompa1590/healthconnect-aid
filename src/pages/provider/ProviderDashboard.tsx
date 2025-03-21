@@ -19,7 +19,6 @@ const ProviderDashboard = () => {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   
-  // Check authentication and load user data
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -30,10 +29,8 @@ const ProviderDashboard = () => {
           return;
         }
         
-        // Load user data from the session
         const user = session.user;
         
-        // First, try to get the provider profile from the database
         const { data: providerProfile, error } = await supabase
           .from('provider_profiles')
           .select('*')
@@ -44,7 +41,6 @@ const ProviderDashboard = () => {
           console.error("Error fetching provider profile:", error);
         }
         
-        // If we have a provider profile, use it
         if (providerProfile) {
           setUserData({
             id: user.id,
@@ -54,7 +50,6 @@ const ProviderDashboard = () => {
             fullProfile: providerProfile
           });
         } 
-        // Otherwise, use the user metadata
         else {
           setUserData({
             id: user.id,
@@ -64,11 +59,9 @@ const ProviderDashboard = () => {
           });
         }
         
-        // Check if this is a new user
         if (user.user_metadata.isNewUser) {
           setShowWelcomeModal(true);
           
-          // Update the user metadata to remove the isNewUser flag
           await supabase.auth.updateUser({
             data: { isNewUser: false }
           });
@@ -104,7 +97,6 @@ const ProviderDashboard = () => {
   };
   
   const handleSettingsSaved = () => {
-    // Refresh user data after settings are saved
     const refreshUserData = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -115,7 +107,6 @@ const ProviderDashboard = () => {
         
         const user = session.user;
         
-        // Get the updated provider profile
         const { data: providerProfile, error } = await supabase
           .from('provider_profiles')
           .select('*')
@@ -162,14 +153,12 @@ const ProviderDashboard = () => {
   
   return (
     <div className="container mx-auto py-6 px-4 min-h-screen">
-      {/* Welcome Modal for new users */}
       <WelcomeModal 
         open={showWelcomeModal} 
         onClose={() => setShowWelcomeModal(false)} 
         providerName={userData?.firstName || 'Provider'} 
       />
       
-      {/* Dashboard Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Welcome, Dr. {userData?.lastName || 'Provider'}</h1>
@@ -180,7 +169,6 @@ const ProviderDashboard = () => {
         </Button>
       </div>
       
-      {/* Main Dashboard Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-8">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
@@ -189,7 +177,6 @@ const ProviderDashboard = () => {
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         
-        {/* Dashboard Tab Content */}
         <TabsContent value="dashboard" className="space-y-4">
           <Card>
             <CardContent className="pt-6">
@@ -198,7 +185,6 @@ const ProviderDashboard = () => {
           </Card>
         </TabsContent>
         
-        {/* Patients Tab Content */}
         <TabsContent value="patients" className="space-y-4">
           <Card>
             <CardContent className="pt-6">
@@ -207,7 +193,6 @@ const ProviderDashboard = () => {
           </Card>
         </TabsContent>
         
-        {/* Schedule Tab Content */}
         <TabsContent value="schedule" className="space-y-4">
           <Card>
             <CardContent className="pt-6">
@@ -216,7 +201,6 @@ const ProviderDashboard = () => {
           </Card>
         </TabsContent>
         
-        {/* Settings Tab Content */}
         <TabsContent value="settings" className="space-y-4">
           <Card>
             <CardContent className="pt-6">

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
@@ -95,9 +96,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setSubmitting(true);
     
     try {
-      const specializations = typeof formData.specializations === 'string' 
-        ? formData.specializations.split(',') 
-        : formData.specializations || [];
+      const specializations = Array.isArray(formData.specializations) 
+        ? formData.specializations 
+        : typeof formData.specializations === 'string' 
+          ? formData.specializations.split(',') 
+          : [];
       
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -137,6 +140,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             const dateOfBirth = formData.dateOfBirth ? new Date(formData.dateOfBirth) : null;
             const dob = dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : null;
             
+            // Convert the WeeklyAvailability object to a proper Supabase JSONB object
             const providerProfileData = {
               id: data.user.id,
               first_name: formData.firstName,
@@ -154,7 +158,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
               registration_number: formData.registrationNumber || '',
               specializations: specializations,
               biography: formData.biography || '',
-              availability: defaultAvailability
+              availability: formData.availability as any // Type cast to any to avoid TypeScript errors
             };
             
             const { error: profileError } = await supabase

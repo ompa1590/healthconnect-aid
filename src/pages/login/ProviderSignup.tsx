@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,8 +13,10 @@ import DocumentUploadStep from "@/components/provider/signup/DocumentUploadStep"
 import BiographyStep from "@/components/provider/signup/BiographyStep";
 import SignupComplete from "@/components/provider/signup/SignupComplete";
 import AvailabilityStep from "@/components/provider/signup/AvailabilityStep";
-import { CheckIcon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { CheckIcon, ArrowLeft, ArrowRight } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import GlassCard from "@/components/ui/GlassCard";
 
 interface DayAvailability {
   isAvailable: boolean;
@@ -50,11 +53,14 @@ export interface ProviderFormData {
 
   providerType: string;
   registrationNumber: string;
+  registrationExpiry?: Date;
   specializations: string[] | string;
   servicesOffered: string[];
   biography: string;
   
   documents: File[];
+  profilePicture?: File;
+  certificateFile?: File;
   
   availability: WeeklyAvailability;
 }
