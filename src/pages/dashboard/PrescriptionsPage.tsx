@@ -6,6 +6,7 @@ import SupportOptions from "@/components/dashboard/SupportOptions";
 import MedicationReminders from "@/components/dashboard/MedicationReminders";
 import QuickHelp from "@/components/dashboard/QuickHelp";
 import BillingManagement from "@/components/dashboard/BillingManagement";
+import PatientDoctorChat from "@/components/dashboard/PatientDoctorChat";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -18,6 +19,7 @@ const PrescriptionsPage = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
           <TabsTrigger value="treatment-plans">Treatment Plans</TabsTrigger>
+          <TabsTrigger value="chat" id="chat-tab">Chat with Doctor</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="support">Support & Help</TabsTrigger>
         </TabsList>
@@ -35,6 +37,10 @@ const PrescriptionsPage = () => {
         
         <TabsContent value="treatment-plans" className="space-y-8">
           <CurrentPlans />
+        </TabsContent>
+        
+        <TabsContent value="chat" className="space-y-8">
+          <PatientDoctorChat />
         </TabsContent>
         
         <TabsContent value="billing" className="space-y-8">

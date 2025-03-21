@@ -1,10 +1,11 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CalendarClock, Clock, FileText, Video } from "lucide-react";
+import { CalendarClock, Clock, FileText, Video, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { HeartPulseLoader } from "@/components/ui/heart-pulse-loader";
+import { useNavigate } from "react-router-dom";
 
 type Appointment = {
   id: number;
@@ -22,6 +23,7 @@ type Appointment = {
 const AppointmentHistory = () => {
   const [loading, setLoading] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const navigate = useNavigate();
 
   const appointments: Appointment[] = [
     {
@@ -55,6 +57,19 @@ const AppointmentHistory = () => {
     }, 800);
   };
 
+  const handleChatWithDoctor = (doctorName: string) => {
+    // Navigate to the chat tab and select the doctor
+    navigate("/dashboard/prescriptions");
+    
+    // Wait for the page to load then click on the chat tab
+    setTimeout(() => {
+      const chatTab = document.getElementById("chat-tab");
+      if (chatTab) {
+        chatTab.click();
+      }
+    }, 100);
+  };
+
   return (
     <>
       <div className="space-y-4">
@@ -75,26 +90,37 @@ const AppointmentHistory = () => {
                   {appointment.specialty}
                 </p>
               </div>
-              {appointment.status === "upcoming" ? (
-                <Button 
-                  variant="outline" 
+              <div className="flex gap-2">
+                {appointment.status === "upcoming" ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="transition-all duration-300 hover:bg-primary/20"
+                  >
+                    Join Call
+                    <Video className="ml-2 h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="transition-all duration-300 hover:bg-primary/20"
+                    onClick={() => handleViewDetails(appointment)}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    View Details
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
                   size="sm"
                   className="transition-all duration-300 hover:bg-primary/20"
+                  onClick={() => handleChatWithDoctor(appointment.doctor)}
                 >
-                  Join Call
-                  <Video className="ml-2 h-4 w-4" />
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Chat
                 </Button>
-              ) : (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="transition-all duration-300 hover:bg-primary/20"
-                  onClick={() => handleViewDetails(appointment)}
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  View Details
-                </Button>
-              )}
+              </div>
             </div>
             <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
@@ -173,6 +199,27 @@ const AppointmentHistory = () => {
                     <p className="text-sm text-muted-foreground">{selectedAppointment.followUp}</p>
                   </div>
                 )}
+                
+                <div className="mt-4 flex justify-end">
+                  <Button 
+                    variant="outline"
+                    className="mr-2"
+                    onClick={() => {
+                      setSelectedAppointment(null);
+                    }}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setSelectedAppointment(null);
+                      handleChatWithDoctor(selectedAppointment.doctor);
+                    }}
+                  >
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    Chat with Doctor
+                  </Button>
+                </div>
               </div>
             </div>
           )}

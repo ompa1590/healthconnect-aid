@@ -2,7 +2,8 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard, FileText, Mail, HelpCircle } from "lucide-react";
+import { CreditCard, FileText, Mail, HelpCircle, MessageCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const supportCategories = [
   {
@@ -24,6 +25,12 @@ const supportCategories = [
     href: "#service-inquiries"
   },
   {
+    title: "Chat with Doctor",
+    description: "Message your healthcare provider directly with any follow-up questions",
+    icon: <MessageCircle className="h-5 w-5 text-purple-500" />,
+    href: "#chat-with-doctor"
+  },
+  {
     title: "General Help",
     description: "Other questions or assistance with your healthcare journey",
     icon: <HelpCircle className="h-5 w-5 text-purple-500" />,
@@ -32,10 +39,19 @@ const supportCategories = [
 ];
 
 const SupportOptions = () => {
+  const navigate = useNavigate();
+  
   const handleSupportClick = (e: React.MouseEvent<HTMLAnchorElement>, category: string) => {
     e.preventDefault();
-    // Instead of using 'click' which doesn't exist on Element, we'll use a different approach
     console.log(`Support category clicked: ${category}`);
+    
+    if (category === "Chat with Doctor") {
+      // Navigate to chat tab
+      const prescriptionsElement = document.getElementById("chat-tab");
+      if (prescriptionsElement) {
+        prescriptionsElement.click();
+      }
+    }
     // Future implementation: Open a modal or navigate to the specific support page
   };
 
