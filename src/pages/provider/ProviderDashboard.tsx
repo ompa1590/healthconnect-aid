@@ -1,80 +1,23 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ProviderAppointments from "@/components/provider/ProviderAppointments";
 import ProviderPatients from "@/components/provider/ProviderPatients";
 import ProviderSchedule from "@/components/provider/ProviderSchedule";
 import ProviderSettings from "@/components/provider/ProviderSettings";
 import WelcomeModal from "@/components/provider/WelcomeModal";
-import ProviderDashboardLayout from "@/components/provider/ProviderDashboardLayout";
-import DashboardOverview from "@/components/provider/DashboardOverview";
 
 const ProviderDashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  
-  // Get tab from URL query params or default to dashboard
-  const tabFromUrl = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(tabFromUrl || "dashboard");
-  
-  // Sample data for the dashboard overview
-  const todaysAppointments = [
-    {
-      id: 1,
-      type: "Specialist consultation",
-      patientId: "PTN-CE550N",
-      patientName: "Sarah Johnson",
-      date: new Date(2024, 2, 21),
-      startTime: "06:00",
-      endTime: "06:30 PM",
-      appointmentType: "video" as const
-    },
-    {
-      id: 2,
-      type: "Psychiatry consultation",
-      patientId: "PTN-CH442M",
-      patientName: "Michael Chen",
-      date: new Date(2024, 2, 21),
-      startTime: "03:00",
-      endTime: "03:30 PM",
-      appointmentType: "video" as const
-    },
-    {
-      id: 3,
-      type: "Family Planning counseling",
-      patientId: "PTN-WL339E",
-      patientName: "Emma Williams",
-      date: new Date(2024, 2, 21),
-      startTime: "05:00",
-      endTime: "05:30 PM",
-      appointmentType: "video" as const
-    }
-  ];
-  
-  const recentPatients = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      patientId: "PTN-CE550N",
-      initials: "S",
-      specialty: "Specialist"
-    },
-    {
-      id: 2,
-      name: "Michael Chen",
-      patientId: "PTN-CH442M",
-      initials: "M",
-      specialty: "Psychiatry"
-    }
-  ];
+  const [activeTab, setActiveTab] = useState("dashboard");
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -104,7 +47,6 @@ const ProviderDashboard = () => {
             email: user.email,
             firstName: providerProfile.first_name || user.user_metadata.firstName,
             lastName: providerProfile.last_name || user.user_metadata.lastName,
-            speciality: providerProfile.speciality || "General Practice",
             fullProfile: providerProfile
           });
         } 
@@ -114,7 +56,6 @@ const ProviderDashboard = () => {
             email: user.email,
             firstName: user.user_metadata.firstName,
             lastName: user.user_metadata.lastName,
-            speciality: "General Practice"
           });
         }
         
@@ -140,6 +81,20 @@ const ProviderDashboard = () => {
     
     checkAuth();
   }, [navigate, toast]);
+  
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate('/provider-login');
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast({
+        title: "Error",
+        description: "Could not sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
   
   const handleSettingsSaved = () => {
     const refreshUserData = async () => {
@@ -169,7 +124,6 @@ const ProviderDashboard = () => {
             email: user.email,
             firstName: providerProfile.first_name || user.user_metadata.firstName,
             lastName: providerProfile.last_name || user.user_metadata.lastName,
-            speciality: providerProfile.speciality || "General Practice",
             fullProfile: providerProfile
           });
           
@@ -198,62 +152,67 @@ const ProviderDashboard = () => {
   }
   
   return (
-    <>
+    <div className="container mx-auto py-6 px-4 min-h-screen">
       <WelcomeModal 
         open={showWelcomeModal} 
         onClose={() => setShowWelcomeModal(false)} 
         providerName={userData?.firstName || 'Provider'} 
       />
       
-      <ProviderDashboardLayout 
-        providerName={userData?.lastName || 'Provider'}
-        speciality={userData?.speciality || 'General Practice'}
-      >
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsContent value="dashboard" className="space-y-0 mt-0">
-            <DashboardOverview 
-              todaysAppointments={todaysAppointments}
-              recentPatients={recentPatients}
-            />
-          </TabsContent>
-          
-          <TabsContent value="patients" className="space-y-0 mt-0">
-            <Card>
-              <CardContent className="pt-6">
-                <ProviderPatients />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="consultations" className="space-y-0 mt-0">
-            <Card>
-              <CardContent className="pt-6">
-                <ProviderAppointments />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="schedule" className="space-y-0 mt-0">
-            <Card>
-              <CardContent className="pt-6">
-                <ProviderSchedule />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="settings" className="space-y-0 mt-0">
-            <Card>
-              <CardContent className="pt-6">
-                <ProviderSettings 
-                  providerData={userData} 
-                  onSettingsSaved={handleSettingsSaved}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </ProviderDashboardLayout>
-    </>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">Welcome, Dr. {userData?.lastName || 'Provider'}</h1>
+          <p className="text-muted-foreground mt-1">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        </div>
+        <Button onClick={handleSignOut} variant="outline" className="mt-4 md:mt-0">
+          Sign Out
+        </Button>
+      </div>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-8">
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="patients">Patients</TabsTrigger>
+          <TabsTrigger value="schedule">Schedule</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="dashboard" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6">
+              <ProviderAppointments />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="patients" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6">
+              <ProviderPatients />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="schedule" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6">
+              <ProviderSchedule />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="settings" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6">
+              <ProviderSettings 
+                providerData={userData} 
+                onSettingsSaved={handleSettingsSaved}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 

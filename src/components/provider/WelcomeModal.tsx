@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
 
 export interface WelcomeModalProps {
   open: boolean;
@@ -22,26 +21,19 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ open, onClose, providerName
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-xl">Welcome, Dr. {providerName}!</DialogTitle>
+          <DialogTitle>Welcome, Dr. {providerName}!</DialogTitle>
           <DialogDescription>
             Thank you for joining VyraHealth! Let's set up your provider profile.
           </DialogDescription>
         </DialogHeader>
         
         <div className="py-4">
-          <h4 className="text-sm font-medium mb-3">Here's what you can do:</h4>
-          <ul className="space-y-3">
-            {[
-              "Manage your appointments in the Dashboard",
-              "View and connect with patients",
-              "Update your schedule and availability",
-              "Complete your provider profile"
-            ].map((item, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm">
-                <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>{item}</span>
-              </li>
-            ))}
+          <h4 className="text-sm font-medium mb-2">Here's what you can do:</h4>
+          <ul className="list-disc pl-5 space-y-2 text-sm">
+            <li>Manage your appointments in the Dashboard</li>
+            <li>View and connect with patients</li>
+            <li>Update your schedule and availability</li>
+            <li>Complete your provider profile</li>
           </ul>
         </div>
         
