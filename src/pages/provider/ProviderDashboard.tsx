@@ -78,7 +78,7 @@ const ProviderDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardNavbar />
+      <DashboardNavbar userName={userName} />
 
       <div className="container py-6">
         <header className="mb-6">
