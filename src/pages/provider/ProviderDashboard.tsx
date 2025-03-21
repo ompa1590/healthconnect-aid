@@ -5,37 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { 
-  Calendar, 
-  Clock, 
-  Users, 
-  Video, 
-  ClipboardList, 
-  FileText, 
-  Bell, 
-  Settings,
-  HelpCircle,
-  Book,
-  AlertCircle,
-  CheckCircle,
-  UserRound,
-  X,
-  LogOut,
-  Info
-} from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Calendar, Clock, Users, Video, ClipboardList, FileText, Bell, Settings, HelpCircle, Book, AlertCircle, CheckCircle, UserRound, X, LogOut, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import WelcomeModal from "@/components/provider/WelcomeModal";
@@ -43,132 +15,100 @@ import ProviderPatients from "@/components/provider/ProviderPatients";
 import ProviderAppointments from "@/components/provider/ProviderAppointments";
 import CancelAppointmentDialog from "@/components/provider/CancelAppointmentDialog";
 import VisitReasonDialog from "@/components/provider/VisitReasonDialog";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarInset,
-} from "@/components/ui/sidebar";
-
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 const ProviderDashboard = () => {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [activeSection, setActiveSection] = useState("dashboard");
-  const [appointments, setAppointments] = useState([
-    {
-      id: 1,
-      patientName: "Sarah Johnson",
-      patientId: "PTN-CE550N",
-      appointmentType: "Specialist consultation",
-      date: new Date(2023, 2, 21),
-      time: "06:00 - 06:30 PM",
-      status: "upcoming",
-      visitReason: "Patient presents with recurrent migraine headaches that have increased in frequency over the past month. Reports visual aura before onset and nausea during episodes. Pain typically lasts 4-6 hours and is unresponsive to OTC pain relievers. Has family history of migraines. Currently taking propranolol for hypertension and has penicillin allergy."
-    },
-    {
-      id: 2,
-      patientName: "Michael Chen",
-      patientId: "PTN-CH442M",
-      appointmentType: "Psychiatry consultation",
-      date: new Date(2023, 2, 21),
-      time: "03:00 - 03:30 PM",
-      status: "upcoming",
-      visitReason: "Patient seeking consultation for increasing anxiety and difficulty sleeping. Reports experiencing panic attacks 2-3 times weekly, with symptoms including racing heart, shortness of breath, and feeling of impending doom. Notes work-related stress as a trigger. No previous psychiatric diagnosis. Currently taking lisinopril for hypertension and has tried melatonin for sleep without significant improvement."
-    },
-    {
-      id: 3,
-      patientName: "Emma Williams",
-      patientId: "PTN-WL339E",
-      appointmentType: "Family Planning counseling",
-      date: new Date(2023, 2, 21),
-      time: "05:00 - 05:30 PM",
-      status: "upcoming",
-      visitReason: "Patient seeking family planning counseling. Currently using hormonal contraception (oral) but experiencing side effects including mood changes and breakthrough bleeding. Interested in discussing long-term contraceptive options. No current plans for pregnancy but may want children in 3-5 years. Has history of mild endometriosis diagnosed 2 years ago. No known drug allergies."
-    }
-  ]);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "New appointment",
-      description: "Sarah Johnson scheduled a consultation for today at 6:00 PM",
-      time: "10 minutes ago",
-      read: false
-    },
-    {
-      id: 2,
-      title: "Appointment reminder",
-      description: "You have an appointment with Michael Chen in 30 minutes",
-      time: "30 minutes ago",
-      read: false
-    },
-    {
-      id: 3,
-      title: "Document shared",
-      description: "Emma Williams shared her medical history with you",
-      time: "2 hours ago",
-      read: true
-    }
-  ]);
-  
+  const [appointments, setAppointments] = useState([{
+    id: 1,
+    patientName: "Sarah Johnson",
+    patientId: "PTN-CE550N",
+    appointmentType: "Specialist consultation",
+    date: new Date(2023, 2, 21),
+    time: "06:00 - 06:30 PM",
+    status: "upcoming",
+    visitReason: "Patient presents with recurrent migraine headaches that have increased in frequency over the past month. Reports visual aura before onset and nausea during episodes. Pain typically lasts 4-6 hours and is unresponsive to OTC pain relievers. Has family history of migraines. Currently taking propranolol for hypertension and has penicillin allergy."
+  }, {
+    id: 2,
+    patientName: "Michael Chen",
+    patientId: "PTN-CH442M",
+    appointmentType: "Psychiatry consultation",
+    date: new Date(2023, 2, 21),
+    time: "03:00 - 03:30 PM",
+    status: "upcoming",
+    visitReason: "Patient seeking consultation for increasing anxiety and difficulty sleeping. Reports experiencing panic attacks 2-3 times weekly, with symptoms including racing heart, shortness of breath, and feeling of impending doom. Notes work-related stress as a trigger. No previous psychiatric diagnosis. Currently taking lisinopril for hypertension and has tried melatonin for sleep without significant improvement."
+  }, {
+    id: 3,
+    patientName: "Emma Williams",
+    patientId: "PTN-WL339E",
+    appointmentType: "Family Planning counseling",
+    date: new Date(2023, 2, 21),
+    time: "05:00 - 05:30 PM",
+    status: "upcoming",
+    visitReason: "Patient seeking family planning counseling. Currently using hormonal contraception (oral) but experiencing side effects including mood changes and breakthrough bleeding. Interested in discussing long-term contraceptive options. No current plans for pregnancy but may want children in 3-5 years. Has history of mild endometriosis diagnosed 2 years ago. No known drug allergies."
+  }]);
+  const [notifications, setNotifications] = useState([{
+    id: 1,
+    title: "New appointment",
+    description: "Sarah Johnson scheduled a consultation for today at 6:00 PM",
+    time: "10 minutes ago",
+    read: false
+  }, {
+    id: 2,
+    title: "Appointment reminder",
+    description: "You have an appointment with Michael Chen in 30 minutes",
+    time: "30 minutes ago",
+    read: false
+  }, {
+    id: 3,
+    title: "Document shared",
+    description: "Emma Williams shared her medical history with you",
+    time: "2 hours ago",
+    read: true
+  }]);
   const [appointmentToCancel, setAppointmentToCancel] = useState<number | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<number | null>(null);
-  
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
-
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      
+      const {
+        data
+      } = await supabase.auth.getSession();
       if (!data.session) {
         navigate("/provider-login");
         return;
       }
-      
       const userMetadata = data.session.user.user_metadata;
-      
       const providerProfile = {
         id: data.session.user.id,
         firstName: userMetadata?.firstName || "Demo",
         lastName: userMetadata?.lastName || "Provider",
         email: data.session.user.email,
         specialization: userMetadata?.specialization || "General Practice",
-        address: userMetadata?.address || "Sea Point Arena Promenade",
+        address: userMetadata?.address || "Sea Point Arena Promenade"
       };
-      
       setProfile(providerProfile);
-      
       const hasSeenWelcomeModal = localStorage.getItem(`welcome_modal_shown_${data.session.user.id}`);
-      
       if (userMetadata?.isNewUser === true && !hasSeenWelcomeModal) {
         setShowWelcomeModal(true);
-        
         await supabase.auth.updateUser({
-          data: { 
+          data: {
             ...userMetadata,
-            isNewUser: false 
+            isNewUser: false
           }
         });
-        
         localStorage.setItem(`welcome_modal_shown_${data.session.user.id}`, 'true');
       }
-      
       setLoading(false);
     };
-    
     checkSession();
   }, [navigate]);
-
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -186,90 +126,74 @@ const ProviderDashboard = () => {
       });
     }
   };
-
   const getStats = () => {
-    return [
-      { 
-        title: "Total Appointments", 
-        value: 16, 
-        icon: <Calendar className="h-5 w-5 text-blue-500" />, 
-        bgColor: "bg-blue-50" 
-      },
-      { 
-        title: "Upcoming Appointments", 
-        value: 8, 
-        icon: <Clock className="h-5 w-5 text-green-500" />, 
-        bgColor: "bg-green-50" 
-      },
-      { 
-        title: "Completed Appointments", 
-        value: 8, 
-        icon: <CheckCircle className="h-5 w-5 text-indigo-500" />, 
-        bgColor: "bg-indigo-50" 
-      },
-      { 
-        title: "Follow-Up Appointments", 
-        value: 0, 
-        icon: <Bell className="h-5 w-5 text-amber-500" />, 
-        bgColor: "bg-amber-50" 
-      },
-      { 
-        title: "Extension Requests", 
-        value: 0, 
-        icon: <FileText className="h-5 w-5 text-rose-500" />, 
-        bgColor: "bg-rose-50" 
-      }
-    ];
+    return [{
+      title: "Total Appointments",
+      value: 16,
+      icon: <Calendar className="h-5 w-5 text-blue-500" />,
+      bgColor: "bg-blue-50"
+    }, {
+      title: "Upcoming Appointments",
+      value: 8,
+      icon: <Clock className="h-5 w-5 text-green-500" />,
+      bgColor: "bg-green-50"
+    }, {
+      title: "Completed Appointments",
+      value: 8,
+      icon: <CheckCircle className="h-5 w-5 text-indigo-500" />,
+      bgColor: "bg-indigo-50"
+    }, {
+      title: "Follow-Up Appointments",
+      value: 0,
+      icon: <Bell className="h-5 w-5 text-amber-500" />,
+      bgColor: "bg-amber-50"
+    }, {
+      title: "Extension Requests",
+      value: 0,
+      icon: <FileText className="h-5 w-5 text-rose-500" />,
+      bgColor: "bg-rose-50"
+    }];
   };
-
   const handleWelcomeComplete = () => {
     setShowWelcomeModal(false);
-    
     toast({
       title: "Welcome to Vyra Health Provider Dashboard",
-      description: "Your account is now set up and ready to go.",
+      description: "Your account is now set up and ready to go."
     });
   };
-
   const handleCancelAppointment = (appointmentId: number) => {
     setAppointmentToCancel(appointmentId);
   };
-
   const handleConfirmCancel = (reason: string, details?: string) => {
-    setAppointments(appointments.map(appointment => 
-      appointment.id === appointmentToCancel 
-        ? { ...appointment, status: "cancelled" } 
-        : appointment
-    ));
-    
+    setAppointments(appointments.map(appointment => appointment.id === appointmentToCancel ? {
+      ...appointment,
+      status: "cancelled"
+    } : appointment));
     setAppointmentToCancel(null);
-    
     toast({
       title: "Appointment Cancelled",
-      description: `The appointment has been cancelled successfully.`,
+      description: `The appointment has been cancelled successfully.`
     });
   };
-
   const handleShowVisitReason = (appointmentId: number) => {
     setSelectedAppointment(appointmentId);
   };
-
   const closeVisitReasonDialog = () => {
     setSelectedAppointment(null);
   };
-
   const markAllNotificationsAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+    setNotifications(notifications.map(n => ({
+      ...n,
+      read: true
+    })));
   };
-
-  const formatDate = (date) => {
+  const formatDate = date => {
     return new Intl.DateTimeFormat('en-US', {
       month: 'long',
       day: 'numeric',
       year: 'numeric'
     }).format(date);
   };
-
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
@@ -279,15 +203,12 @@ const ProviderDashboard = () => {
       case "consultations":
         return <ProviderAppointments />;
       case "prescriptions":
-        return (
-          <div className="p-6">
+        return <div className="p-6">
             <h2 className="text-2xl font-bold mb-6">Prescriptions</h2>
             <p className="text-muted-foreground">No active prescriptions to display.</p>
-          </div>
-        );
+          </div>;
       case "settings":
-        return (
-          <div className="p-6">
+        return <div className="p-6">
             <h2 className="text-2xl font-bold mb-6">Settings</h2>
             <div className="space-y-8">
               <div className="space-y-4">
@@ -319,11 +240,9 @@ const ProviderDashboard = () => {
                 <Button>Manage Availability</Button>
               </div>
             </div>
-          </div>
-        );
+          </div>;
       case "help":
-        return (
-          <div className="p-6">
+        return <div className="p-6">
             <h2 className="text-2xl font-bold mb-6">Help & Support</h2>
             <div className="space-y-8">
               <div className="space-y-4">
@@ -351,20 +270,14 @@ const ProviderDashboard = () => {
                   We value your feedback to improve our services. Please let us know if you have any suggestions.
                 </p>
                 <div className="p-4 border rounded-md">
-                  <textarea 
-                    className="w-full p-2 border rounded-md" 
-                    rows={4}
-                    placeholder="Enter your feedback here..."
-                  />
+                  <textarea className="w-full p-2 border rounded-md" rows={4} placeholder="Enter your feedback here..." />
                   <Button className="mt-4">Submit Feedback</Button>
                 </div>
               </div>
             </div>
-          </div>
-        );
+          </div>;
       case "legal":
-        return (
-          <div className="p-6">
+        return <div className="p-6">
             <h2 className="text-2xl font-bold mb-6">Legal Documents</h2>
             <div className="space-y-8">
               <div className="p-4 border rounded-md">
@@ -384,21 +297,17 @@ const ProviderDashboard = () => {
                 <Button variant="outline" className="mt-4">Read Full Policy</Button>
               </div>
             </div>
-          </div>
-        );
+          </div>;
       default:
         return renderDashboard();
     }
   };
-
   const renderDashboard = () => {
-    return (
-      <>
+    return <>
         <h1 className="text-3xl font-bold mb-6">Welcome, Dr. {profile?.lastName || "Provider"}</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-          {getStats().map((stat, index) => (
-            <GlassCard key={index} className="p-4 hover:shadow-md transition-all">
+          {getStats().map((stat, index) => <GlassCard key={index} className="p-4 hover:shadow-md transition-all">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
@@ -408,8 +317,7 @@ const ProviderDashboard = () => {
                   {stat.icon}
                 </div>
               </div>
-            </GlassCard>
-          ))}
+            </GlassCard>)}
         </div>
         
         <GlassCard className="mb-12">
@@ -424,14 +332,13 @@ const ProviderDashboard = () => {
             
             <TabsContent value="upcoming" className="p-0">
               <div className="divide-y divide-border/30">
-                {appointments.filter(a => a.status !== "cancelled").map((appointment) => (
-                  <div key={appointment.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-5 hover:bg-muted/10 transition-colors">
+                {appointments.filter(a => a.status !== "cancelled").map(appointment => <div key={appointment.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-5 hover:bg-muted/10 transition-colors">
                     <div className="flex items-center">
                       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mr-4">
                         <UserRound className="h-6 w-6 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-medium">{appointment.appointmentType}</h3>
+                        <h3 className="font-semibold text-xl text-left">{appointment.appointmentType}</h3>
                         <p className="text-sm text-muted-foreground mt-1">{appointment.patientId} - {appointment.patientName}</p>
                       </div>
                     </div>
@@ -456,21 +363,11 @@ const ProviderDashboard = () => {
                     </div>
                     
                     <div className="flex items-center gap-3 mt-4 md:mt-0">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="flex items-center gap-1 border-primary/20 hover:border-primary/40"
-                        onClick={() => handleShowVisitReason(appointment.id)}
-                      >
+                      <Button variant="outline" size="sm" className="flex items-center gap-1 border-primary/20 hover:border-primary/40" onClick={() => handleShowVisitReason(appointment.id)}>
                         <FileText className="h-4 w-4" />
                         Visit Reason
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="border-muted hover:border-muted/80"
-                        onClick={() => handleCancelAppointment(appointment.id)}
-                      >
+                      <Button variant="outline" size="sm" className="border-muted hover:border-muted/80" onClick={() => handleCancelAppointment(appointment.id)}>
                         Cancel
                       </Button>
                       <Button size="sm" className="bg-primary hover:bg-primary/90">
@@ -478,8 +375,7 @@ const ProviderDashboard = () => {
                         Join Call
                       </Button>
                     </div>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </TabsContent>
             
@@ -495,13 +391,10 @@ const ProviderDashboard = () => {
           <GlassCard className="p-4 hover:shadow-md transition-all">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold">Recent Patients</h3>
-              <Button variant="ghost" size="sm"
-                onClick={() => setActiveSection("patients")}
-              >View All</Button>
+              <Button variant="ghost" size="sm" onClick={() => setActiveSection("patients")}>View All</Button>
             </div>
             <div className="space-y-4">
-              {appointments.map((appointment, index) => (
-                <div key={index} className="flex items-center p-2 hover:bg-muted/20 rounded-md transition-colors">
+              {appointments.map((appointment, index) => <div key={index} className="flex items-center p-2 hover:bg-muted/20 rounded-md transition-colors">
                   <Avatar className="h-10 w-10 mr-3">
                     <AvatarFallback>{appointment.patientName.charAt(0)}</AvatarFallback>
                   </Avatar>
@@ -510,21 +403,17 @@ const ProviderDashboard = () => {
                     <p className="text-xs text-muted-foreground">{appointment.patientId}</p>
                   </div>
                   <Badge className="ml-auto">{appointment.appointmentType.split(' ')[0]}</Badge>
-                </div>
-              ))}
+                </div>)}
             </div>
           </GlassCard>
           
           <GlassCard className="p-4 hover:shadow-md transition-all">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold">Your Schedule Today</h3>
-              <Button variant="ghost" size="sm"
-                onClick={() => setActiveSection("consultations")}
-              >Set Availability</Button>
+              <Button variant="ghost" size="sm" onClick={() => setActiveSection("consultations")}>Set Availability</Button>
             </div>
             <div className="space-y-3">
-              {appointments.filter(a => a.status !== "cancelled").map((appointment, index) => (
-                <div key={index} className="flex items-center p-2 rounded-md hover:bg-muted/20 transition-colors">
+              {appointments.filter(a => a.status !== "cancelled").map((appointment, index) => <div key={index} className="flex items-center p-2 rounded-md hover:bg-muted/20 transition-colors">
                   <div className="bg-primary/10 text-primary font-medium rounded p-1 w-16 text-center mr-3 text-sm">
                     {appointment.time.split(' - ')[0]}
                   </div>
@@ -536,66 +425,40 @@ const ProviderDashboard = () => {
                     <Video className="h-3 w-3 mr-1" />
                     Join
                   </Button>
-                </div>
-              ))}
+                </div>)}
             </div>
           </GlassCard>
         </div>
-      </>
-    );
+      </>;
   };
-
   const getActiveAppointment = () => {
     return appointments.find(a => a.id === appointmentToCancel);
   };
-  
   const getSelectedAppointment = () => {
     return appointments.find(a => a.id === selectedAppointment);
   };
-
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-center">
           <div className="text-2xl font-semibold">Loading your dashboard...</div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <SidebarProvider>
+  return <SidebarProvider>
       <div className="min-h-screen bg-background flex w-full font-poppins">
-        <WelcomeModal 
-          isOpen={showWelcomeModal} 
-          onOpenChange={setShowWelcomeModal} 
-          onComplete={handleWelcomeComplete} 
-        />
+        <WelcomeModal isOpen={showWelcomeModal} onOpenChange={setShowWelcomeModal} onComplete={handleWelcomeComplete} />
         
-        <CancelAppointmentDialog
-          isOpen={appointmentToCancel !== null}
-          onClose={() => setAppointmentToCancel(null)}
-          appointmentId={appointmentToCancel || 0}
-          patientName={getActiveAppointment()?.patientName || ""}
-          onConfirmCancel={handleConfirmCancel}
-        />
+        <CancelAppointmentDialog isOpen={appointmentToCancel !== null} onClose={() => setAppointmentToCancel(null)} appointmentId={appointmentToCancel || 0} patientName={getActiveAppointment()?.patientName || ""} onConfirmCancel={handleConfirmCancel} />
         
-        {selectedAppointment && (
-          <VisitReasonDialog 
-            isOpen={selectedAppointment !== null}
-            onClose={closeVisitReasonDialog}
-            appointment={getSelectedAppointment() || {
-              id: 0,
-              patientName: "",
-              patientId: "",
-              appointmentType: "",
-              date: new Date(),
-              time: ""
-            }}
-          />
-        )}
+        {selectedAppointment && <VisitReasonDialog isOpen={selectedAppointment !== null} onClose={closeVisitReasonDialog} appointment={getSelectedAppointment() || {
+        id: 0,
+        patientName: "",
+        patientId: "",
+        appointmentType: "",
+        date: new Date(),
+        time: ""
+      }} />}
         
         <Sidebar>
           <SidebarHeader>
@@ -621,40 +484,28 @@ const ProviderDashboard = () => {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      isActive={activeSection === "dashboard"}
-                      onClick={() => setActiveSection("dashboard")}
-                    >
+                    <SidebarMenuButton isActive={activeSection === "dashboard"} onClick={() => setActiveSection("dashboard")}>
                       <Calendar className="h-4 w-4" />
                       <span>Dashboard</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      isActive={activeSection === "patients"}
-                      onClick={() => setActiveSection("patients")}
-                    >
+                    <SidebarMenuButton isActive={activeSection === "patients"} onClick={() => setActiveSection("patients")}>
                       <Users className="h-4 w-4" />
                       <span>Patients</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      isActive={activeSection === "consultations"}
-                      onClick={() => setActiveSection("consultations")}
-                    >
+                    <SidebarMenuButton isActive={activeSection === "consultations"} onClick={() => setActiveSection("consultations")}>
                       <Video className="h-4 w-4" />
                       <span>Consultations</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      isActive={activeSection === "prescriptions"}
-                      onClick={() => setActiveSection("prescriptions")}
-                    >
+                    <SidebarMenuButton isActive={activeSection === "prescriptions"} onClick={() => setActiveSection("prescriptions")}>
                       <ClipboardList className="h-4 w-4" />
                       <span>Prescriptions</span>
                     </SidebarMenuButton>
@@ -668,30 +519,21 @@ const ProviderDashboard = () => {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      isActive={activeSection === "settings"}
-                      onClick={() => setActiveSection("settings")}
-                    >
+                    <SidebarMenuButton isActive={activeSection === "settings"} onClick={() => setActiveSection("settings")}>
                       <Settings className="h-4 w-4" />
                       <span>Settings</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      isActive={activeSection === "help"}
-                      onClick={() => setActiveSection("help")}
-                    >
+                    <SidebarMenuButton isActive={activeSection === "help"} onClick={() => setActiveSection("help")}>
                       <HelpCircle className="h-4 w-4" />
                       <span>Help & Support</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      isActive={activeSection === "legal"}
-                      onClick={() => setActiveSection("legal")}
-                    >
+                    <SidebarMenuButton isActive={activeSection === "legal"} onClick={() => setActiveSection("legal")}>
                       <Book className="h-4 w-4" />
                       <span>Legal</span>
                     </SidebarMenuButton>
@@ -703,20 +545,11 @@ const ProviderDashboard = () => {
           
           <SidebarFooter>
             <div className="space-y-2 w-full px-2">
-              <Button 
-                variant="outline" 
-                className="w-full justify-start" 
-                size="sm"
-              >
+              <Button variant="outline" className="w-full justify-start" size="sm">
                 <HelpCircle className="h-4 w-4 mr-2" />
                 Contact Support
               </Button>
-              <Button 
-                variant="destructive" 
-                className="w-full justify-start" 
-                size="sm"
-                onClick={handleSignOut}
-              >
+              <Button variant="destructive" className="w-full justify-start" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
               </Button>
@@ -727,10 +560,7 @@ const ProviderDashboard = () => {
         <SidebarInset>
           <div className="flex flex-col h-full">
             <header className="p-4 border-b flex justify-between items-center">
-              <div 
-                className="flex items-center cursor-pointer"
-                onClick={handleSignOut}
-              >
+              <div className="flex items-center cursor-pointer" onClick={handleSignOut}>
                 <span className="text-primary text-xl font-bold tracking-tight">Vyra</span>
                 <span className="text-secondary text-xl font-bold tracking-tight">Health</span>
               </div>
@@ -739,53 +569,32 @@ const ProviderDashboard = () => {
                   <PopoverTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative">
                       <Bell className="h-5 w-5" />
-                      {unreadNotificationsCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                      {unreadNotificationsCount > 0 && <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
                           {unreadNotificationsCount}
-                        </span>
-                      )}
+                        </span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80 p-0" align="end">
                     <div className="flex items-center justify-between p-2 border-b">
                       <h3 className="font-medium">Notifications</h3>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={markAllNotificationsAsRead}
-                        className="text-xs"
-                      >
+                      <Button variant="ghost" size="sm" onClick={markAllNotificationsAsRead} className="text-xs">
                         Mark all as read
                       </Button>
                     </div>
                     <div className="max-h-80 overflow-auto">
-                      {notifications.length === 0 ? (
-                        <div className="p-4 text-center text-muted-foreground">
+                      {notifications.length === 0 ? <div className="p-4 text-center text-muted-foreground">
                           No notifications
-                        </div>
-                      ) : (
-                        notifications.map(notification => (
-                          <div 
-                            key={notification.id} 
-                            className={`p-3 border-b last:border-0 ${notification.read ? "" : "bg-muted/30"}`}
-                          >
+                        </div> : notifications.map(notification => <div key={notification.id} className={`p-3 border-b last:border-0 ${notification.read ? "" : "bg-muted/30"}`}>
                             <div className="flex justify-between">
                               <h4 className="text-sm font-medium">{notification.title}</h4>
                               <span className="text-xs text-muted-foreground">{notification.time}</span>
                             </div>
                             <p className="text-xs mt-1">{notification.description}</p>
-                          </div>
-                        ))
-                      )}
+                          </div>)}
                     </div>
                   </PopoverContent>
                 </Popover>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleSignOut}
-                  className="hidden md:flex items-center"
-                >
+                <Button variant="ghost" size="sm" onClick={handleSignOut} className="hidden md:flex items-center">
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
                 </Button>
@@ -798,8 +607,6 @@ const ProviderDashboard = () => {
           </div>
         </SidebarInset>
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>;
 };
-
 export default ProviderDashboard;
