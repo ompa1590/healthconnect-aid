@@ -13,7 +13,6 @@ import ServicesOfferedStep from "@/components/provider/signup/ServicesOfferedSte
 import BiographyStep from "@/components/provider/signup/BiographyStep";
 import AvailabilityStep from "@/components/provider/signup/AvailabilityStep";
 import DocumentUploadStep from "@/components/provider/signup/DocumentUploadStep";
-import SignatureUploadStep from "@/components/provider/signup/SignatureUploadStep";
 import SignupComplete from "@/components/provider/signup/SignupComplete";
 
 export type ProviderFormData = {
@@ -42,7 +41,6 @@ export type ProviderFormData = {
   };
   profilePicture?: File;
   certificateFile?: File;
-  signatureFile?: File;
 };
 
 const defaultAvailability = {
@@ -164,13 +162,6 @@ const ProviderSignup = () => {
           return false;
         }
         break;
-        
-      case 8:
-        if (!formData.signatureFile) {
-          setStepErrors("Please provide your signature");
-          return false;
-        }
-        break;
     }
     
     return true;
@@ -246,15 +237,6 @@ const ProviderSignup = () => {
       title: "Document Upload",
       component: (
         <DocumentUploadStep 
-          formData={formData} 
-          updateFormData={(data) => setFormData({ ...formData, ...data })} 
-        />
-      ),
-    },
-    {
-      title: "E-Signature",
-      component: (
-        <SignatureUploadStep 
           formData={formData} 
           updateFormData={(data) => setFormData({ ...formData, ...data })} 
         />
