@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,7 +8,8 @@ import {
   FileText, 
   XCircle, 
   Search,
-  Calendar 
+  Calendar,
+  DollarSign 
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import CancelAppointmentDialog from "./CancelAppointmentDialog";
@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VisitReasonDialog from "./VisitReasonDialog";
 import ConsultationNotesDialog from "./ConsultationNotesDialog";
+import OHIPBillingDialog from "./OHIPBillingDialog";
 
 interface Appointment {
   id: number;
@@ -88,6 +89,7 @@ const ProviderAppointments = () => {
   const [cancelAppointment, setCancelAppointment] = useState<number | null>(null);
   const [visitReasonAppointment, setVisitReasonAppointment] = useState<number | null>(null);
   const [notesAppointment, setNotesAppointment] = useState<number | null>(null);
+  const [billingAppointment, setBillingAppointment] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const { toast } = useToast();
 
@@ -103,25 +105,17 @@ const ProviderAppointments = () => {
     setNotesAppointment(appointmentId);
   };
 
-  const handleConfirmCancel = (reason: string, details?: string) => {
-    const appointmentToCancel = appointments.find(a => a.id === cancelAppointment);
-    if (!appointmentToCancel) return;
-    
-    // In a real app, you would make an API call to cancel the appointment here
-    setAppointments(appointments.map(appointment => 
-      appointment.id === cancelAppointment 
-        ? { ...appointment, status: "cancelled" } 
-        : appointment
-    ));
-    
-    toast({
-      title: "Appointment Cancelled",
-      description: `Appointment with ${appointmentToCancel.patient} has been cancelled.`,
-    });
+  const handleBillingClaim = (appointmentId: number) => {
+    setBillingAppointment(appointmentId);
   };
 
   const getActiveAppointment = () => {
-    return appointments.find(a => a.id === cancelAppointment || a.id === visitReasonAppointment || a.id === notesAppointment);
+    return appointments.find(a => 
+      a.id === cancelAppointment || 
+      a.id === visitReasonAppointment || 
+      a.id === notesAppointment ||
+      a.id === billingAppointment
+    );
   };
 
   const filteredAppointments = appointments.filter(appointment => 
@@ -377,8 +371,24 @@ const ProviderAppointments = () => {
           }}
         />
       )}
+
+      {billingAppointment && getActiveAppointment() && (
+        <OHIPBillingDialog
+          isOpen={billingAppointment !== null}
+          onClose={() => setBillingAppointment(null)}
+          appointment={{
+            id: getActiveAppointment()?.id || 0,
+            patient: getActiveAppointment()?.patient || "",
+            patientId: getActiveAppointment()?.patientId || "",
+            reason: getActiveAppointment()?.reason || "",
+            date: getActiveAppointment()?.date || new Date(),
+            time: getActiveAppointment()?.time || "",
+          }}
+        />
+      )}
     </div>
   );
 };
 
 export default ProviderAppointments;
+
