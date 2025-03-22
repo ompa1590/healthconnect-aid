@@ -41,6 +41,7 @@ export type ProviderFormData = {
   };
   profilePicture?: File;
   certificateFile?: File;
+  signatureImage?: string;
 };
 
 const defaultAvailability = {
@@ -159,6 +160,10 @@ const ProviderSignup = () => {
         }
         if (!formData.certificateFile) {
           setStepErrors("Please upload your professional certificate");
+          return false;
+        }
+        if (!formData.signatureImage) {
+          setStepErrors("Please provide your e-signature");
           return false;
         }
         break;
