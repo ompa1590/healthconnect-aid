@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { FileText } from "lucide-react";
 import {
@@ -32,7 +31,6 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
   onClose,
   appointment,
 }) => {
-  // This would come from an API in a real app
   const mockConsultationData = {
     doctor: "Dr. Michael Chen",
     specialty: "Dermatologist",
@@ -59,13 +57,11 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
     followUp: "Schedule a follow-up appointment in two weeks if symptoms persist. If the rash spreads or worsens significantly, contact the office immediately for an earlier appointment."
   };
 
-  // Add state for editing mode and confirmation
   const [isEditing, setIsEditing] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isAcknowledged, setIsAcknowledged] = useState(false);
 
-  // Define the form initial data
   const formInitialData = {
     condition: mockConsultationData.condition,
     diagnosis: mockConsultationData.diagnosis,
@@ -76,38 +72,16 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
     acknowledgment: false
   };
 
-  // Handle saving to database
   const saveToDatabase = async (data) => {
     setIsSaving(true);
     
     try {
-      // Simulate API call with timeout
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Here you would actually save to Supabase or your backend
-      // Example:
-      // await supabase
-      //   .from('consultation_notes')
-      //   .upsert({ 
-      //     appointment_id: appointment.id,
-      //     patient_id: appointment.patientId,
-      //     condition: data.condition,
-      //     diagnosis: data.diagnosis,
-      //     recommendations: data.recommendations.split('\n'),
-      //     medications: data.medications.split('\n').map(med => {
-      //       const [name, dosage, notes] = med.split(',').map(s => s.trim());
-      //       return { name, dosage, notes };
-      //     }),
-      //     follow_up: data.followUp,
-      //     reviewed: true,
-      //     reviewed_at: new Date().toISOString()
-      //   });
       
       console.log("Saved consultation notes:", data);
       toast.success("Consultation notes confirmed and saved successfully");
       setIsConfirmed(true);
       
-      // Close the dialog after confirmation
       setTimeout(() => {
         onClose();
         setIsConfirmed(false);
@@ -122,7 +96,6 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
     }
   };
 
-  // Handle confirmation
   const handleConfirm = () => {
     if (!isAcknowledged) {
       toast.error("Please acknowledge the disclaimer before confirming");
@@ -132,7 +105,6 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
     saveToDatabase(formInitialData);
   };
 
-  // Handle form submission
   const handleFormSubmit = (data) => {
     if (!data.acknowledgment) {
       toast.error("Please acknowledge the disclaimer before confirming");
@@ -142,14 +114,12 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
     saveToDatabase(data);
   };
 
-  // Toggle editing mode
   const toggleEditing = () => {
     setIsEditing(!isEditing);
   };
 
   const legalText = "I have reviewed these consultation notes and confirm their accuracy. I acknowledge that while Vyra Health's AI assists in documentation, I remain responsible for the medical content and any clinical decisions based on these notes. Vyra Health is not liable for any discrepancies in its AI-generated documentation.";
 
-  // Patient and doctor info for components
   const patientInfo = {
     name: appointment.patient,
     id: appointment.patientId
@@ -162,8 +132,8 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <div className="flex items-center gap-2 mb-1">
             <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10">
               <FileText className="h-4 w-4 text-primary" />
@@ -175,7 +145,7 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 px-1">
+        <ScrollArea className="flex-1 pr-4 overflow-y-auto max-h-[calc(90vh-120px)]">
           <div className="p-1">
             {!isEditing ? (
               <ConsultationDisplay

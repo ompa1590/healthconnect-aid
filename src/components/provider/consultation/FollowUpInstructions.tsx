@@ -10,7 +10,7 @@ const FollowUpInstructions: React.FC<FollowUpInstructionsProps> = ({
   followUp,
 }) => {
   return (
-    <div className="border rounded-md p-4 bg-muted/30">
+    <div className="border rounded-md p-4 bg-muted/30 mb-4">
       <h3 className="font-medium flex items-center gap-2 mb-2">
         <CalendarClock className="h-4 w-4 text-primary" />
         Follow-up Instructions
