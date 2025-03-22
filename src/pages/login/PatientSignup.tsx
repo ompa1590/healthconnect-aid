@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import AccountInfoStep from "@/components/signup/AccountInfoStep";
 import ProvinceStep from "@/components/signup/ProvinceStep";
 import HealthCardStep from "@/components/signup/HealthCardStep";
+import InsuranceInfoStep from "@/components/signup/InsuranceInfoStep";
 import AIHistoryStep from "@/components/signup/AIHistoryStep";
 import DocumentUploadStep from "@/components/signup/DocumentUploadStep";
 import SignupComplete from "@/components/signup/SignupComplete";
@@ -19,6 +20,15 @@ export type SignupFormData = {
   name: string;
   province: string;
   healthCardNumber: string;
+  healthCardProvince?: string;
+  healthCardExpiry?: string;
+  isHealthCardValid?: boolean;
+  hasPrivateInsurance?: boolean;
+  insuranceProvider?: string;
+  insurancePolicyNumber?: string;
+  insuranceCoverageDetails?: string;
+  insuranceCards?: string[];
+  insuranceCardFiles?: File[];
   medicalHistory: {
     conditions: string[];
     allergies: string[];
@@ -37,6 +47,15 @@ const PatientSignup = () => {
     name: "",
     province: "",
     healthCardNumber: "",
+    healthCardProvince: "",
+    healthCardExpiry: "",
+    isHealthCardValid: false,
+    hasPrivateInsurance: undefined,
+    insuranceProvider: "",
+    insurancePolicyNumber: "",
+    insuranceCoverageDetails: "",
+    insuranceCards: [],
+    insuranceCardFiles: [],
     medicalHistory: {
       conditions: [],
       allergies: [],
@@ -104,6 +123,39 @@ const PatientSignup = () => {
           setStepErrors("Health card number is required");
           return false;
         }
+        if (!formData.healthCardProvince) {
+          setStepErrors("Health card issuing province/territory is required");
+          return false;
+        }
+        if (!formData.healthCardExpiry) {
+          setStepErrors("Health card expiry date is required");
+          return false;
+        }
+        if (!formData.isHealthCardValid) {
+          setStepErrors("Please confirm your health card is valid");
+          return false;
+        }
+        break;
+        
+      case 3: // Insurance Info
+        if (formData.hasPrivateInsurance === undefined) {
+          setStepErrors("Please indicate whether you have private insurance");
+          return false;
+        }
+        if (formData.hasPrivateInsurance === true) {
+          if (!formData.insuranceProvider || !formData.insuranceProvider.trim()) {
+            setStepErrors("Insurance provider name is required");
+            return false;
+          }
+          if (!formData.insurancePolicyNumber || !formData.insurancePolicyNumber.trim()) {
+            setStepErrors("Policy/group number is required");
+            return false;
+          }
+          if (!formData.insuranceCards || formData.insuranceCards.length === 0) {
+            setStepErrors("Please upload a copy of your insurance card");
+            return false;
+          }
+        }
         break;
     }
     
@@ -134,6 +186,15 @@ const PatientSignup = () => {
       title: "Health Card Information",
       component: (
         <HealthCardStep 
+          formData={formData} 
+          updateFormData={(data) => setFormData({ ...formData, ...data })} 
+        />
+      ),
+    },
+    {
+      title: "Insurance Information",
+      component: (
+        <InsuranceInfoStep 
           formData={formData} 
           updateFormData={(data) => setFormData({ ...formData, ...data })} 
         />

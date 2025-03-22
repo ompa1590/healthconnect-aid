@@ -1,9 +1,12 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CreditCard, ShieldCheck } from "lucide-react";
+import { CreditCard, ShieldCheck, Calendar, MapPin, AlertCircle } from "lucide-react";
 import { SignupFormData } from "@/pages/login/PatientSignup";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface HealthCardStepProps {
   formData: SignupFormData;
@@ -11,6 +14,38 @@ interface HealthCardStepProps {
 }
 
 const HealthCardStep: React.FC<HealthCardStepProps> = ({ formData, updateFormData }) => {
+  const [showExpiryWarning, setShowExpiryWarning] = useState(false);
+  
+  const provinces = [
+    "Alberta",
+    "British Columbia",
+    "Manitoba",
+    "New Brunswick",
+    "Newfoundland and Labrador",
+    "Northwest Territories",
+    "Nova Scotia",
+    "Nunavut",
+    "Ontario",
+    "Prince Edward Island",
+    "Quebec",
+    "Saskatchewan",
+    "Yukon"
+  ];
+  
+  const handleExpiryDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const expiryDate = e.target.value;
+    updateFormData({ healthCardExpiry: expiryDate });
+    
+    // Check if expiry date is in the past
+    if (expiryDate) {
+      const today = new Date();
+      const expiry = new Date(expiryDate);
+      setShowExpiryWarning(expiry < today);
+    } else {
+      setShowExpiryWarning(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-muted/20 p-4 rounded-lg border border-border/30 mb-6">
@@ -41,6 +76,74 @@ const HealthCardStep: React.FC<HealthCardStepProps> = ({ formData, updateFormDat
         <p className="text-xs text-muted-foreground">
           Format: Enter the number exactly as it appears on your provincial health card
         </p>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="healthCardProvince">Issuing Province/Territory *</Label>
+        <div className="relative">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 z-10 text-muted-foreground h-5 w-5" />
+          <Select 
+            value={formData.healthCardProvince} 
+            onValueChange={(value) => updateFormData({ healthCardProvince: value })}
+          >
+            <SelectTrigger className="pl-10">
+              <SelectValue placeholder="Select province/territory" />
+            </SelectTrigger>
+            <SelectContent>
+              {provinces.map((province) => (
+                <SelectItem key={province} value={province}>
+                  {province}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="healthCardExpiry">Expiry Date *</Label>
+        <div className="relative">
+          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
+          <Input
+            id="healthCardExpiry"
+            type="date"
+            placeholder="MM/YYYY"
+            className="pl-10"
+            value={formData.healthCardExpiry}
+            onChange={handleExpiryDateChange}
+            required
+          />
+        </div>
+      </div>
+      
+      {showExpiryWarning && (
+        <Alert variant="destructive" className="mt-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Your health card appears to be expired. Please make sure your coverage is up to date, especially if you've recently moved.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="flex items-start space-x-2 pt-2">
+        <Checkbox 
+          id="validCard"
+          checked={formData.isHealthCardValid}
+          onCheckedChange={(checked) => 
+            updateFormData({ isHealthCardValid: checked === true })
+          }
+        />
+        <div className="grid gap-1.5 leading-none">
+          <label
+            htmlFor="validCard"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            I confirm my health card is valid and not expired
+          </label>
+          <p className="text-xs text-muted-foreground">
+            This confirmation helps ensure your eligibility for healthcare services
+          </p>
+        </div>
       </div>
 
       <div className="mt-6 flex items-center justify-center">
