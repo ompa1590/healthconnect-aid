@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -107,6 +108,32 @@ const ProviderAppointments = () => {
 
   const handleBillingClaim = (appointmentId: number) => {
     setBillingAppointment(appointmentId);
+  };
+
+  // Add the missing handleConfirmCancel function
+  const handleConfirmCancel = (reason: string, details?: string) => {
+    // Find the appointment to cancel
+    const updatedAppointments = appointments.map(appointment => {
+      if (appointment.id === cancelAppointment) {
+        return {
+          ...appointment,
+          status: "cancelled"
+        };
+      }
+      return appointment;
+    });
+    
+    // Update appointments state
+    setAppointments(updatedAppointments);
+    
+    // Close the dialog
+    setCancelAppointment(null);
+    
+    // Show success message
+    toast({
+      title: "Appointment Cancelled",
+      description: `The appointment has been cancelled successfully.`,
+    });
   };
 
   const getActiveAppointment = () => {
@@ -391,4 +418,3 @@ const ProviderAppointments = () => {
 };
 
 export default ProviderAppointments;
-
