@@ -36,6 +36,7 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ConsultationNotesDialogProps {
   isOpen: boolean;
@@ -85,6 +86,7 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
   // Add state for editing mode and confirmation
   const [isEditing, setIsEditing] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Add form for editing
   const form = useForm({
@@ -99,6 +101,53 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
     }
   });
 
+  // Handle saving to database
+  const saveToDatabase = async (data) => {
+    // In a real app, this would save to your database
+    // For now we'll simulate with a delay
+    setIsSaving(true);
+    
+    try {
+      // Simulate API call with timeout
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Here you would actually save to Supabase or your backend
+      // Example:
+      // await supabase
+      //   .from('consultation_notes')
+      //   .upsert({ 
+      //     appointment_id: appointment.id,
+      //     patient_id: appointment.patientId,
+      //     condition: data.condition,
+      //     diagnosis: data.diagnosis,
+      //     recommendations: data.recommendations.split('\n'),
+      //     medications: data.medications.split('\n').map(med => {
+      //       const [name, dosage, notes] = med.split(',').map(s => s.trim());
+      //       return { name, dosage, notes };
+      //     }),
+      //     follow_up: data.followUp,
+      //     reviewed: true,
+      //     reviewed_at: new Date().toISOString()
+      //   });
+      
+      console.log("Saved consultation notes:", data);
+      toast.success("Consultation notes confirmed and saved successfully");
+      setIsConfirmed(true);
+      
+      // Close the dialog after confirmation
+      setTimeout(() => {
+        onClose();
+        setIsConfirmed(false);
+        setIsEditing(false);
+        setIsSaving(false);
+      }, 1500);
+    } catch (error) {
+      console.error("Error saving consultation notes:", error);
+      toast.error("Failed to save consultation notes");
+      setIsSaving(false);
+    }
+  };
+
   // Handle confirmation
   const handleConfirm = (data) => {
     if (!data.acknowledgment) {
@@ -106,24 +155,15 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
       return;
     }
     
-    setIsConfirmed(true);
-    toast.success("Consultation notes confirmed and saved");
-    
-    // In a real app, you would save the confirmed notes to your backend
-    console.log("Confirmed consultation notes:", data);
-    
-    // Close the dialog after confirmation
-    setTimeout(() => {
-      onClose();
-      setIsConfirmed(false);
-      setIsEditing(false);
-    }, 1500);
+    saveToDatabase(data);
   };
 
   // Toggle editing mode
   const toggleEditing = () => {
     setIsEditing(!isEditing);
   };
+
+  const legalText = "I have reviewed these consultation notes and confirm their accuracy. I acknowledge that while Vyra Health's AI assists in documentation, I remain responsible for the medical content and any clinical decisions based on these notes. Vyra Health is not liable for any discrepancies in its AI-generated documentation.";
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -152,7 +192,7 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 px-1">
           <div className="p-1">
             {!isEditing ? (
               <div className="space-y-5">
@@ -276,19 +316,20 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
                       </p>
                     </div>
                     
-                    <div className="flex items-start gap-2 mb-4">
+                    <div className="flex items-start gap-3 mb-4 border p-4 rounded-md bg-muted/20">
                       <Checkbox 
                         id="acknowledge" 
                         checked={form.getValues("acknowledgment")}
                         onCheckedChange={(checked) => {
                           form.setValue("acknowledgment", checked === true);
                         }}
+                        className="mt-1"
                       />
                       <label 
                         htmlFor="acknowledge" 
                         className="text-sm cursor-pointer"
                       >
-                        I have reviewed these consultation notes and confirm their accuracy. I acknowledge that while Vyra's AI assists in documentation, I remain responsible for the medical content and any clinical decisions based on these notes. Vyra is not liable for any discrepancies in its AI-generated documentation.
+                        {legalText}
                       </label>
                     </div>
                     
@@ -298,10 +339,16 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
                       </DialogClose>
                       <Button 
                         onClick={() => handleConfirm(form.getValues())}
-                        disabled={!form.getValues("acknowledgment")}
+                        disabled={!form.getValues("acknowledgment") || isSaving}
                       >
-                        <Check className="mr-2 h-4 w-4" />
-                        Confirm & Finalize
+                        {isSaving ? (
+                          <>Saving...</>
+                        ) : (
+                          <>
+                            <Check className="mr-2 h-4 w-4" />
+                            Confirm & Finalize
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -428,7 +475,7 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
                           Follow-up Instructions
                         </FormLabel>
                         <FormControl>
-                          <Textarea {...field} />
+                          <Textarea {...field} className="min-h-[80px]" />
                         </FormControl>
                       </FormItem>
                     )}
@@ -444,11 +491,12 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
                           <Checkbox
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            className="mt-1"
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
                           <FormLabel className="text-sm">
-                            I have reviewed these consultation notes and confirm their accuracy. I acknowledge that while Vyra's AI assists in documentation, I remain responsible for the medical content and any clinical decisions based on these notes. Vyra is not liable for any discrepancies in its AI-generated documentation.
+                            {legalText}
                           </FormLabel>
                         </div>
                       </FormItem>
@@ -457,12 +505,26 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
                   
                   {/* Action Buttons */}
                   <div className="flex justify-end gap-3 pt-2">
-                    <Button type="button" variant="outline" onClick={toggleEditing}>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={toggleEditing}
+                      disabled={isSaving}
+                    >
                       Cancel Edits
                     </Button>
-                    <Button type="submit">
-                      <Check className="mr-2 h-4 w-4" />
-                      Confirm & Finalize
+                    <Button 
+                      type="submit"
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <>Saving...</>
+                      ) : (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          Confirm & Finalize
+                        </>
+                      )}
                     </Button>
                   </div>
                 </form>
