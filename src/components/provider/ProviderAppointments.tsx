@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -110,9 +109,7 @@ const ProviderAppointments = () => {
     setBillingAppointment(appointmentId);
   };
 
-  // Add the missing handleConfirmCancel function
   const handleConfirmCancel = (reason: string, details?: string) => {
-    // Find the appointment to cancel
     const updatedAppointments = appointments.map(appointment => {
       if (appointment.id === cancelAppointment) {
         return {
@@ -123,13 +120,10 @@ const ProviderAppointments = () => {
       return appointment;
     });
     
-    // Update appointments state
     setAppointments(updatedAppointments);
     
-    // Close the dialog
     setCancelAppointment(null);
     
-    // Show success message
     toast({
       title: "Appointment Cancelled",
       description: `The appointment has been cancelled successfully.`,
@@ -300,15 +294,24 @@ const ProviderAppointments = () => {
                           </div>
                         </div>
                         
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="ml-auto mt-2 md:mt-0"
-                          onClick={() => handleViewNotes(appointment.id)}
-                        >
-                          <FileText className="mr-1.5 h-4 w-4" />
-                          View Notes
-                        </Button>
+                        <div className="flex items-center gap-2 ml-auto mt-2 md:mt-0">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewNotes(appointment.id)}
+                          >
+                            <FileText className="mr-1.5 h-4 w-4" />
+                            View Notes
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleBillingClaim(appointment.id)}
+                          >
+                            <DollarSign className="mr-1.5 h-4 w-4" />
+                            Claim
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))
