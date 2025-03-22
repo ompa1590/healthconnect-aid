@@ -1,5 +1,6 @@
 
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import MyPrescriptions from "@/components/dashboard/MyPrescriptions";
 import CurrentPlans from "@/components/dashboard/CurrentPlans";
 import SupportOptions from "@/components/dashboard/SupportOptions";
@@ -9,11 +10,30 @@ import BillingManagement from "@/components/dashboard/BillingManagement";
 import PatientDoctorChat from "@/components/dashboard/PatientDoctorChat";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Home } from "lucide-react";
 
 const PrescriptionsPage = () => {
+  const navigate = useNavigate();
+  
+  const handleBackToHome = () => {
+    navigate("/dashboard");
+  };
+  
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-medium mb-6">My Healthcare</h1>
+      <div className="flex items-center mb-6">
+        <Button 
+          variant="back" 
+          size="sm" 
+          onClick={handleBackToHome}
+          className="mr-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back to Home
+        </Button>
+        <h1 className="text-3xl font-medium">My Healthcare</h1>
+      </div>
       
       <Tabs defaultValue="prescriptions" className="mb-8">
         <TabsList className="mb-6">
