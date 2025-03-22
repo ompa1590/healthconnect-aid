@@ -1,41 +1,17 @@
 
 import React, { useState } from "react";
-import { 
-  Stethoscope, 
-  Calendar, 
-  Clock, 
-  FileText, 
-  ListChecks, 
-  Pill, 
-  CalendarClock, 
-  AlertCircle,
-  Check,
-  Edit
-} from "lucide-react";
+import { FileText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogClose
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-} from "@/components/ui/form";
-import { useForm } from "react-hook-form";
+import ConsultationDisplay from "./consultation/ConsultationDisplay";
+import EditConsultationForm from "./consultation/EditConsultationForm";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ConsultationNotesDialogProps {
@@ -51,10 +27,10 @@ interface ConsultationNotesDialogProps {
   };
 }
 
-const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({ 
-  isOpen, 
-  onClose, 
-  appointment 
+const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
+  isOpen,
+  onClose,
+  appointment,
 }) => {
   // This would come from an API in a real app
   const mockConsultationData = {
@@ -87,24 +63,21 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
-  // Add form for editing
-  const form = useForm({
-    defaultValues: {
-      condition: mockConsultationData.condition,
-      diagnosis: mockConsultationData.diagnosis,
-      recommendations: mockConsultationData.recommendations.join("\n"),
-      medications: mockConsultationData.medications.map(med => 
-        `${med.name}, ${med.dosage}, ${med.notes}`).join("\n"),
-      followUp: mockConsultationData.followUp,
-      acknowledgment: false
-    }
-  });
+  const [isAcknowledged, setIsAcknowledged] = useState(false);
+
+  // Define the form initial data
+  const formInitialData = {
+    condition: mockConsultationData.condition,
+    diagnosis: mockConsultationData.diagnosis,
+    recommendations: mockConsultationData.recommendations.join("\n"),
+    medications: mockConsultationData.medications.map(med => 
+      `${med.name}, ${med.dosage}, ${med.notes}`).join("\n"),
+    followUp: mockConsultationData.followUp,
+    acknowledgment: false
+  };
 
   // Handle saving to database
   const saveToDatabase = async (data) => {
-    // In a real app, this would save to your database
-    // For now we'll simulate with a delay
     setIsSaving(true);
     
     try {
@@ -140,6 +113,7 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
         setIsConfirmed(false);
         setIsEditing(false);
         setIsSaving(false);
+        setIsAcknowledged(false);
       }, 1500);
     } catch (error) {
       console.error("Error saving consultation notes:", error);
@@ -149,7 +123,17 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
   };
 
   // Handle confirmation
-  const handleConfirm = (data) => {
+  const handleConfirm = () => {
+    if (!isAcknowledged) {
+      toast.error("Please acknowledge the disclaimer before confirming");
+      return;
+    }
+    
+    saveToDatabase(formInitialData);
+  };
+
+  // Handle form submission
+  const handleFormSubmit = (data) => {
     if (!data.acknowledgment) {
       toast.error("Please acknowledge the disclaimer before confirming");
       return;
@@ -165,6 +149,17 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
 
   const legalText = "I have reviewed these consultation notes and confirm their accuracy. I acknowledge that while Vyra Health's AI assists in documentation, I remain responsible for the medical content and any clinical decisions based on these notes. Vyra Health is not liable for any discrepancies in its AI-generated documentation.";
 
+  // Patient and doctor info for components
+  const patientInfo = {
+    name: appointment.patient,
+    id: appointment.patientId
+  };
+
+  const doctorInfo = {
+    name: mockConsultationData.doctor,
+    specialty: mockConsultationData.specialty
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -174,18 +169,6 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
               <FileText className="h-4 w-4 text-primary" />
             </div>
             <DialogTitle>Consultation Notes</DialogTitle>
-            
-            {!isEditing && !isConfirmed && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="ml-auto"
-                onClick={toggleEditing}
-              >
-                <Edit className="h-4 w-4 mr-1" />
-                Edit Notes
-              </Button>
-            )}
           </div>
           <DialogDescription className="text-base font-medium">
             AI-generated summary of the consultation
@@ -195,340 +178,30 @@ const ConsultationNotesDialog: React.FC<ConsultationNotesDialogProps> = ({
         <ScrollArea className="flex-1 px-1">
           <div className="p-1">
             {!isEditing ? (
-              <div className="space-y-5">
-                {/* Patient and Appointment Details */}
-                <div className="flex flex-col md:flex-row gap-4 justify-between">
-                  {/* Patient Info */}
-                  <div className="flex items-center">
-                    <Avatar className="h-12 w-12 mr-3">
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        {appointment.patient.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-medium text-lg">{appointment.patient}</h3>
-                      <p className="text-sm text-muted-foreground">{appointment.patientId}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Doctor & Time Info */}
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Stethoscope className="h-4 w-4 text-primary" />
-                      <span className="font-medium">{mockConsultationData.doctor}</span>
-                      <Badge variant="outline" className="ml-1">
-                        {mockConsultationData.specialty}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>{appointment.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span>{appointment.time}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                {/* Condition & Diagnosis */}
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-medium flex items-center gap-2 mb-1">
-                      <AlertCircle className="h-4 w-4 text-amber-500" />
-                      Presenting Condition
-                    </h3>
-                    <p className="text-sm leading-relaxed">{mockConsultationData.condition}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-medium flex items-center gap-2 mb-1">
-                      <Stethoscope className="h-4 w-4 text-blue-500" />
-                      Diagnosis
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary" className="font-normal">
-                        {mockConsultationData.diagnosis}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                {/* Recommendations */}
-                <div>
-                  <h3 className="font-medium flex items-center gap-2 mb-2">
-                    <ListChecks className="h-4 w-4 text-green-500" />
-                    Recommendations
-                  </h3>
-                  <ul className="text-sm space-y-2">
-                    {mockConsultationData.recommendations.map((rec, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <div className="h-5 w-5 rounded-full bg-green-50 text-green-700 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs">
-                          {index + 1}
-                        </div>
-                        <span>{rec}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                
-                {/* Medications */}
-                <div>
-                  <h3 className="font-medium flex items-center gap-2 mb-2">
-                    <Pill className="h-4 w-4 text-indigo-500" />
-                    Prescribed Medications
-                  </h3>
-                  <div className="space-y-3">
-                    {mockConsultationData.medications.map((med, index) => (
-                      <div key={index} className="border rounded-md p-3">
-                        <h4 className="font-medium">{med.name}</h4>
-                        <p className="text-sm my-1">{med.dosage}</p>
-                        {med.notes && (
-                          <p className="text-xs text-muted-foreground">{med.notes}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Follow-up */}
-                <div className="border rounded-md p-4 bg-muted/30">
-                  <h3 className="font-medium flex items-center gap-2 mb-2">
-                    <CalendarClock className="h-4 w-4 text-primary" />
-                    Follow-up Instructions
-                  </h3>
-                  <p className="text-sm">{mockConsultationData.followUp}</p>
-                </div>
-                
-                {/* Confirmation section */}
-                {!isConfirmed && (
-                  <div className="border-t pt-4 mt-6">
-                    <div className="flex items-start gap-2 mb-4">
-                      <div className="h-5 w-5 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <AlertCircle className="h-3 w-3" />
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Please review these AI-generated consultation notes. You can edit them if needed by clicking the "Edit Notes" button above. Your confirmation indicates that you have reviewed and verified the accuracy of these notes.
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-start gap-3 mb-4 border p-4 rounded-md bg-muted/20">
-                      <Checkbox 
-                        id="acknowledge" 
-                        checked={form.getValues("acknowledgment")}
-                        onCheckedChange={(checked) => {
-                          form.setValue("acknowledgment", checked === true);
-                        }}
-                        className="mt-1"
-                      />
-                      <label 
-                        htmlFor="acknowledge" 
-                        className="text-sm cursor-pointer"
-                      >
-                        {legalText}
-                      </label>
-                    </div>
-                    
-                    <div className="flex justify-end gap-3">
-                      <DialogClose asChild>
-                        <Button variant="outline">Close</Button>
-                      </DialogClose>
-                      <Button 
-                        onClick={() => handleConfirm(form.getValues())}
-                        disabled={!form.getValues("acknowledgment") || isSaving}
-                      >
-                        {isSaving ? (
-                          <>Saving...</>
-                        ) : (
-                          <>
-                            <Check className="mr-2 h-4 w-4" />
-                            Confirm & Finalize
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <ConsultationDisplay
+                patient={patientInfo}
+                appointment={appointment}
+                doctor={doctorInfo}
+                consultationData={mockConsultationData}
+                isConfirmed={isConfirmed}
+                isAcknowledged={isAcknowledged}
+                onAcknowledgeChange={setIsAcknowledged}
+                onConfirm={handleConfirm}
+                onEditClick={toggleEditing}
+                isSaving={isSaving}
+                legalText={legalText}
+              />
             ) : (
-              /* Edit Mode */
-              <Form {...form}>
-                <form className="space-y-6" onSubmit={form.handleSubmit(handleConfirm)}>
-                  <div className="flex flex-col md:flex-row gap-4 justify-between">
-                    {/* Patient Info */}
-                    <div className="flex items-center">
-                      <Avatar className="h-12 w-12 mr-3">
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {appointment.patient.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h3 className="font-medium text-lg">{appointment.patient}</h3>
-                        <p className="text-sm text-muted-foreground">{appointment.patientId}</p>
-                      </div>
-                    </div>
-                    
-                    {/* Doctor & Time Info */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Stethoscope className="h-4 w-4 text-primary" />
-                        <span className="font-medium">{mockConsultationData.doctor}</span>
-                        <Badge variant="outline" className="ml-1">
-                          {mockConsultationData.specialty}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>{appointment.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>{appointment.time}</span>
-                      </div>
-                    </div>
-                  </div>
-                
-                  <Separator />
-                
-                  {/* Edit Condition */}
-                  <FormField
-                    control={form.control}
-                    name="condition"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-medium flex items-center gap-2">
-                          <AlertCircle className="h-4 w-4 text-amber-500" />
-                          Presenting Condition
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea {...field} className="min-h-[100px]" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {/* Edit Diagnosis */}
-                  <FormField
-                    control={form.control}
-                    name="diagnosis"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-medium flex items-center gap-2">
-                          <Stethoscope className="h-4 w-4 text-blue-500" />
-                          Diagnosis
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <Separator />
-                  
-                  {/* Edit Recommendations */}
-                  <FormField
-                    control={form.control}
-                    name="recommendations"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-medium flex items-center gap-2">
-                          <ListChecks className="h-4 w-4 text-green-500" />
-                          Recommendations (one per line)
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea {...field} className="min-h-[100px]" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {/* Edit Medications */}
-                  <FormField
-                    control={form.control}
-                    name="medications"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-medium flex items-center gap-2">
-                          <Pill className="h-4 w-4 text-indigo-500" />
-                          Medications (one per line, format: Name, Dosage, Notes)
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea {...field} className="min-h-[100px]" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {/* Edit Follow-up */}
-                  <FormField
-                    control={form.control}
-                    name="followUp"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-medium flex items-center gap-2">
-                          <CalendarClock className="h-4 w-4 text-primary" />
-                          Follow-up Instructions
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea {...field} className="min-h-[80px]" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {/* Acknowledgment */}
-                  <FormField
-                    control={form.control}
-                    name="acknowledgment"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 border-t pt-4">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="mt-1"
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className="text-sm">
-                            {legalText}
-                          </FormLabel>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {/* Action Buttons */}
-                  <div className="flex justify-end gap-3 pt-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={toggleEditing}
-                      disabled={isSaving}
-                    >
-                      Cancel Edits
-                    </Button>
-                    <Button 
-                      type="submit"
-                      disabled={isSaving}
-                    >
-                      {isSaving ? (
-                        <>Saving...</>
-                      ) : (
-                        <>
-                          <Check className="mr-2 h-4 w-4" />
-                          Confirm & Finalize
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
+              <EditConsultationForm
+                initialData={formInitialData}
+                onCancel={toggleEditing}
+                onSubmit={handleFormSubmit}
+                isSaving={isSaving}
+                legalText={legalText}
+                patient={patientInfo}
+                appointment={appointment}
+                doctor={doctorInfo}
+              />
             )}
           </div>
         </ScrollArea>
