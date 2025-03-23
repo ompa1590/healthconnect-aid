@@ -34,7 +34,12 @@ const ProviderTypeStep: React.FC<ProviderTypeStepProps> = ({ formData, updateFor
     { value: "speech_therapist", label: "Speech Therapist", description: "Speech and communication specialists" },
   ];
 
-  const renderProviderGroup = (providers, title, icon, badgeVariant = "default") => (
+  const renderProviderGroup = (
+    providers, 
+    title, 
+    icon, 
+    badgeVariant: "default" | "secondary" | "destructive" | "outline" = "default"
+  ) => (
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-3">
         {icon}
