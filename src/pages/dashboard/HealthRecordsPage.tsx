@@ -2,16 +2,13 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
-import { File, FileText, Upload, Loader2, Download, Trash, FileSearch } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { extractMedicalInfo } from "@/utils/medicalExtractor";
+import DocumentList from "@/components/dashboard/health-records/DocumentList";
+import DocumentUploadDialog from "@/components/dashboard/health-records/DocumentUploadDialog";
+import SummaryDialog from "@/components/dashboard/health-records/SummaryDialog";
+import { parsePdfContent } from "@/utils/documentParser";
 
 const HealthRecordsPage = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -23,49 +20,48 @@ const HealthRecordsPage = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [activeDocumentSummary, setActiveDocumentSummary] = useState<string>("");
   const [showSummaryDialog, setShowSummaryDialog] = useState(false);
-  const [documentSummaries, setDocumentSummaries] = useState<{[key: string]: string}>({});
   const [summaryVerified, setSummaryVerified] = useState<{[key: string]: boolean}>({});
   const { toast } = useToast();
   
   useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        setIsLoading(true);
-        
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          setDocuments([]);
-          return;
-        }
-        
-        const { data: documentsData, error: documentsError } = await supabase
-          .from('user_documents')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .order('uploaded_at', { ascending: false });
-          
-        if (documentsError) {
-          throw documentsError;
-        }
-
-        if (documentsData) {
-          setDocuments(documentsData);
-        }
-      } catch (error) {
-        console.error("Error fetching documents:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load your documents",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     fetchDocuments();
-  }, [toast]);
+  }, []);
+
+  const fetchDocuments = async () => {
+    try {
+      setIsLoading(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setDocuments([]);
+        return;
+      }
+      
+      const { data: documentsData, error: documentsError } = await supabase
+        .from('user_documents')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('uploaded_at', { ascending: false });
+        
+      if (documentsError) {
+        throw documentsError;
+      }
+
+      if (documentsData) {
+        setDocuments(documentsData);
+      }
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load your documents",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -127,17 +123,8 @@ const HealthRecordsPage = () => {
         throw error;
       }
 
-      const { data: documentsData, error: documentsError } = await supabase
-        .from('user_documents')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('uploaded_at', { ascending: false });
-        
-      if (documentsError) {
-        throw documentsError;
-      }
-
-      setDocuments(documentsData || []);
+      await fetchDocuments();
+      
       setSelectedFile(null);
       setDocumentName("");
       
@@ -222,27 +209,6 @@ const HealthRecordsPage = () => {
     }
   };
 
-  const parsePdfContent = async (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const documentType = file.name.toLowerCase();
-        let summary = "";
-        
-        if (documentType.includes('blood') || documentType.includes('lab')) {
-          summary = "Blood Test Results Summary:\n• Hemoglobin: 14.2 g/dL (Normal)\n• White Blood Cells: 7.5 x10^9/L (Normal)\n• Vitamin B12: 180 pg/mL (Low - Deficiency detected)\n• Vitamin D: 22 ng/mL (Low)\n• Glucose: 95 mg/dL (Normal)\n• Total Cholesterol: 195 mg/dL (Normal)";
-        } else if (documentType.includes('cardio') || documentType.includes('heart')) {
-          summary = "Cardiovascular Exam Summary:\n• Blood Pressure: 128/82 mmHg (Slightly elevated)\n• Heart Rate: 72 bpm (Normal)\n• ECG: Normal sinus rhythm\n• No evidence of structural heart disease\n• Recommendation: Follow-up in 6 months";
-        } else if (documentType.includes('allerg')) {
-          summary = "Allergy Test Results:\n• Dust mites: Strong positive reaction\n• Cat dander: Moderate positive reaction\n• Pollen: Mild positive reaction\n• No food allergies detected\n• Recommendation: Environmental control measures and antihistamines";
-        } else {
-          summary = "Document Analysis:\n• Medical document detected\n• Multiple health parameters mentioned\n• Please review the document in detail\n• Consult with healthcare provider for interpretation";
-        }
-        
-        resolve(summary);
-      }, 1500);
-    });
-  };
-
   const extractDocumentSummary = async (id: string, path: string, name: string) => {
     try {
       setIsExtracting({...isExtracting, [id]: true});
@@ -256,10 +222,9 @@ const HealthRecordsPage = () => {
         throw error;
       }
 
-      // Fix: Create a File object correctly with one argument (the blob) and a name option
-      const file = new File([data], name);
-      
-      const summary = await parsePdfContent(file);
+      // Fix the File constructor issue - use the Blob directly
+      const fileBlob = new Blob([data]);
+      const summary = await parsePdfContent(new File([fileBlob], name));
       
       // Update the document with the summary
       await supabase
@@ -269,8 +234,6 @@ const HealthRecordsPage = () => {
         })
         .eq('id', id);
 
-      setDocumentSummaries({...documentSummaries, [id]: summary});
-      
       setActiveDocumentSummary(summary);
       setShowSummaryDialog(true);
       
@@ -290,22 +253,33 @@ const HealthRecordsPage = () => {
     }
   };
 
-  const verifyDocumentSummary = async (id: string) => {
+  const verifyDocumentSummary = async () => {
     try {
+      const docId = documents.find(doc => doc.document_summary === activeDocumentSummary)?.id;
+      
+      if (!docId) {
+        throw new Error("Document not found");
+      }
+      
       // Update the document to mark summary as verified
       await supabase
         .from('user_documents')
         .update({
           summary_verified: true
         })
-        .eq('id', id);
+        .eq('id', docId);
       
-      setSummaryVerified({...summaryVerified, [id]: true});
+      setSummaryVerified({...summaryVerified, [docId]: true});
+      
+      // Refresh documents to show the verified badge
+      fetchDocuments();
       
       toast({
         title: "Success",
         description: "Document summary verified",
       });
+      
+      setShowSummaryDialog(false);
     } catch (error) {
       console.error("Error verifying document summary:", error);
       toast({
@@ -335,152 +309,26 @@ const HealthRecordsPage = () => {
                   Access and upload your medical reports, test results, and other health documents
                 </CardDescription>
               </div>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="flex items-center gap-2">
-                    <Upload className="h-4 w-4" />
-                    Upload Document
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Upload Medical Document</DialogTitle>
-                    <DialogDescription>
-                      Upload reports, scans, or other medical documents to keep track of your health records.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="documentName" className="text-right">Name</Label>
-                      <Input
-                        id="documentName"
-                        placeholder="Document name"
-                        className="col-span-3"
-                        value={documentName}
-                        onChange={(e) => setDocumentName(e.target.value)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="documentType" className="text-right">Type</Label>
-                      <select
-                        id="documentType"
-                        className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        value={documentType}
-                        onChange={(e) => setDocumentType(e.target.value)}
-                      >
-                        <option value="Medical Report">Medical Report</option>
-                        <option value="Lab Test">Lab Test</option>
-                        <option value="Prescription">Prescription</option>
-                        <option value="Scan/Imaging">Scan/Imaging</option>
-                        <option value="Insurance">Insurance</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="documentFile" className="text-right">File</Label>
-                      <div className="col-span-3">
-                        <Input
-                          id="documentFile"
-                          type="file"
-                          className="cursor-pointer"
-                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                          onChange={handleFileChange}
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Accepted formats: PDF, DOC, DOCX, JPG, JPEG, PNG
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-                    <Button 
-                      onClick={uploadDocument} 
-                      disabled={isUploading || !selectedFile || !documentName.trim()}
-                    >
-                      {isUploading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : "Upload"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <DocumentUploadDialog
+                isUploading={isUploading}
+                onUpload={uploadDocument}
+                selectedFile={selectedFile}
+                onFileChange={handleFileChange}
+                documentName={documentName}
+                onDocumentNameChange={(e) => setDocumentName(e.target.value)}
+                documentType={documentType}
+                onDocumentTypeChange={(e) => setDocumentType(e.target.value)}
+              />
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <div className="flex items-center justify-center h-40">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-                  <span>Loading your documents...</span>
-                </div>
-              ) : documents.length === 0 ? (
-                <div className="text-center py-8 bg-muted/20 rounded-lg border border-dashed">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <h3 className="text-lg font-medium mb-1">No documents yet</h3>
-                  <p className="text-muted-foreground mb-4">Upload your first medical document to keep track of your health records</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {documents.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-primary/10 p-2 rounded-md">
-                          <File className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{doc.document_name}</h4>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Badge variant="outline" className="text-xs">{doc.document_type}</Badge>
-                            <span>
-                              {new Date(doc.uploaded_at).toLocaleDateString()} 
-                            </span>
-                            {doc.summary_verified && (
-                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                                Summary Verified
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="flex items-center gap-1"
-                          onClick={() => extractDocumentSummary(doc.id, doc.document_path, doc.document_name)}
-                          disabled={isExtracting[doc.id]}
-                        >
-                          {isExtracting[doc.id] ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <FileSearch className="h-3 w-3" />
-                          )}
-                          Summary
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => downloadDocument(doc.document_path, doc.document_name)}
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => deleteDocument(doc.id, doc.document_path)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <DocumentList
+                documents={documents}
+                isLoading={isLoading}
+                isExtracting={isExtracting}
+                onExtractSummary={extractDocumentSummary}
+                onDownload={downloadDocument}
+                onDelete={deleteDocument}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -504,34 +352,12 @@ const HealthRecordsPage = () => {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={showSummaryDialog} onOpenChange={setShowSummaryDialog}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Document Summary</DialogTitle>
-            <DialogDescription>
-              AI-generated summary based on document content
-            </DialogDescription>
-          </DialogHeader>
-          <div className="bg-muted/20 p-4 rounded-md whitespace-pre-line max-h-[300px] overflow-y-auto">
-            {activeDocumentSummary}
-          </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-amber-800 text-sm">
-            <p>This is an AI-generated summary. Please verify its accuracy against the original document before making medical decisions.</p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSummaryDialog(false)}>Close</Button>
-            <Button onClick={() => {
-              const docId = documents.find(doc => doc.document_summary === activeDocumentSummary)?.id;
-              if (docId) {
-                verifyDocumentSummary(docId);
-                setShowSummaryDialog(false);
-              }
-            }}>
-              Verify Summary
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SummaryDialog
+        open={showSummaryDialog}
+        onOpenChange={setShowSummaryDialog}
+        summary={activeDocumentSummary}
+        onVerify={verifyDocumentSummary}
+      />
     </main>
   );
 };
