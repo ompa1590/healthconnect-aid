@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -500,5 +501,36 @@ const HealthRecordsPage = () => {
         </TabsContent>
       </Tabs>
 
-      <
+      <Dialog open={showSummaryDialog} onOpenChange={setShowSummaryDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Document Summary</DialogTitle>
+            <DialogDescription>
+              AI-generated summary based on document content
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-muted/20 p-4 rounded-md whitespace-pre-line max-h-[300px] overflow-y-auto">
+            {activeDocumentSummary}
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-amber-800 text-sm">
+            <p>This is an AI-generated summary. Please verify its accuracy against the original document before making medical decisions.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSummaryDialog(false)}>Close</Button>
+            <Button onClick={() => {
+              const docId = documents.find(doc => doc.document_summary === activeDocumentSummary)?.id;
+              if (docId) {
+                verifyDocumentSummary(docId);
+                setShowSummaryDialog(false);
+              }
+            }}>
+              Verify Summary
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </main>
+  );
+};
 
+export default HealthRecordsPage;
