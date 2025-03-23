@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, FileText, Calendar, Phone, Pill, Stethoscope, AlertCircle, Shield, Users } from "lucide-react";
@@ -21,10 +20,13 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import SummaryDialog from "../dashboard/health-records/SummaryDialog";
 
 const ProviderPatients = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [recordsOpen, setRecordsOpen] = useState(false);
+  const [selectedConsultation, setSelectedConsultation] = useState(null);
+  const [consultationNotesOpen, setConsultationNotesOpen] = useState(false);
 
   const patients = [
     {
@@ -178,6 +180,11 @@ const ProviderPatients = () => {
   const handleOpenRecords = (patient) => {
     setSelectedPatient(patient);
     setRecordsOpen(true);
+  };
+
+  const handleOpenConsultationNotes = (consultation) => {
+    setSelectedConsultation(consultation);
+    setConsultationNotesOpen(true);
   };
 
   return (
@@ -446,12 +453,24 @@ const ProviderPatients = () => {
                   </CardHeader>
                   <CardContent>
                     {selectedPatient.consultations.map((consultation, index) => (
-                      <div key={index} className="mb-4 pb-4 border-b last:border-0 last:mb-0 last:pb-0">
+                      <div key={index} className="mb-6 pb-6 border-b last:border-0 last:mb-0 last:pb-0">
                         <div className="flex justify-between mb-2">
                           <h4 className="font-medium">{consultation.date}</h4>
                           <span className="text-sm text-muted-foreground">{consultation.reason}</span>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        
+                        {/* Provider details */}
+                        <div className="mb-3 bg-muted/30 p-2 rounded-md">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <Stethoscope className="h-3.5 w-3.5 text-primary" />
+                            <span className="font-medium text-sm">Dr. Michael Chen</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            <span className="font-medium">Credentials:</span> MD, FRCPC • <span className="font-medium">Specialty:</span> {index === 0 ? "Internal Medicine" : index === 1 ? "Psychiatry" : "Family Medicine"}
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
                           <div>
                             <h5 className="text-sm font-medium text-muted-foreground">Diagnosis</h5>
                             <p className="text-sm">{consultation.diagnosis}</p>
@@ -459,6 +478,33 @@ const ProviderPatients = () => {
                           <div>
                             <h5 className="text-sm font-medium text-muted-foreground">Treatment</h5>
                             <p className="text-sm">{consultation.treatment}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Consultation notes section */}
+                        <div className="mt-3 border-t border-border/30 pt-3">
+                          <h5 className="text-sm font-medium text-muted-foreground mb-1.5 flex items-center">
+                            <FileText className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                            Consultation Notes
+                          </h5>
+                          <div className="text-sm bg-muted/20 rounded-md p-3 relative">
+                            <p className="line-clamp-3">
+                              {index === 0 
+                                ? "Patient reports stable blood pressure readings at home. Current medication regimen appears effective. Discussed importance of regular exercise and reduced sodium intake. Patient showing good understanding of condition management."
+                                : index === 1 
+                                ? "Patient describes reduction in anxiety symptoms since last visit. Sleep has improved from 4-5 hours to 6-7 hours per night. Still experiencing occasional panic symptoms, particularly in crowded settings. Has been practicing breathing techniques as advised with some benefit."
+                                : "Routine checkup shows all vitals within normal limits. Patient reports no new symptoms or concerns. Preventative health measures discussed including upcoming vaccinations."}
+                            </p>
+                            <div className="absolute bottom-0 right-0 p-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 text-xs"
+                                onClick={() => handleOpenConsultationNotes(consultation)}
+                              >
+                                View Full Notes
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -538,6 +584,63 @@ const ProviderPatients = () => {
             </div>
           </SheetContent>
         </Sheet>
+      )}
+
+      {/* Consultation Notes Dialog */}
+      {selectedConsultation && (
+        <SummaryDialog
+          open={consultationNotesOpen}
+          onOpenChange={setConsultationNotesOpen}
+          summary={`
+Patient Visit Report - ${selectedConsultation.date}
+
+Provider: Dr. Michael Chen, MD, FRCPC
+Specialty: ${selectedConsultation.date === "2024-03-15" ? "Internal Medicine" : selectedConsultation.date === "2024-01-22" ? "Psychiatry" : "Family Medicine"}
+Location: Vyra Health Clinic, Toronto
+
+Chief Complaint: ${selectedConsultation.reason}
+
+Subjective:
+${selectedConsultation.date === "2024-03-15" 
+  ? "Patient reports feeling generally well. Home blood pressure readings have been averaging 128/82 mmHg. No dizziness, headaches, or visual disturbances. Patient has been compliant with medication regimen. Reports mild stress at work but managing well with previously discussed coping strategies."
+  : selectedConsultation.date === "2024-01-22" 
+  ? "Patient reports improvement in anxiety symptoms since starting medication. Sleep has improved from 4-5 hours to 6-7 hours per night. Still experiencing occasional panic symptoms, particularly in crowded settings. Has been practicing breathing techniques as advised with some benefit."
+  : "Patient presents for routine annual checkup. No specific complaints. Reports regular exercise 3 times per week. Diet remains balanced with occasional indulgences. Sleep patterns normal. No significant life stressors reported."}
+
+Objective:
+${selectedConsultation.date === "2024-03-15" 
+  ? "BP: 130/85 mmHg, HR: 72 bpm, RR: 16, Temp: 98.6°F, SpO2: 98%\nGeneral: Alert and oriented, in no acute distress\nCVS: Regular rate and rhythm, no murmurs or gallops\nResp: Clear to auscultation bilaterally\nAbdomen: Soft, non-tender, non-distended"
+  : selectedConsultation.date === "2024-01-22" 
+  ? "BP: 118/75 mmHg, HR: 68 bpm, RR: 14, Temp: 98.4°F, SpO2: 99%\nGeneral: Mildly anxious but appropriate\nMSE: Mood anxious, affect congruent, thought process linear, no SI/HI, judgment intact\nNeurological: No focal deficits"
+  : "BP: 120/78 mmHg, HR: 70 bpm, RR: 15, Temp: 98.5°F, SpO2: 99%\nGeneral: Well-appearing, healthy\nCVS: Regular rate and rhythm\nResp: Clear breath sounds\nAbdomen: Normal bowel sounds, non-tender\nSkin: No concerning lesions\nLymph: No lymphadenopathy"}
+
+Assessment:
+${selectedConsultation.diagnosis}
+
+Plan:
+1. ${selectedConsultation.treatment}
+2. ${selectedConsultation.date === "2024-03-15" 
+  ? "Continue current medication regimen with no changes. Review home blood pressure log at next visit."
+  : selectedConsultation.date === "2024-01-22" 
+  ? "Consider referral to psychologist for additional CBT if symptoms persist. Continue current medication with follow-up in 4 weeks."
+  : "Routine bloodwork ordered including CBC, CMP, lipid panel, and HbA1c. Results to be discussed at follow-up."}
+3. ${selectedConsultation.date === "2024-03-15" 
+  ? "Encouraged to maintain dietary sodium restrictions and moderate exercise regimen."
+  : selectedConsultation.date === "2024-01-22" 
+  ? "Provided resources for local support group. Encouraged to continue mindfulness practice."
+  : "Due for age-appropriate cancer screenings. Colonoscopy referral provided."}
+4. Follow-up: ${selectedConsultation.date === "2024-03-15" 
+  ? "Return in 3 months for blood pressure check and medication review."
+  : selectedConsultation.date === "2024-01-22" 
+  ? "Return in 4 weeks to assess medication efficacy and side effects."
+  : "Return in 6 months or sooner if concerns arise."}
+
+Notes signed electronically by Dr. Michael Chen, MD, FRCPC on ${selectedConsultation.date}
+          `}
+          onVerify={() => {
+            setConsultationNotesOpen(false);
+          }}
+        />
       )}
     </div>
   );
