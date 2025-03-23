@@ -15,8 +15,8 @@ const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
       <div
         ref={ref}
         className={cn(
-          "glass-card p-6",
-          hoverEffect && "hover:translate-y-[-2px]",
+          "glass-card p-6 backdrop-blur-sm border border-border/30 bg-white/70 dark:bg-black/20",
+          hoverEffect && "hover:translate-y-[-2px] hover:shadow-lg",
           !noAnimation && "animate-fade-in",
           className
         )}

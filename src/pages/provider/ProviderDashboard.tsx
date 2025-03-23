@@ -326,7 +326,13 @@ const ProviderDashboard = () => {
 
   const renderDashboard = () => {
     return <>
-        <h1 className="text-3xl font-bold mb-6">Welcome, Dr. {profile?.lastName || "Provider"}</h1>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+          <h1 className="text-3xl font-bold gradient-text">Welcome, Dr. {profile?.lastName || "Provider"}</h1>
+          <p className="text-muted-foreground text-sm mt-1 md:mt-0">
+            <Calendar className="h-4 w-4 inline mr-1" /> 
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+          </p>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           {getStats().map((stat, index) => <GlassCard key={index} className="p-4 hover:shadow-md transition-all">
@@ -342,121 +348,147 @@ const ProviderDashboard = () => {
             </GlassCard>)}
         </div>
         
-        <GlassCard className="mb-12 overflow-hidden shadow-lg border-0">
-          <Tabs defaultValue="upcoming">
-            <div className="flex justify-between items-center p-6 border-b border-border/40 bg-gradient-to-r from-primary/5 to-primary/10">
-              <h2 className="text-xl font-poppins font-semibold tracking-tight">Today's Appointments</h2>
-              <TabsList className="bg-background/50 backdrop-blur-sm">
-                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-              </TabsList>
-            </div>
-            
-            <TabsContent value="upcoming" className="p-0">
-              <div className="divide-y divide-border/30">
-                {appointments.filter(a => a.status !== "cancelled").map(appointment => (
-                  <div 
-                    key={appointment.id} 
-                    className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-5 hover:bg-muted/10 transition-colors"
-                  >
-                    <div className="flex items-center">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mr-4 shadow-sm">
-                        <UserRound className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg tracking-tight font-poppins">{appointment.appointmentType}</h3>
-                        <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
-                          <span className="font-medium text-primary/80">{appointment.patientId}</span>
-                          <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50"></span>
-                          {appointment.patientName}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-6 mt-3 md:mt-0">
-                      <div className="flex items-center gap-1.5 bg-primary/5 px-3 py-1.5 rounded-full shadow-sm">
-                        <Calendar className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium">
-                          {formatDate(appointment.date)}
-                        </span>
+        <div className="mb-12">
+          <GlassCard className="overflow-hidden shadow-lg border-0 bg-gradient-to-br from-background to-background/60">
+            <Tabs defaultValue="upcoming">
+              <div className="flex justify-between items-center p-6 border-b border-border/30 bg-gradient-to-r from-primary/5 via-primary/10 to-transparent">
+                <h2 className="text-xl font-poppins font-semibold tracking-tight">Today's Appointments</h2>
+                <TabsList className="bg-background/60 backdrop-blur-sm border border-border/30">
+                  <TabsTrigger value="upcoming" className="font-medium text-sm">Upcoming</TabsTrigger>
+                  <TabsTrigger value="completed" className="font-medium text-sm">Completed</TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <TabsContent value="upcoming" className="p-0">
+                <div className="divide-y divide-border/20">
+                  {appointments.filter(a => a.status !== "cancelled").map(appointment => (
+                    <div 
+                      key={appointment.id} 
+                      className="p-6 hover:bg-primary/5 transition-all duration-300"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shadow-sm">
+                            <UserRound className="h-6 w-6 text-primary" />
+                          </div>
+                        </div>
+                        
+                        <div className="flex-grow">
+                          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div>
+                              <h3 className="font-semibold text-lg tracking-tight font-poppins">{appointment.appointmentType}</h3>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <span className="text-sm font-medium text-primary">{appointment.patientId}</span>
+                                <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50"></span>
+                                <span className="text-sm">{appointment.patientName}</span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-3 mt-2 md:mt-0">
+                              <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary shadow-sm">
+                                <Calendar className="h-3 w-3 mr-1" />
+                                {formatDate(appointment.date)}
+                              </div>
+                              
+                              <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-medical/10 text-medical shadow-sm">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {appointment.time}
+                              </div>
+                              
+                              <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-secondary/10 text-secondary shadow-sm">
+                                <Video className="h-3 w-3 mr-1" />
+                                Video Call
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                       
-                      <div className="flex items-center gap-1.5 bg-primary/5 px-3 py-1.5 rounded-full shadow-sm">
-                        <Clock className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium">{appointment.time}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full shadow-sm">
-                        <Video className="h-4 w-4" />
-                        <span className="text-sm font-medium">Video Call</span>
+                      <div className="flex flex-wrap gap-3 mt-4 justify-end">
+                        <Button variant="outline" size="sm" className="bg-background border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/40 shadow-sm" 
+                                onClick={() => handleShowVisitReason(appointment.id)}>
+                          <FileText className="h-3.5 w-3.5 mr-1.5" />
+                          Visit Reason
+                        </Button>
+                        <Button variant="outline" size="sm" className="bg-background hover:bg-destructive/5 border-destructive/20 text-destructive hover:border-destructive/40 shadow-sm" 
+                                onClick={() => handleCancelAppointment(appointment.id)}>
+                          <X className="h-3.5 w-3.5 mr-1.5" />
+                          Cancel
+                        </Button>
+                        <Button size="sm" className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-sm">
+                          <Video className="h-3.5 w-3.5 mr-1.5" />
+                          Join Call
+                        </Button>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-3 mt-4 md:mt-0">
-                      <Button variant="outline" size="sm" className="flex items-center gap-1 border-primary/20 hover:border-primary/40 shadow-sm" onClick={() => handleShowVisitReason(appointment.id)}>
-                        <FileText className="h-4 w-4" />
-                        Visit Reason
-                      </Button>
-                      <Button variant="outline" size="sm" className="border-muted hover:border-muted/80 shadow-sm" onClick={() => handleCancelAppointment(appointment.id)}>
-                        Cancel
-                      </Button>
-                      <Button size="sm" className="bg-primary hover:bg-primary/90 shadow-sm">
-                        <Video className="mr-1 h-4 w-4" />
-                        Join Call
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="completed" className="p-4">
-              <div className="text-center py-10">
-                <p className="text-muted-foreground">No completed appointments today.</p>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </GlassCard>
+                  ))}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="completed" className="p-4">
+                <div className="text-center py-10">
+                  <p className="text-muted-foreground">No completed appointments today.</p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </GlassCard>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <GlassCard className="p-4 hover:shadow-md transition-all">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">Recent Patients</h3>
-              <Button variant="ghost" size="sm" onClick={() => setActiveSection("patients")}>View All</Button>
+          <GlassCard className="p-6 hover:shadow-md transition-all overflow-hidden">
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="font-semibold text-lg">Recent Patients</h3>
+              <Button variant="ghost" size="sm" className="text-primary hover:text-primary/90 hover:bg-primary/5" onClick={() => setActiveSection("patients")}>
+                View All
+              </Button>
             </div>
-            <div className="space-y-4">
-              {appointments.map((appointment, index) => <div key={index} className="flex items-center p-2 hover:bg-muted/20 rounded-md transition-colors">
-                  <Avatar className="h-10 w-10 mr-3">
-                    <AvatarFallback>{appointment.patientName.charAt(0)}</AvatarFallback>
+            <div className="space-y-3">
+              {appointments.map((appointment, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-center p-3 hover:bg-muted/20 rounded-lg transition-colors"
+                >
+                  <Avatar className="h-10 w-10 mr-3 border-2 border-primary/10">
+                    <AvatarFallback className="bg-primary/10 text-primary">{appointment.patientName.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="font-medium">{appointment.patientName}</p>
                     <p className="text-xs text-muted-foreground">{appointment.patientId}</p>
                   </div>
-                  <Badge className="ml-auto">{appointment.appointmentType.split(' ')[0]}</Badge>
-                </div>)}
+                  <Badge className="ml-auto bg-primary/10 text-primary hover:bg-primary/20">
+                    {appointment.appointmentType.split(' ')[0]}
+                  </Badge>
+                </div>
+              ))}
             </div>
           </GlassCard>
           
-          <GlassCard className="p-4 hover:shadow-md transition-all">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">Your Schedule Today</h3>
-              <Button variant="ghost" size="sm" onClick={() => setActiveSection("consultations")}>Set Availability</Button>
+          <GlassCard className="p-6 hover:shadow-md transition-all overflow-hidden">
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="font-semibold text-lg">Your Schedule Today</h3>
+              <Button variant="ghost" size="sm" className="text-primary hover:text-primary/90 hover:bg-primary/5" onClick={() => setActiveSection("consultations")}>
+                Set Availability
+              </Button>
             </div>
             <div className="space-y-3">
-              {appointments.filter(a => a.status !== "cancelled").map((appointment, index) => <div key={index} className="flex items-center p-2 rounded-md hover:bg-muted/20 transition-colors">
-                  <div className="bg-primary/10 text-primary font-medium rounded p-1 w-16 text-center mr-3 text-sm">
+              {appointments.filter(a => a.status !== "cancelled").map((appointment, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-center p-3 rounded-lg hover:bg-muted/20 transition-colors"
+                >
+                  <div className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary font-medium rounded-full px-3 py-1 w-20 text-center mr-3 text-sm shadow-sm">
                     {appointment.time.split(' - ')[0]}
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">{appointment.appointmentType}</p>
                     <p className="text-xs text-muted-foreground">{appointment.patientName}</p>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/40">
                     <Video className="h-3 w-3 mr-1" />
                     Join
                   </Button>
-                </div>)}
+                </div>
+              ))}
             </div>
           </GlassCard>
         </div>
@@ -474,9 +506,9 @@ const ProviderDashboard = () => {
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-background/80">
         <div className="animate-pulse text-center">
-          <div className="text-2xl font-semibold">Loading your dashboard...</div>
+          <div className="text-2xl font-semibold gradient-text">Loading your dashboard...</div>
         </div>
       </div>;
   }
@@ -603,7 +635,7 @@ const ProviderDashboard = () => {
         
         <SidebarInset>
           <div className="flex flex-col h-full">
-            <header className="p-4 border-b flex justify-between items-center">
+            <header className="p-4 border-b bg-gradient-to-r from-background via-background to-background/70 backdrop-blur-sm flex justify-between items-center">
               <div className="flex items-center cursor-pointer" onClick={handleSignOut}>
                 <span className="text-primary text-xl font-bold tracking-tight">Vyra</span>
                 <span className="text-secondary text-xl font-bold tracking-tight">Health</span>
@@ -645,7 +677,7 @@ const ProviderDashboard = () => {
               </div>
             </header>
             
-            <main className="flex-1 p-6 overflow-auto">
+            <main className="flex-1 p-6 overflow-auto bg-gradient-to-br from-background via-background to-background/95">
               {renderContent()}
             </main>
           </div>
