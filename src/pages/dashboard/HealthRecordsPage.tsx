@@ -21,6 +21,12 @@ const HealthRecordsPage = () => {
   const [activeDocumentSummary, setActiveDocumentSummary] = useState<string>("");
   const [showSummaryDialog, setShowSummaryDialog] = useState(false);
   const [summaryVerified, setSummaryVerified] = useState<{[key: string]: boolean}>({});
+  
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [documentTypeFilter, setDocumentTypeFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
+  
   const { toast } = useToast();
   
   useEffect(() => {
@@ -328,6 +334,12 @@ const HealthRecordsPage = () => {
                 onExtractSummary={extractDocumentSummary}
                 onDownload={downloadDocument}
                 onDelete={deleteDocument}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                documentTypeFilter={documentTypeFilter}
+                onDocumentTypeFilterChange={setDocumentTypeFilter}
+                dateFilter={dateFilter}
+                onDateFilterChange={setDateFilter}
               />
             </CardContent>
           </Card>
