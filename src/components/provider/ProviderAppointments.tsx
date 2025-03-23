@@ -204,11 +204,11 @@ const ProviderAppointments = () => {
                     >
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-medium">
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold">
                             {appointment.patient.split(' ').map(n => n[0]).join('')}
                           </div>
                           <div>
-                            <h3 className="font-medium font-poppins text-lg">{appointment.reason}</h3>
+                            <h3 className="font-semibold font-poppins text-lg leading-tight">{appointment.reason}</h3>
                             <p className="text-sm text-muted-foreground">
                               {appointment.patientId} - {appointment.patient}
                             </p>
@@ -216,17 +216,17 @@ const ProviderAppointments = () => {
                         </div>
                         
                         <div className="flex flex-wrap items-center gap-3 md:gap-6 text-sm ml-13">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 bg-muted/40 px-2.5 py-1 rounded-full">
                             <CalendarClock className="h-4 w-4 text-primary" />
-                            <span>{formatAppointmentDate(appointment.date)}</span>
+                            <span className="font-medium">{formatAppointmentDate(appointment.date)}</span>
                           </div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 bg-muted/40 px-2.5 py-1 rounded-full">
                             <Clock className="h-4 w-4 text-primary" />
-                            <span>{appointment.time}</span>
+                            <span className="font-medium">{appointment.time}</span>
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <Video className="h-4 w-4 text-primary" />
-                            <span>Video Call</span>
+                          <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-full">
+                            <Video className="h-4 w-4" />
+                            <span className="font-medium">Video Call</span>
                           </div>
                         </div>
                         
@@ -272,11 +272,11 @@ const ProviderAppointments = () => {
                     >
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-medium">
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold">
                             {appointment.patient.split(' ').map(n => n[0]).join('')}
                           </div>
                           <div>
-                            <h3 className="font-medium font-poppins">{appointment.reason}</h3>
+                            <h3 className="font-semibold font-poppins">{appointment.reason}</h3>
                             <p className="text-sm text-muted-foreground">
                               {appointment.patientId} - {appointment.patient}
                             </p>
@@ -333,11 +333,11 @@ const ProviderAppointments = () => {
                     >
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 bg-muted/50 rounded-full flex items-center justify-center text-muted-foreground font-medium">
+                          <div className="w-10 h-10 bg-muted/50 rounded-full flex items-center justify-center text-muted-foreground font-semibold">
                             {appointment.patient.split(' ').map(n => n[0]).join('')}
                           </div>
                           <div>
-                            <h3 className="font-medium font-poppins line-through">{appointment.reason}</h3>
+                            <h3 className="font-semibold font-poppins line-through">{appointment.reason}</h3>
                             <p className="text-sm text-muted-foreground">
                               {appointment.patientId} - {appointment.patient}
                             </p>

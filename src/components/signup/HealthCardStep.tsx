@@ -7,6 +7,10 @@ import { SignupFormData } from "@/pages/login/PatientSignup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface HealthCardStepProps {
   formData: SignupFormData;
@@ -32,16 +36,15 @@ const HealthCardStep: React.FC<HealthCardStepProps> = ({ formData, updateFormDat
     "Yukon"
   ];
   
-  const handleExpiryDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const expiryDate = e.target.value;
-    updateFormData({ healthCardExpiry: expiryDate });
-    
-    // Check if expiry date is in the past
-    if (expiryDate) {
+  const handleExpiryDate = (date: Date | undefined) => {
+    if (date) {
+      updateFormData({ healthCardExpiry: format(date, "yyyy-MM-dd") });
+      
+      // Check if expiry date is in the past
       const today = new Date();
-      const expiry = new Date(expiryDate);
-      setShowExpiryWarning(expiry < today);
+      setShowExpiryWarning(date < today);
     } else {
+      updateFormData({ healthCardExpiry: '' });
       setShowExpiryWarning(false);
     }
   };
@@ -102,18 +105,35 @@ const HealthCardStep: React.FC<HealthCardStepProps> = ({ formData, updateFormDat
       
       <div className="space-y-2">
         <Label htmlFor="healthCardExpiry">Expiry Date *</Label>
-        <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
-          <Input
-            id="healthCardExpiry"
-            type="date"
-            placeholder="MM/YYYY"
-            className="pl-10"
-            value={formData.healthCardExpiry}
-            onChange={handleExpiryDateChange}
-            required
-          />
-        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              id="healthCardExpiry"
+              className={cn(
+                "w-full justify-start text-left font-normal relative pl-10",
+                !formData.healthCardExpiry && "text-muted-foreground"
+              )}
+            >
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
+              {formData.healthCardExpiry ? (
+                format(new Date(formData.healthCardExpiry), "MMMM d, yyyy")
+              ) : (
+                <span>Select expiry date</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <div className="p-3 pointer-events-auto">
+              <input
+                type="date"
+                className="w-full p-2 border rounded"
+                value={formData.healthCardExpiry}
+                onChange={(e) => handleExpiryDate(e.target.value ? new Date(e.target.value) : undefined)}
+              />
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
       
       {showExpiryWarning && (

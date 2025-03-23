@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { User, Mail, Lock, Calendar as CalendarIcon, MapPin, Phone } from "lucide-react";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface GeneralInfoStepProps {
   formData: ProviderFormData;
@@ -16,6 +17,22 @@ interface GeneralInfoStepProps {
 }
 
 const GeneralInfoStep: React.FC<GeneralInfoStepProps> = ({ formData, updateFormData }) => {
+  const provinces = [
+    "Alberta",
+    "British Columbia",
+    "Manitoba",
+    "New Brunswick",
+    "Newfoundland and Labrador",
+    "Northwest Territories",
+    "Nova Scotia",
+    "Nunavut",
+    "Ontario",
+    "Prince Edward Island",
+    "Quebec",
+    "Saskatchewan",
+    "Yukon"
+  ];
+  
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -115,7 +132,7 @@ const GeneralInfoStep: React.FC<GeneralInfoStepProps> = ({ formData, updateFormD
                 date > new Date() || date < new Date("1900-01-01")
               }
               initialFocus
-              className="pointer-events-auto"
+              className="pointer-events-auto p-3"
             />
           </PopoverContent>
         </Popover>
@@ -149,13 +166,21 @@ const GeneralInfoStep: React.FC<GeneralInfoStepProps> = ({ formData, updateFormD
         </div>
         <div className="space-y-2">
           <Label htmlFor="province">Province *</Label>
-          <Input
-            id="province"
-            type="text"
-            placeholder="Province"
+          <Select
             value={formData.province}
-            onChange={(e) => updateFormData({ province: e.target.value })}
-          />
+            onValueChange={(value) => updateFormData({ province: value })}
+          >
+            <SelectTrigger id="province">
+              <SelectValue placeholder="Select province" />
+            </SelectTrigger>
+            <SelectContent>
+              {provinces.map((province) => (
+                <SelectItem key={province} value={province}>
+                  {province}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
