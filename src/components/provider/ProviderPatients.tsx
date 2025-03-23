@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, FileText, Calendar, Phone, Pill, Stethoscope, AlertCircle, Shield, Users } from "lucide-react";
+import { Search, FileText, Calendar, Phone, Pill, Stethoscope, AlertCircle, Shield, Users, Clock, Calendar as CalendarIcon } from "lucide-react";
 import { useState } from "react";
 import { 
   Sheet, 
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from "@/components/ui/GlassCard";
 import { 
   Table, 
   TableBody, 
@@ -20,6 +21,8 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import SummaryDialog from "../dashboard/health-records/SummaryDialog";
 
 const ProviderPatients = () => {
@@ -187,52 +190,86 @@ const ProviderPatients = () => {
     setConsultationNotesOpen(true);
   };
 
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
-        <Input
-          placeholder="Search patients..."
-          className="pl-10"
-        />
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-2xl font-bold gradient-text">My Patients</h2>
+        <div className="relative max-w-md w-full">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <Input
+            placeholder="Search patients by name or ID..."
+            className="pl-10 bg-background border-border/30 focus-visible:ring-primary/30 pr-10"
+          />
+          <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4">
         {patients.map((patient) => (
-          <div 
+          <GlassCard 
             key={patient.id} 
-            className="bg-background rounded-lg border border-border/30 p-4 hover:shadow-sm transition-shadow"
+            variant="elevated"
+            className="overflow-hidden hover:border-primary/30 transition-all duration-300"
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h3 className="font-medium text-lg">{patient.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {patient.age} years • {patient.gender}
-                </p>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {patient.conditions.map((condition, index) => (
-                    <span 
-                      key={index} 
-                      className="inline-block bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
-                    >
-                      {condition}
-                    </span>
-                  ))}
+              <div className="flex items-start gap-4">
+                <Avatar className="h-12 w-12 border-2 border-primary/10">
+                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-medium">
+                    {patient.name.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div>
+                  <h3 className="font-medium text-lg tracking-tight">{patient.name}</h3>
+                  <div className="flex items-center text-sm text-muted-foreground gap-2 mt-0.5">
+                    <span>{patient.age} years</span>
+                    <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50"></span>
+                    <span>{patient.gender}</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {patient.conditions.map((condition, index) => (
+                      <Badge 
+                        key={index} 
+                        variant="outline"
+                        className="bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 font-normal text-xs px-2.5 py-0.5"
+                      >
+                        {condition}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
               
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm">
+              <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="bg-background border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/40 shadow-sm"
+                >
                   <Phone className="mr-2 h-4 w-4" />
                   Call
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="bg-background border-secondary/20 text-secondary hover:bg-secondary/5 hover:border-secondary/40 shadow-sm"
+                >
                   <Calendar className="mr-2 h-4 w-4" />
                   Schedule
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
+                  className="bg-background border-medical/20 text-medical hover:bg-medical/5 hover:border-medical/40 shadow-sm"
                   onClick={() => handleOpenRecords(patient)}
                 >
                   <FileText className="mr-2 h-4 w-4" />
@@ -241,13 +278,20 @@ const ProviderPatients = () => {
               </div>
             </div>
             
-            <div className="mt-3 pt-3 border-t border-border/30 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <span>Last visit:</span>
-                <span className="font-medium">{patient.lastVisit}</span>
+            <div className="mt-4 pt-3 border-t border-border/30 flex justify-between items-center">
+              <div className="flex items-center text-sm">
+                <CalendarIcon className="h-4 w-4 text-muted-foreground mr-1.5" />
+                <span className="text-muted-foreground mr-1.5">Last visit:</span>
+                <span className="font-medium">{formatDate(patient.lastVisit)}</span>
               </div>
+              <Badge 
+                variant="outline" 
+                className="bg-wellness/10 text-wellness border-wellness/30"
+              >
+                Active Patient
+              </Badge>
             </div>
-          </div>
+          </GlassCard>
         ))}
       </div>
 
@@ -255,62 +299,73 @@ const ProviderPatients = () => {
       {selectedPatient && (
         <Sheet open={recordsOpen} onOpenChange={setRecordsOpen}>
           <SheetContent className="sm:max-w-2xl overflow-y-auto">
-            <SheetHeader className="pb-4">
-              <SheetTitle className="text-2xl flex items-center">
+            <SheetHeader className="pb-4 border-b mb-6">
+              <SheetTitle className="text-2xl flex items-center gradient-text">
                 <Stethoscope className="mr-2 h-5 w-5 text-primary" />
                 {selectedPatient.name}'s Medical Record
               </SheetTitle>
-              <SheetDescription>
-                {selectedPatient.age} years • {selectedPatient.gender} • Last visit: {selectedPatient.lastVisit}
+              <SheetDescription className="flex items-center gap-2">
+                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                  {selectedPatient.age} years 
+                </Badge>
+                <Badge variant="outline" className="bg-secondary/5 text-secondary border-secondary/20">
+                  {selectedPatient.gender}
+                </Badge>
+                <Badge variant="outline" className="bg-medical/5 text-medical border-medical/20 flex items-center">
+                  <Clock className="mr-1 h-3 w-3" />
+                  Last visit: {formatDate(selectedPatient.lastVisit)}
+                </Badge>
               </SheetDescription>
             </SheetHeader>
             
             {/* Tabbed Medical Record */}
             <Tabs defaultValue="overview" className="mt-4">
-              <TabsList className="w-full grid grid-cols-3 lg:grid-cols-6">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="medications">Medications</TabsTrigger>
-                <TabsTrigger value="reports">Reports</TabsTrigger>
-                <TabsTrigger value="consultations">Consultations</TabsTrigger>
-                <TabsTrigger value="history">History</TabsTrigger>
-                <TabsTrigger value="family">Family</TabsTrigger>
+              <TabsList className="w-full grid grid-cols-3 lg:grid-cols-6 bg-muted/50 p-1 rounded-lg">
+                <TabsTrigger value="overview" className="font-medium text-sm">Overview</TabsTrigger>
+                <TabsTrigger value="medications" className="font-medium text-sm">Medications</TabsTrigger>
+                <TabsTrigger value="reports" className="font-medium text-sm">Reports</TabsTrigger>
+                <TabsTrigger value="consultations" className="font-medium text-sm">Consultations</TabsTrigger>
+                <TabsTrigger value="history" className="font-medium text-sm">History</TabsTrigger>
+                <TabsTrigger value="family" className="font-medium text-sm">Family</TabsTrigger>
               </TabsList>
               
               {/* Overview Tab */}
-              <TabsContent value="overview" className="mt-4 space-y-4">
-                <Card>
-                  <CardHeader className="pb-2">
+              <TabsContent value="overview" className="mt-6 space-y-6">
+                <Card className="overflow-hidden border-border/30 shadow-sm">
+                  <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 via-primary/10 to-transparent">
                     <CardTitle className="text-lg flex items-center">
                       <AlertCircle className="mr-2 h-4 w-4 text-red-500" />
                       Conditions & Allergies
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-4 pt-4">
                     <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-1">Active Conditions</h4>
-                      <div className="flex flex-wrap gap-1">
+                      <h4 className="font-medium text-sm text-muted-foreground mb-2">Active Conditions</h4>
+                      <div className="flex flex-wrap gap-1.5">
                         {selectedPatient.conditions.map((condition, index) => (
-                          <span 
+                          <Badge 
                             key={index} 
-                            className="inline-block bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
+                            variant="outline"
+                            className="bg-primary/5 text-primary border-primary/20 hover:bg-primary/10"
                           >
                             {condition}
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                     </div>
                     
                     <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-1">Allergies</h4>
-                      <div className="flex flex-wrap gap-1">
+                      <h4 className="font-medium text-sm text-muted-foreground mb-2">Allergies</h4>
+                      <div className="flex flex-wrap gap-1.5">
                         {selectedPatient.allergies.length > 0 ? (
                           selectedPatient.allergies.map((allergy, index) => (
-                            <span 
+                            <Badge 
                               key={index} 
-                              className="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full"
+                              variant="outline"
+                              className="bg-destructive/5 text-destructive border-destructive/20 hover:bg-destructive/10"
                             >
                               {allergy}
-                            </span>
+                            </Badge>
                           ))
                         ) : (
                           <span className="text-sm">No known allergies</span>
@@ -579,7 +634,7 @@ const ProviderPatients = () => {
             
             <div className="mt-6 text-right">
               <SheetClose asChild>
-                <Button>Close</Button>
+                <Button className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80">Close</Button>
               </SheetClose>
             </div>
           </SheetContent>
