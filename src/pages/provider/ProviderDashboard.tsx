@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -341,10 +342,10 @@ const ProviderDashboard = () => {
             </GlassCard>)}
         </div>
         
-        <GlassCard className="mb-12">
+        <GlassCard className="mb-12 overflow-hidden shadow-lg border-0">
           <Tabs defaultValue="upcoming">
-            <div className="flex justify-between items-center p-6 border-b border-border/40">
-              <h2 className="text-xl font-semibold">Today's Appointments</h2>
+            <div className="flex justify-between items-center p-6 border-b border-border/40 bg-gradient-to-r from-primary/5 to-primary/10">
+              <h2 className="text-xl font-poppins font-semibold tracking-tight">Today's Appointments</h2>
               <TabsList className="bg-background/50 backdrop-blur-sm">
                 <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
                 <TabsTrigger value="completed">Completed</TabsTrigger>
@@ -353,50 +354,59 @@ const ProviderDashboard = () => {
             
             <TabsContent value="upcoming" className="p-0">
               <div className="divide-y divide-border/30">
-                {appointments.filter(a => a.status !== "cancelled").map(appointment => <div key={appointment.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-5 hover:bg-muted/10 transition-colors">
+                {appointments.filter(a => a.status !== "cancelled").map(appointment => (
+                  <div 
+                    key={appointment.id} 
+                    className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-5 hover:bg-muted/10 transition-colors"
+                  >
                     <div className="flex items-center">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mr-4">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mr-4 shadow-sm">
                         <UserRound className="h-6 w-6 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-xl text-left">{appointment.appointmentType}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">{appointment.patientId} - {appointment.patientName}</p>
+                        <h3 className="font-semibold text-lg tracking-tight font-poppins">{appointment.appointmentType}</h3>
+                        <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
+                          <span className="font-medium text-primary/80">{appointment.patientId}</span>
+                          <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50"></span>
+                          {appointment.patientName}
+                        </p>
                       </div>
                     </div>
                     
-                    <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-8 mt-3 md:mt-0">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
-                        <span className="text-sm">
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-6 mt-3 md:mt-0">
+                      <div className="flex items-center gap-1.5 bg-primary/5 px-3 py-1.5 rounded-full shadow-sm">
+                        <Calendar className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">
                           {formatDate(appointment.date)}
                         </span>
                       </div>
                       
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 text-muted-foreground mr-2" />
-                        <span className="text-sm">{appointment.time}</span>
+                      <div className="flex items-center gap-1.5 bg-primary/5 px-3 py-1.5 rounded-full shadow-sm">
+                        <Clock className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">{appointment.time}</span>
                       </div>
                       
-                      <div className="flex items-center">
-                        <Video className="h-4 w-4 text-muted-foreground mr-2" />
-                        <span className="text-sm">Video Call</span>
+                      <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full shadow-sm">
+                        <Video className="h-4 w-4" />
+                        <span className="text-sm font-medium">Video Call</span>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-3 mt-4 md:mt-0">
-                      <Button variant="outline" size="sm" className="flex items-center gap-1 border-primary/20 hover:border-primary/40" onClick={() => handleShowVisitReason(appointment.id)}>
+                      <Button variant="outline" size="sm" className="flex items-center gap-1 border-primary/20 hover:border-primary/40 shadow-sm" onClick={() => handleShowVisitReason(appointment.id)}>
                         <FileText className="h-4 w-4" />
                         Visit Reason
                       </Button>
-                      <Button variant="outline" size="sm" className="border-muted hover:border-muted/80" onClick={() => handleCancelAppointment(appointment.id)}>
+                      <Button variant="outline" size="sm" className="border-muted hover:border-muted/80 shadow-sm" onClick={() => handleCancelAppointment(appointment.id)}>
                         Cancel
                       </Button>
-                      <Button size="sm" className="bg-primary hover:bg-primary/90">
+                      <Button size="sm" className="bg-primary hover:bg-primary/90 shadow-sm">
                         <Video className="mr-1 h-4 w-4" />
                         Join Call
                       </Button>
                     </div>
-                  </div>)}
+                  </div>
+                ))}
               </div>
             </TabsContent>
             
