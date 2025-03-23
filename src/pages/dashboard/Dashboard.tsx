@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import AppointmentScheduler from "@/components/dashboard/AppointmentScheduler";
@@ -18,6 +19,7 @@ import PastAppointmentsPage from "./PastAppointmentsPage";
 import PrescriptionsPage from "./PrescriptionsPage";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import BookAppointmentFlow from "@/components/dashboard/BookingFlow/BookAppointmentFlow";
+import HealthInsightsWidget from "@/components/dashboard/health-records/HealthInsightsWidget";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -146,6 +148,34 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <HealthInsightsWidget className="md:col-span-3 lg:col-span-2" />
+        
+        <Card className="border rounded-xl shadow-sm hover:shadow-md transition-all lg:col-span-1">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-medium mb-3">Quick Links</h3>
+            <div className="space-y-2">
+              <Button variant="outline" className="w-full justify-start text-left hover:bg-health-50 hover:border-health-200 transition-colors" onClick={() => navigate("/dashboard/medical-history")}>
+                <ClipboardList className="mr-2 h-4 w-4" />
+                View Medical History
+              </Button>
+              <Button variant="outline" className="w-full justify-start text-left hover:bg-health-50 hover:border-health-200 transition-colors" onClick={() => navigate("/dashboard/health-records")}>
+                <ClipboardList className="mr-2 h-4 w-4" />
+                Access Health Records
+              </Button>
+              <Button variant="outline" className="w-full justify-start text-left hover:bg-health-50 hover:border-health-200 transition-colors" onClick={() => navigate("/dashboard/prescriptions")}>
+                <Pill className="mr-2 h-4 w-4" />
+                My Prescriptions
+              </Button>
+              <Button variant="outline" className="w-full justify-start text-left hover:bg-health-50 hover:border-health-200 transition-colors" onClick={() => navigate("/dashboard/treatment-options")}>
+                <Stethoscope className="mr-2 h-4 w-4" />
+                Explore Treatment Options
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
       <h2 className="text-2xl font-medium mb-6">Your Appointments</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="border rounded-xl shadow-sm hover:shadow-md transition-all">
@@ -155,43 +185,17 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <div className="space-y-4">
-          <Card className="border rounded-xl shadow-sm hover:shadow-md transition-all">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-medium mb-3">Quick Links</h3>
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start text-left hover:bg-health-50 hover:border-health-200 transition-colors" onClick={() => navigate("/dashboard/medical-history")}>
-                  <ClipboardList className="mr-2 h-4 w-4" />
-                  View Medical History
-                </Button>
-                <Button variant="outline" className="w-full justify-start text-left hover:bg-health-50 hover:border-health-200 transition-colors" onClick={() => navigate("/dashboard/health-records")}>
-                  <ClipboardList className="mr-2 h-4 w-4" />
-                  Access Health Records
-                </Button>
-                <Button variant="outline" className="w-full justify-start text-left hover:bg-health-50 hover:border-health-200 transition-colors" onClick={() => navigate("/dashboard/prescriptions")}>
-                  <Pill className="mr-2 h-4 w-4" />
-                  My Prescriptions
-                </Button>
-                <Button variant="outline" className="w-full justify-start text-left hover:bg-health-50 hover:border-health-200 transition-colors" onClick={() => navigate("/dashboard/treatment-options")}>
-                  <Stethoscope className="mr-2 h-4 w-4" />
-                  Explore Treatment Options
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="border rounded-xl shadow-sm hover:shadow-md transition-all bg-gradient-to-br from-white to-health-50/50">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-medium mb-3">Need Help?</h3>
-              <p className="text-muted-foreground mb-4">
-                Our support team is available 24/7 to assist you with any questions or concerns.
-              </p>
-              <Button variant="outline" className="w-full shadow-sm hover:shadow-md hover:bg-primary/5">
-                Contact Support
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="border rounded-xl shadow-sm hover:shadow-md transition-all bg-gradient-to-br from-white to-health-50/50">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-medium mb-3">Need Help?</h3>
+            <p className="text-muted-foreground mb-4">
+              Our support team is available 24/7 to assist you with any questions or concerns.
+            </p>
+            <Button variant="outline" className="w-full shadow-sm hover:shadow-md hover:bg-primary/5">
+              Contact Support
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>;
 
