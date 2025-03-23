@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -118,14 +117,9 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updat
     });
   };
 
-  // Function to parse PDF content (will be implemented with a PDF parsing library)
   const parsePdfContent = async (file: File): Promise<string> => {
-    // This is a simulated PDF parsing function
-    // In a real implementation, you would use a library like pdf.js or make a server request
     return new Promise((resolve) => {
-      // Simulate processing time
       setTimeout(() => {
-        // For demo purposes, return a mock certificate summary
         if (file.name.toLowerCase().includes('certif')) {
           resolve("Certificate Analysis:\n• Document Type: Professional Medical Certificate\n• Issuing Authority: Canadian Medical Association\n• License Type: Full Practice\n• Status: Active\n• Specialization: Internal Medicine\n• Date of Issue: 2022-05-15\n• Expiration Date: 2025-05-14");
         } else {
@@ -135,7 +129,6 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updat
     });
   };
 
-  // Drawing signature functions
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     setIsDrawingActive(true);
     const canvas = canvasRef.current;
@@ -145,12 +138,12 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updat
     if (!ctx) return;
     
     const rect = canvas.getBoundingClientRect();
-    const x = e instanceof MouseEvent 
-      ? e.clientX - rect.left 
-      : e.touches[0].clientX - rect.left;
-    const y = e instanceof MouseEvent 
-      ? e.clientY - rect.top 
-      : e.touches[0].clientY - rect.top;
+    const x = 'touches' in e 
+      ? e.touches[0].clientX - rect.left 
+      : e.clientX - rect.left;
+    const y = 'touches' in e 
+      ? e.touches[0].clientY - rect.top 
+      : e.clientY - rect.top;
     
     setLastPoint({x, y});
   };
@@ -165,12 +158,12 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updat
     if (!ctx) return;
     
     const rect = canvas.getBoundingClientRect();
-    const x = e instanceof MouseEvent 
-      ? e.clientX - rect.left 
-      : e.touches[0].clientX - rect.left;
-    const y = e instanceof MouseEvent 
-      ? e.clientY - rect.top 
-      : e.touches[0].clientY - rect.top;
+    const x = 'touches' in e 
+      ? e.touches[0].clientX - rect.left 
+      : e.clientX - rect.left;
+    const y = 'touches' in e 
+      ? e.touches[0].clientY - rect.top 
+      : e.clientY - rect.top;
     
     ctx.beginPath();
     ctx.lineWidth = 2;
@@ -187,7 +180,6 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updat
     setIsDrawingActive(false);
     setLastPoint(null);
     
-    // Save the signature as data URL
     const canvas = canvasRef.current;
     if (canvas) {
       const dataURL = canvas.toDataURL('image/png');
