@@ -256,10 +256,12 @@ const HealthRecordsPage = () => {
         throw error;
       }
 
+      // Fix: Create a File object correctly with one argument (the blob) and a name option
       const file = new File([data], name);
       
       const summary = await parsePdfContent(file);
       
+      // Update the document with the summary
       await supabase
         .from('user_documents')
         .update({
@@ -290,6 +292,7 @@ const HealthRecordsPage = () => {
 
   const verifyDocumentSummary = async (id: string) => {
     try {
+      // Update the document to mark summary as verified
       await supabase
         .from('user_documents')
         .update({

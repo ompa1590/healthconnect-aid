@@ -251,24 +251,30 @@ export type Database = {
         Row: {
           document_name: string | null
           document_path: string
+          document_summary: string | null
           document_type: string | null
           id: string
+          summary_verified: boolean | null
           uploaded_at: string
           user_id: string
         }
         Insert: {
           document_name?: string | null
           document_path: string
+          document_summary?: string | null
           document_type?: string | null
           id?: string
+          summary_verified?: boolean | null
           uploaded_at?: string
           user_id: string
         }
         Update: {
           document_name?: string | null
           document_path?: string
+          document_summary?: string | null
           document_type?: string | null
           id?: string
+          summary_verified?: boolean | null
           uploaded_at?: string
           user_id?: string
         }
