@@ -41,6 +41,8 @@ export type ProviderFormData = {
   };
   profilePicture?: File;
   certificateFile?: File;
+  certificateSummary?: string;
+  certificateVerified?: boolean;
   signatureImage?: string;
 };
 
@@ -164,6 +166,10 @@ const ProviderSignup = () => {
         }
         if (!formData.signatureImage) {
           setStepErrors("Please provide your e-signature");
+          return false;
+        }
+        if (formData.certificateSummary && !formData.certificateVerified) {
+          setStepErrors("Please verify that the certificate summary is accurate");
           return false;
         }
         break;

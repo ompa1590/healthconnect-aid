@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -37,6 +36,8 @@ export type SignupFormData = {
   };
   documents?: string[];
   documentFiles?: File[];
+  documentSummaries?: {[key: string]: string};
+  documentVerified?: {[key: string]: boolean};
 };
 
 const PatientSignup = () => {
@@ -64,18 +65,18 @@ const PatientSignup = () => {
     },
     documents: [],
     documentFiles: [],
+    documentSummaries: {},
+    documentVerified: {},
   });
   const [stepErrors, setStepErrors] = useState<string | null>(null);
   
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        // User is already logged in, redirect to dashboard
         navigate('/dashboard');
       }
     };
@@ -83,7 +84,6 @@ const PatientSignup = () => {
     checkSession();
   }, [navigate]);
 
-  // Validate current step
   const validateCurrentStep = (): boolean => {
     setStepErrors(null);
     
@@ -162,7 +162,6 @@ const PatientSignup = () => {
     return true;
   };
 
-  // Define the steps in the sign-up process
   const steps = [
     {
       title: "Create Your Account",
