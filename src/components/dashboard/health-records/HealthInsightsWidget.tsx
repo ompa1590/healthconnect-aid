@@ -42,7 +42,13 @@ const HealthInsightsWidget: React.FC<HealthInsightsProps> = ({ className }) => {
     const fetchVerifiedDocuments = async () => {
       try {
         const { data: session } = await supabase.auth.getSession();
-        if (!session?.session) return;
+        if (!session?.session) {
+          // Show sample data if not logged in
+          setIsLoading(false);
+          setDocuments([]);
+          setSampleData();
+          return;
+        }
 
         const { data, error } = await supabase
           .from("user_documents")
@@ -54,31 +60,36 @@ const HealthInsightsWidget: React.FC<HealthInsightsProps> = ({ className }) => {
         if (error) throw error;
         setDocuments(data || []);
 
-        // Extract medical information from all document summaries
-        const extractedInfo = {
-          conditions: [] as string[],
-          allergies: [] as string[],
-          medications: [] as string[],
-          pastTreatments: [] as string[],
-        };
+        if (data && data.length > 0) {
+          // Extract medical information from all document summaries
+          const extractedInfo = {
+            conditions: [] as string[],
+            allergies: [] as string[],
+            medications: [] as string[],
+            pastTreatments: [] as string[],
+          };
 
-        data?.forEach((doc) => {
-          if (doc.document_summary) {
-            const docInfo = extractMedicalInfo(doc.document_summary);
-            extractedInfo.conditions.push(...docInfo.conditions);
-            extractedInfo.allergies.push(...docInfo.allergies);
-            extractedInfo.medications.push(...docInfo.medications);
-            extractedInfo.pastTreatments.push(...docInfo.pastTreatments);
-          }
-        });
+          data?.forEach((doc) => {
+            if (doc.document_summary) {
+              const docInfo = extractMedicalInfo(doc.document_summary);
+              extractedInfo.conditions.push(...docInfo.conditions);
+              extractedInfo.allergies.push(...docInfo.allergies);
+              extractedInfo.medications.push(...docInfo.medications);
+              extractedInfo.pastTreatments.push(...docInfo.pastTreatments);
+            }
+          });
 
-        // Remove duplicates
-        setInsights({
-          conditions: [...new Set(extractedInfo.conditions)],
-          allergies: [...new Set(extractedInfo.allergies)],
-          medications: [...new Set(extractedInfo.medications)],
-          pastTreatments: [...new Set(extractedInfo.pastTreatments)],
-        });
+          // Remove duplicates
+          setInsights({
+            conditions: [...new Set(extractedInfo.conditions)],
+            allergies: [...new Set(extractedInfo.allergies)],
+            medications: [...new Set(extractedInfo.medications)],
+            pastTreatments: [...new Set(extractedInfo.pastTreatments)],
+          });
+        } else {
+          // No verified documents found, show sample data
+          setSampleData();
+        }
       } catch (error) {
         console.error("Error fetching verified documents:", error);
         toast({
@@ -86,6 +97,8 @@ const HealthInsightsWidget: React.FC<HealthInsightsProps> = ({ className }) => {
           description: "Could not load health insights",
           variant: "destructive",
         });
+        // Show sample data on error
+        setSampleData();
       } finally {
         setIsLoading(false);
       }
@@ -93,6 +106,15 @@ const HealthInsightsWidget: React.FC<HealthInsightsProps> = ({ className }) => {
 
     fetchVerifiedDocuments();
   }, [toast]);
+
+  const setSampleData = () => {
+    setInsights({
+      conditions: ["Hypothyroidism", "Mild Hypertension", "Vitamin B12 Deficiency", "Vitamin D Deficiency"],
+      allergies: ["Dust Mites", "Cat Dander", "Pollen", "Penicillin"],
+      medications: ["Levothyroxine 50mcg", "Lisinopril 10mg", "Vitamin D3 2000IU", "Vitamin B12 1000mcg"],
+      pastTreatments: ["Physical Therapy", "Allergen Immunotherapy", "Annual Wellness Exam", "Cardiovascular Assessment"]
+    });
+  };
 
   // Data for pie chart
   const pieData = [
@@ -102,8 +124,10 @@ const HealthInsightsWidget: React.FC<HealthInsightsProps> = ({ className }) => {
     { name: "Treatments", value: insights.pastTreatments.length, color: colors.treatments },
   ].filter(item => item.value > 0);
 
-  // If there are no verified documents with summaries
-  if (!isLoading && documents.length === 0) {
+  // If there are no verified documents with summaries and no sample data
+  if (!isLoading && documents.length === 0 && insights.conditions.length === 0 && 
+      insights.allergies.length === 0 && insights.medications.length === 0 && 
+      insights.pastTreatments.length === 0) {
     return (
       <Card className={className}>
         <CardHeader>
@@ -148,6 +172,21 @@ const HealthInsightsWidget: React.FC<HealthInsightsProps> = ({ className }) => {
     );
   };
 
+  // Sample data notification
+  const SampleDataNotice = () => {
+    if (documents.length === 0 && !isLoading) {
+      return (
+        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2 mt-2 mb-4">
+          <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center">
+            <CircleAlert className="h-3 w-3 mr-1.5" />
+            Sample data shown. Upload and verify documents to see your actual health insights.
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <Card className={className}>
       <CardHeader>
@@ -174,6 +213,8 @@ const HealthInsightsWidget: React.FC<HealthInsightsProps> = ({ className }) => {
           </div>
         ) : (
           <div className="space-y-6">
+            <SampleDataNotice />
+            
             {/* Health summary chart */}
             {pieData.length > 0 ? (
               <div className="h-[200px] w-full relative">
