@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -174,9 +175,9 @@ const ProviderAppointments = () => {
         </div>
       </div>
       
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-xl font-poppins">Upcoming Appointments</CardTitle>
+      <Card className="shadow-md border-0 overflow-hidden">
+        <CardHeader className="pb-3 bg-gradient-to-r from-primary/5 to-primary/10">
+          <CardTitle className="text-xl font-poppins tracking-tight">Upcoming Appointments</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Tabs defaultValue="upcoming">
@@ -200,31 +201,33 @@ const ProviderAppointments = () => {
                   .map((appointment) => (
                     <div
                       key={appointment.id}
-                      className="px-4 py-4 hover:bg-muted/30 transition-colors border-b last:border-0"
+                      className="px-6 py-5 hover:bg-muted/20 transition-all duration-200 border-b last:border-0"
                     >
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold">
+                          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold shadow-sm">
                             {appointment.patient.split(' ').map(n => n[0]).join('')}
                           </div>
                           <div>
-                            <h3 className="font-semibold font-poppins text-lg leading-tight">{appointment.reason}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {appointment.patientId} - {appointment.patient}
+                            <h3 className="font-semibold font-poppins text-lg leading-tight tracking-tight">{appointment.reason}</h3>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                              <span className="font-medium text-primary/80">{appointment.patientId}</span> 
+                              <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50"></span> 
+                              {appointment.patient}
                             </p>
                           </div>
                         </div>
                         
-                        <div className="flex flex-wrap items-center gap-3 md:gap-6 text-sm ml-13">
-                          <div className="flex items-center gap-1.5 bg-muted/40 px-2.5 py-1 rounded-full">
+                        <div className="flex flex-wrap items-center gap-3 md:gap-5 text-sm ml-13">
+                          <div className="flex items-center gap-1.5 bg-primary/5 px-3 py-1.5 rounded-full shadow-sm">
                             <CalendarClock className="h-4 w-4 text-primary" />
                             <span className="font-medium">{formatAppointmentDate(appointment.date)}</span>
                           </div>
-                          <div className="flex items-center gap-1.5 bg-muted/40 px-2.5 py-1 rounded-full">
+                          <div className="flex items-center gap-1.5 bg-primary/5 px-3 py-1.5 rounded-full shadow-sm">
                             <Clock className="h-4 w-4 text-primary" />
                             <span className="font-medium">{appointment.time}</span>
                           </div>
-                          <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-full">
+                          <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full shadow-sm">
                             <Video className="h-4 w-4" />
                             <span className="font-medium">Video Call</span>
                           </div>
@@ -234,7 +237,7 @@ const ProviderAppointments = () => {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            className="text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50"
+                            className="text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50 shadow-sm"
                             onClick={() => handleCancelAppointment(appointment.id)}
                           >
                             Cancel
@@ -242,11 +245,12 @@ const ProviderAppointments = () => {
                           <Button 
                             variant="outline" 
                             size="sm"
+                            className="shadow-sm hover:bg-primary/5"
                             onClick={() => handleViewVisitReason(appointment.id)}
                           >
                             Visit Reason
                           </Button>
-                          <Button size="sm">
+                          <Button size="sm" className="shadow-sm font-medium">
                             <Video className="mr-1.5 h-4 w-4" />
                             Join Call
                           </Button>
@@ -268,22 +272,24 @@ const ProviderAppointments = () => {
                   .map((appointment) => (
                     <div
                       key={appointment.id}
-                      className="px-4 py-4 hover:bg-muted/30 transition-colors border-b last:border-0"
+                      className="px-6 py-5 hover:bg-muted/20 transition-all duration-200 border-b last:border-0"
                     >
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold">
+                          <div className="w-12 h-12 bg-primary/5 rounded-full flex items-center justify-center text-primary font-semibold shadow-sm">
                             {appointment.patient.split(' ').map(n => n[0]).join('')}
                           </div>
                           <div>
-                            <h3 className="font-semibold font-poppins">{appointment.reason}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {appointment.patientId} - {appointment.patient}
+                            <h3 className="font-semibold font-poppins tracking-tight">{appointment.reason}</h3>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                              <span className="font-medium text-primary/80">{appointment.patientId}</span>
+                              <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50"></span>
+                              {appointment.patient}
                             </p>
                           </div>
                         </div>
                         
-                        <div className="flex flex-wrap items-center gap-3 md:gap-6 text-sm ml-13">
+                        <div className="flex flex-wrap items-center gap-3 md:gap-5 text-sm ml-13">
                           <div className="flex items-center gap-1.5">
                             <CalendarClock className="h-4 w-4 text-muted-foreground" />
                             <span>{formatAppointmentDate(appointment.date)}</span>
@@ -298,6 +304,7 @@ const ProviderAppointments = () => {
                           <Button 
                             variant="outline" 
                             size="sm"
+                            className="shadow-sm hover:bg-primary/5"
                             onClick={() => handleViewNotes(appointment.id)}
                           >
                             <FileText className="mr-1.5 h-4 w-4" />
@@ -306,6 +313,7 @@ const ProviderAppointments = () => {
                           <Button 
                             variant="outline" 
                             size="sm"
+                            className="shadow-sm hover:bg-primary/5"
                             onClick={() => handleBillingClaim(appointment.id)}
                           >
                             <DollarSign className="mr-1.5 h-4 w-4" />
@@ -329,23 +337,25 @@ const ProviderAppointments = () => {
                   .map((appointment) => (
                     <div
                       key={appointment.id}
-                      className="px-4 py-4 hover:bg-muted/30 transition-colors border-b last:border-0 opacity-75"
+                      className="px-6 py-5 hover:bg-muted/20 transition-all duration-200 border-b last:border-0 opacity-75"
                     >
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 bg-muted/50 rounded-full flex items-center justify-center text-muted-foreground font-semibold">
+                          <div className="w-12 h-12 bg-muted/50 rounded-full flex items-center justify-center text-muted-foreground font-semibold shadow-sm">
                             {appointment.patient.split(' ').map(n => n[0]).join('')}
                           </div>
                           <div>
-                            <h3 className="font-semibold font-poppins line-through">{appointment.reason}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {appointment.patientId} - {appointment.patient}
+                            <h3 className="font-semibold font-poppins line-through tracking-tight">{appointment.reason}</h3>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                              <span className="font-medium text-muted/80">{appointment.patientId}</span>
+                              <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50"></span>
+                              {appointment.patient}
                             </p>
                             <p className="text-xs text-destructive mt-1">Cancelled</p>
                           </div>
                         </div>
                         
-                        <div className="flex flex-wrap items-center gap-3 md:gap-6 text-sm ml-13">
+                        <div className="flex flex-wrap items-center gap-3 md:gap-5 text-sm ml-13">
                           <div className="flex items-center gap-1.5">
                             <CalendarClock className="h-4 w-4 text-muted-foreground" />
                             <span className="line-through">{formatAppointmentDate(appointment.date)}</span>
