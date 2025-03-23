@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, FileText, Calendar, Phone, Pill, Stethoscope, AlertCircle, Shield, Users, Clock, Calendar as CalendarIcon } from "lucide-react";
@@ -24,6 +25,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import SummaryDialog from "../dashboard/health-records/SummaryDialog";
+import { format } from "date-fns";
 
 const ProviderPatients = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -190,9 +192,9 @@ const ProviderPatients = () => {
     setConsultationNotesOpen(true);
   };
 
+  // Updated formatDate function to use date-fns format
   const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+    return format(new Date(dateString), "MMM d, yyyy");
   };
 
   return (
