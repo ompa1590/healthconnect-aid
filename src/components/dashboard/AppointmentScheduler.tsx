@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import BookAppointment from "./BookAppointment";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { CalendarDays, ArrowLeft, Clock, User } from "lucide-react";
+import { CalendarDays, ArrowLeft, Clock, User, Stethoscope, CalendarCheck, Sparkles } from "lucide-react";
 import { GlassCard } from "../ui/GlassCard";
 
 const AppointmentScheduler = () => {
@@ -44,22 +44,25 @@ const AppointmentScheduler = () => {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
+    <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 animate-fade-in">
       <div className="flex items-center mb-8">
         <Button 
           variant="back" 
           size="sm" 
           onClick={handleBackToHome}
-          className="mr-4 bg-white shadow-sm hover:bg-gray-50"
+          className="mr-4 bg-white shadow-sm hover:bg-gray-50 group"
         >
-          <ArrowLeft className="h-4 w-4 mr-1" />
+          <ArrowLeft className="h-4 w-4 mr-1 group-hover:-translate-x-1 transition-transform" />
           Back to Home
         </Button>
-        <h1 className="text-2xl md:text-3xl font-medium text-gray-800">Book Appointment</h1>
+        <h1 className="text-2xl md:text-3xl font-medium text-gray-800 flex items-center">
+          Book Appointment
+          <CalendarCheck className="ml-2 h-6 w-6 text-primary/70" />
+        </h1>
       </div>
     
       <div className="grid md:grid-cols-2 gap-8">
-        <GlassCard className="rounded-xl" variant="elevated" borderEffect>
+        <GlassCard className="rounded-xl" variant="colored" borderEffect>
           <h2 className="text-xl font-medium mb-6 flex items-center text-gray-800">
             <User className="mr-2 h-5 w-5 text-primary/70" />
             Select Your Provider
@@ -73,8 +76,11 @@ const AppointmentScheduler = () => {
                 </SelectTrigger>
                 <SelectContent className="bg-white/90 backdrop-blur-md">
                   {specialists.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
+                    <SelectItem key={s} value={s} className="focus:bg-primary/10 cursor-pointer">
+                      <div className="flex items-center">
+                        <Stethoscope className="mr-2 h-4 w-4 text-primary/70" />
+                        {s}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -84,7 +90,7 @@ const AppointmentScheduler = () => {
         </GlassCard>
 
         <div className="space-y-8">
-          <GlassCard className="rounded-xl" variant="elevated" borderEffect>
+          <GlassCard className="rounded-xl" variant="accent" borderEffect>
             <h2 className="text-xl font-medium mb-6 flex items-center text-gray-800">
               <CalendarDays className="mr-2 h-5 w-5 text-primary/70" />
               Choose Appointment Date
@@ -94,7 +100,7 @@ const AppointmentScheduler = () => {
                 mode="single"
                 selected={date}
                 onSelect={setDate}
-                className="rounded-md border border-border/30 bg-white/50 p-3"
+                className="rounded-md border border-border/30 bg-white/50 p-3 shadow-sm hover:shadow-md transition-all"
                 disabled={(date) => date < new Date()}
               />
             </div>
@@ -112,8 +118,11 @@ const AppointmentScheduler = () => {
                 </SelectTrigger>
                 <SelectContent className="bg-white/90 backdrop-blur-md">
                   {timeSlots.map((slot) => (
-                    <SelectItem key={slot} value={slot}>
-                      {slot}
+                    <SelectItem key={slot} value={slot} className="focus:bg-primary/10 cursor-pointer">
+                      <div className="flex items-center">
+                        <Clock className="mr-2 h-4 w-4 text-primary/70" />
+                        {slot}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -126,8 +135,9 @@ const AppointmentScheduler = () => {
       <div className="mt-8 flex justify-end">
         <Dialog open={openBookingFlow} onOpenChange={setOpenBookingFlow}>
           <DialogTrigger asChild>
-            <Button className="px-6 shadow-md hover:shadow-lg transition-all duration-200 bg-gradient-to-r from-primary/90 to-primary/80 hover:from-primary hover:to-primary/90">
+            <Button className="px-6 shadow-md hover:shadow-lg transition-all duration-200 bg-gradient-to-r from-primary/90 to-primary/80 hover:from-primary hover:to-primary/90 group">
               Schedule Appointment
+              <Sparkles className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
