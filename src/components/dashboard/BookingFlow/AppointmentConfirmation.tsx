@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Clock, User } from "lucide-react";
 import { format } from "date-fns";
@@ -15,6 +14,12 @@ interface AppointmentConfirmationProps {
 }
 
 const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConfirmationProps) => {
+  const [showPrescreening, setShowPrescreening] = useState(false);
+
+  const togglePrescreening = () => {
+    setShowPrescreening(!showPrescreening);
+  };
+
   return (
     <div className="space-y-6 text-center">
       <div className="flex flex-col items-center mb-4">
@@ -72,10 +77,41 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
           You can manage your appointments in the Dashboard.
         </p>
         
-        <Button onClick={onDone} size="lg" className="px-8">
-          Done
-        </Button>
+        <div className="space-y-3">
+          <Button onClick={onDone} size="lg" className="px-8">
+            Done
+          </Button>
+          <div>
+            <Button 
+              onClick={togglePrescreening} 
+              variant="outline" 
+              size="lg" 
+              className="px-8 mt-2"
+            >
+              {showPrescreening ? 'Close Prescreening' : 'Start Your Prescreening'}
+            </Button>
+          </div>
+        </div>
       </div>
+
+      {showPrescreening && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
+          <div className="fixed inset-4 z-50 rounded-lg border bg-background shadow-lg">
+            <iframe
+              src="https://www.tixaeagents.ai/app/na/render/dCNT2Pct710m7Dxr3Kyi/iframe"
+              className="w-full h-full rounded-lg"
+              frameBorder="0"
+            />
+            <Button
+              onClick={togglePrescreening}
+              className="absolute top-4 right-4"
+              variant="outline"
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

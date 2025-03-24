@@ -14,8 +14,8 @@ const HowItWorksPage = () => {
     icon: Clipboard,
     color: "primary",
     animation: "fade-right",
-    details: ["Explore specialized services for your specific health concerns", "Use our AI Symptom Checker for personalized recommendations", "Read doctor profiles and reviews to find the perfect match", "Compare service options and pricing"],
-    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1470&auto=format&fit=crop"
+    details: ["Explore specialized services for your specific health concerns", "Read doctor profiles and reviews to find the perfect match", "Compare service options and pricing"],
+    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1470&auto=format&fit=crop"
   }, {
     id: 2,
     title: "Book an Appointment",
@@ -42,7 +42,7 @@ const HowItWorksPage = () => {
     color: "medical",
     animation: "fade-left",
     details: ["Digital treatment plans sent directly to your patient portal", "Electronic prescriptions sent to your preferred pharmacy", "Detailed aftercare instructions", "Lab work referrals when necessary"],
-    image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?q=80&w=1470&auto=format&fit=crop"
+    image: "https://images.unsplash.com/photo-1517817748493-49ec54a32465?q=80&w=1470&auto=format&fit=crop"
   }, {
     id: 5,
     title: "Medication & Follow-Ups",
@@ -51,7 +51,7 @@ const HowItWorksPage = () => {
     color: "care",
     animation: "fade-right",
     details: ["Medication delivered to your door within 24-48 hours", "Automatic refill reminders", "Easy scheduling of follow-up appointments", "Ongoing chat support with your care team"],
-    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1470&auto=format&fit=crop"
+    image: "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?q=80&w=1470&auto=format&fit=crop"
   }];
   
   return <div className="min-h-screen">
@@ -154,7 +154,7 @@ const HowItWorksPage = () => {
                   <Link to="/services">Browse Services</Link>
                 </Button>
                 <Button variant="outline" className="rounded-full border-primary/30 hover:border-primary/60 hover:bg-primary/5 transition-all" size="lg" asChild>
-                  <Link to="/login">Sign In</Link>
+                  <Link to="/login">Get Started</Link>
                 </Button>
               </div>
             </div>

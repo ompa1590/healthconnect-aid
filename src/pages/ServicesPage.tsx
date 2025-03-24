@@ -1,4 +1,3 @@
-
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { ServiceCategoryTabs } from "@/components/services/ServiceCategoryTabs";
@@ -7,6 +6,42 @@ import AllTreatments from "@/components/services/AllTreatments";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { DoctorCard } from "@/components/services/DoctorCard";
+import { GlassCard } from "@/components/ui/GlassCard";
+// Add team members data
+const teamMembers = [
+  {
+    name: "Dr. Sarah Johnson",
+    role: "Chief Medical Officer",
+    background: "15+ years experience in telemedicine and primary care",
+    specialty: "Internal Medicine",
+    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=1470&auto=format&fit=crop",
+    gradient: "from-blue-500/20 to-purple-500/20"
+  },
+  {
+    name: "Dr. James Wilson",
+    role: "Lead Specialist",
+    background: "Board certified with focus on chronic conditions",
+    specialty: "Cardiology",
+    image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=1470&auto=format&fit=crop",
+    gradient: "from-green-500/20 to-blue-500/20"
+  },
+  {
+    name: "Dr. Maria Garcia",
+    role: "Mental Health Director",
+    background: "Specialized in telepsychiatry and anxiety disorders",
+    specialty: "Psychiatry",
+    image: "https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=987&auto=format&fit=crop",
+    gradient: "from-purple-500/20 to-pink-500/20"
+  },
+  {
+    name: "Dr. David Chen",
+    role: "Pediatric Specialist",
+    background: "Dedicated to children's telehealth services",
+    specialty: "Pediatrics",
+    image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=1470&auto=format&fit=crop",
+    gradient: "from-orange-500/20 to-red-500/20"
+  }
+];
 
 const ServicesPage = () => {
   const [viewMode, setViewMode] = useState("categories");
@@ -104,52 +139,44 @@ const ServicesPage = () => {
           </Tabs>
         </section>
         
-        {/* Featured Healthcare Professionals Section */}
-        <section className="container mx-auto px-6 py-12 mt-8">
-          <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-3xl p-8">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold mb-2">Healthcare Professional Spotlight</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Our team of certified specialists is available 24/7 to address your health concerns.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="col-span-1 md:col-span-2 rounded-2xl overflow-hidden h-auto md:h-[400px] relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=1480&auto=format&fit=crop" 
-                  alt="Healthcare team meeting" 
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex flex-col justify-end p-6 text-white">
-                  <h3 className="text-2xl font-bold mb-2">Collaborative Care Approach</h3>
-                  <p className="mb-4">Our healthcare professionals work together to provide comprehensive care for complex conditions.</p>
-                </div>
-              </div>
-              
-              <div className="flex flex-col gap-4">
-                <div className="rounded-2xl overflow-hidden h-[190px] relative">
-                  <img 
-                    src="https://images.unsplash.com/photo-1551601651-bc60f254d532?q=80&w=1364&auto=format&fit=crop" 
-                    alt="Doctor with patient" 
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4 text-white">
-                    <h3 className="text-lg font-bold">Patient-Centered Care</h3>
+        {/* Team Section */}
+        <section className="container mx-auto px-6 mb-20">
+          <div className="text-center mb-12">
+            <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-muted text-primary mb-4">Our Team</span>
+            <h2 className="text-3xl font-bold mb-4">Meet Our Medical Experts</h2>
+            <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
+              Our team of board-certified physicians and specialists are dedicated to providing
+              exceptional care through our telehealth platform.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {teamMembers.map((member, index) => (
+              <GlassCard 
+                key={index} 
+                className="p-0 overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-lg animate-fade-in" 
+                style={{
+                  animationDelay: `${index * 0.1}s`
+                }}
+              >
+                <div className={`bg-gradient-to-br ${member.gradient} p-6 pb-0`}>
+                  <div className="w-24 h-24 mx-auto bg-white rounded-full overflow-hidden mb-4">
+                    <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
                   </div>
                 </div>
-                <div className="rounded-2xl overflow-hidden h-[190px] relative">
-                  <img 
-                    src="https://images.unsplash.com/photo-1631815589668-dc6d0eb3a6cc?q=80&w=1364&auto=format&fit=crop" 
-                    alt="Telemedicine consultation" 
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4 text-white">
-                    <h3 className="text-lg font-bold">Virtual Consultations</h3>
+                
+                <div className="text-center p-6">
+                  <h3 className="text-xl font-semibold text-center mb-1">{member.name}</h3>
+                  <p className="text-primary text-sm text-center mb-4">{member.role}</p>
+                  <p className="text-muted-foreground text-sm mb-3">{member.background}</p>
+                  <div className="flex items-center justify-center">
+                    <span className="px-3 py-1 rounded-full bg-muted text-xs font-medium">
+                      {member.specialty}
+                    </span>
                   </div>
                 </div>
-              </div>
-            </div>
+              </GlassCard>
+            ))}
           </div>
         </section>
       </main>
