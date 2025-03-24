@@ -12,7 +12,9 @@ import {
   Mail, 
   BadgeInfo,
   ShieldAlert,
-  SaveIcon
+  SaveIcon,
+  Stethoscope,
+  Sparkles
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -172,7 +174,19 @@ const ProfileSettings = () => {
   }
   
   return (
-    <Card className="animate-fade-in transition-all duration-300">
+    <main className="max-w-6xl mx-auto px-6 py-10 animate-fade-in">
+      <div className="mb-6 relative overflow-hidden rounded-xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-health-200/40 to-health-100/20"></div>
+        <div className="relative p-6 border border-health-200/30">
+          <div className="flex items-center mb-2">
+            <Sparkles className="h-5 w-5 text-primary/70 mr-2" />
+            <h2 className="text-xl font-medium">Personalized your Profile</h2>
+          </div>
+          <p className="text-muted-foreground max-w-2xl">
+            Update your personal information to keep your profile accurate and up to date.          </p>
+        </div>
+      </div>
+    <Card className="max-w-6xl mx-auto my-6 px-6 py-10 animate-fade-in">
       <CardContent className="p-6">
         <h2 className="text-xl font-medium mb-6 flex items-center">
           <UserCog className="mr-2 h-5 w-5 text-primary" />
@@ -392,6 +406,7 @@ const ProfileSettings = () => {
         </Form>
       </CardContent>
     </Card>
+  </main>
   );
 };
 

@@ -140,7 +140,7 @@ const ServicesPage = () => {
                 </div>
                 <div className="rounded-2xl overflow-hidden h-[190px] relative">
                   <img 
-                    src="https://images.unsplash.com/photo-1631815589668-dc6d0eb3a6cc?q=80&w=1364&auto=format&fit=crop" 
+                    src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=1364&auto=format&fit=crop" 
                     alt="Telemedicine consultation" 
                     className="w-full h-full object-cover"
                   />

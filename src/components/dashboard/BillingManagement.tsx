@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -62,8 +61,41 @@ const paymentMethods = [
 const BillingManagement = () => {
   return (
     <div className="space-y-8">
-      <h2 className="text-xl font-semibold">Billing & Payments</h2>
-      
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Billing & Payments</h2>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" className="gap-2">
+            <Bell className="h-4 w-4" />
+            Set Reminders
+          </Button>
+          <Button className="gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Billing Support
+          </Button>
+        </div>
+      </div>
+
+      {/* Help banner */}
+      <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <MailQuestion className="h-5 w-5 text-primary" />
+          <div>
+            <p className="font-medium">Need help with your billing?</p>
+            <p className="text-sm text-muted-foreground">Our support team is available 24/7 to assist you</p>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" size="sm" className="gap-2">
+            <FileText className="h-4 w-4" />
+            View FAQ
+          </Button>
+          <Button variant="default" size="sm" className="gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Chat Now
+          </Button>
+        </div>
+      </div>
+
       {/* Account summary */}
       <Card>
         <CardHeader className="pb-3">
@@ -220,55 +252,6 @@ const BillingManagement = () => {
           <Button variant="outline">View All Transactions</Button>
         </CardFooter>
       </Card>
-      
-      {/* Insurance Claims */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Insurance Claims */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <MailQuestion className="h-5 w-5 text-primary" />
-              Insurance Claims
-            </CardTitle>
-            <CardDescription>Submit and track your insurance claims</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Button className="w-full gap-2">
-                <FileText className="h-4 w-4" />
-                Submit New Claim
-              </Button>
-              <Button variant="outline" className="w-full gap-2">
-                <FileText className="h-4 w-4" />
-                View Pending Claims (2)
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Support */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-primary" />
-              Billing Support
-            </CardTitle>
-            <CardDescription>Get help with your billing questions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Button className="w-full gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Chat with Billing Support
-              </Button>
-              <Button variant="outline" className="w-full gap-2">
-                <Bell className="h-4 w-4" />
-                Set Payment Reminders
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 };

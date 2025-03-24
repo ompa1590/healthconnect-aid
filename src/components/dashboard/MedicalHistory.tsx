@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash, Loader2, Upload, FileText, File } from "lucide-react";
+import { Plus, Trash, Loader2, Upload, FileText, File, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { 
@@ -367,7 +367,19 @@ const MedicalHistory = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto px-6 py-10 animate-fade-in space-y-6">
+            <div className="mb-6 relative overflow-hidden rounded-xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-health-200/40 to-health-100/20"></div>
+        <div className="relative p-6 border border-health-200/30">
+          <div className="flex items-center mb-2">
+            <Sparkles className="h-5 w-5 text-primary/70 mr-2" />
+            <h2 className="text-xl font-medium">Update your History</h2>
+          </div>
+          <p className="text-muted-foreground max-w-2xl">
+          Update your medical history to ensure accurate and personalized care.          
+          </p>
+        </div>
+      </div>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h2 className="text-xl font-semibold">Medical Documents</h2>

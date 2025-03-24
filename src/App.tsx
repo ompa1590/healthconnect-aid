@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PatientLogin from './pages/login/PatientLogin';
@@ -21,6 +20,7 @@ import ServicesPage from './pages/ServicesPage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
+import DashboardLayout from "@/layouts/DashboardLayout";
 
 const App = () => {
   React.useEffect(() => {
@@ -59,15 +59,6 @@ const App = () => {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/login" element={<PatientLogin />} />
           <Route path="/signup" element={<PatientSignup />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard/profile" element={<ProfileSettings />} />
-          <Route path="/dashboard/medical-history" element={<MedicalHistory />} />
-          <Route path="/dashboard/health-records" element={<HealthRecordsPage />} />
-          <Route path="/dashboard/treatment-options" element={<TreatmentOptionsPage />} />
-          <Route path="/dashboard/services" element={<DashboardServices />} />
-          <Route path="/dashboard/past-appointments" element={<PastAppointmentsPage />} />
-          <Route path="/dashboard/book-appointment" element={<BookAppointment />} />
-          <Route path="/dashboard/prescriptions" element={<PrescriptionsPage />} />
           <Route path="/provider-registration" element={<ProviderSignup />} />
           <Route path="/provider-login" element={<ProviderLogin />} />
           <Route path="/provider/dashboard" element={<ProviderDashboard />} />
@@ -77,6 +68,17 @@ const App = () => {
           <Route path="/provider/settings" element={<ProviderDashboard />} />
           <Route path="/provider/help" element={<ProviderDashboard />} />
           <Route path="/provider/legal" element={<ProviderDashboard />} />
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/profile" element={<ProfileSettings />} />
+            <Route path="/dashboard/medical-history" element={<MedicalHistory />} />
+            <Route path="/dashboard/health-records" element={<HealthRecordsPage />} />
+            <Route path="/dashboard/treatment-options" element={<TreatmentOptionsPage />} />
+            <Route path="/dashboard/services" element={<DashboardServices />} />
+            <Route path="/dashboard/past-appointments" element={<PastAppointmentsPage />} />
+            <Route path="/dashboard/book-appointment" element={<BookAppointment />} />
+            <Route path="/dashboard/prescriptions" element={<PrescriptionsPage />} />
+          </Route>
         </Routes>
       </Router>
     </LanguageProvider>

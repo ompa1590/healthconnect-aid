@@ -75,14 +75,6 @@ const ContactPage = () => {
       color: "secondary"
     },
     {
-      icon: MapPin,
-      title: "Location",
-      details: "123 Health Avenue, Toronto, ON",
-      action: "Get directions",
-      link: "https://maps.google.com",
-      color: "primary"
-    },
-    {
       icon: MessageSquare,
       title: "Live Chat",
       details: "Chat with our support team",
@@ -270,29 +262,7 @@ const ContactPage = () => {
             </div>
           </div>
           
-          {/* Map Section */}
-          <div className="relative">
-            <GlassCard className="p-0 overflow-hidden animate-fade-in">
-              <div className="aspect-video rounded-xl bg-muted relative">
-                {/* Placeholder map UI */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <MapPin className="h-12 w-12 text-primary mx-auto mb-4 opacity-50" />
-                    <p className="text-muted-foreground">Interactive map would be displayed here</p>
-                  </div>
-                </div>
-                
-                {/* Location marker */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center relative">
-                    <div className="absolute w-12 h-12 bg-primary/30 rounded-full animate-ping"></div>
-                    <MapPin className="h-4 w-4 text-white" />
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-          </div>
+
         </section>
       </main>
       <Footer />

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +48,11 @@ const HealthCardStep: React.FC<HealthCardStepProps> = ({ formData, updateFormDat
     }
   };
 
+  const handleHealthCardNumber = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.slice(0, 10); // Limit to 10 characters
+    updateFormData({ healthCardNumber: value });
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-muted/20 p-4 rounded-lg border border-border/30 mb-6">
@@ -69,15 +73,16 @@ const HealthCardStep: React.FC<HealthCardStepProps> = ({ formData, updateFormDat
           <Input
             id="healthCardNumber"
             type="text"
+            maxLength={10}
             placeholder="Enter your health card number"
             className="pl-10"
             value={formData.healthCardNumber}
-            onChange={(e) => updateFormData({ healthCardNumber: e.target.value })}
+            onChange={handleHealthCardNumber}
             required
           />
         </div>
         <p className="text-xs text-muted-foreground">
-          Format: Enter the number exactly as it appears on your provincial health card
+          Format: Enter the number exactly as it appears on your provincial health card (10 characters)
         </p>
       </div>
       

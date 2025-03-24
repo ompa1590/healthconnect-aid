@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
 import ProfileSettings from "@/components/dashboard/ProfileSettings";
 import DashboardServices from "@/components/dashboard/DashboardServices";
-import DashboardRewards from "@/components/dashboard/DashboardRewards";
 import MedicalHistoryPage from "./MedicalHistoryPage";
 import TreatmentOptionsPage from "./TreatmentOptionsPage";
 import HealthRecordsPage from "./HealthRecordsPage";
@@ -273,14 +272,11 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white to-health-50/20">
-      <DashboardNavbar userName={userName} />
-      
+    <div className="min-h-screen bg-gradient-to-br from-white to-health-50/20">      
       <Routes>
         <Route path="/" element={<DashboardHome />} />
         <Route path="/profile" element={<ProfileSettings />} />
         <Route path="/services" element={<DashboardServices />} />
-        <Route path="/rewards" element={<DashboardRewards />} />
         <Route path="/past-appointments" element={<PastAppointmentsPage />} />
         <Route path="/medical-history" element={<MedicalHistoryPage />} />
         <Route path="/treatment-options" element={<TreatmentOptionsPage />} />

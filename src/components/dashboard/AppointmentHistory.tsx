@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarClock, Clock, FileText, Video, MessageCircle } from "lucide-react";
@@ -6,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { HeartPulseLoader } from "@/components/ui/heart-pulse-loader";
 import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 type Appointment = {
   id: number;
@@ -72,30 +73,35 @@ const AppointmentHistory = () => {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-6">
         {appointments.map((appointment) => (
           <div
             key={appointment.id}
             className={cn(
-              "p-4 rounded-lg border transition-all duration-300 hover:shadow-md",
-              appointment.status === "upcoming"
-                ? "bg-primary/5 border-primary/20"
-                : "bg-muted/50 border-border/50"
+              "p-6 rounded-xl border transition-all duration-300",
+              "hover:shadow-lg hover:border-primary/30",
+              "bg-gradient-to-r from-white to-muted/20",
+              appointment.status === "upcoming" 
+                ? "border-primary/20 shadow-sm" 
+                : "border-border/50"
             )}
           >
             <div className="flex items-start justify-between">
-              <div className="transition-all duration-200 group-hover:translate-x-1">
-                <h3 className="font-medium">{appointment.doctor}</h3>
-                <p className="text-sm text-muted-foreground">
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold tracking-tight">{appointment.doctor}</h3>
+                <p className="text-sm text-muted-foreground font-medium">
                   {appointment.specialty}
                 </p>
+                <Badge variant={appointment.status === "upcoming" ? "default" : "secondary"} className="mt-2">
+                  {appointment.status === "upcoming" ? "Upcoming" : "Completed"}
+                </Badge>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 {appointment.status === "upcoming" ? (
                   <Button 
-                    variant="outline" 
+                    variant="default"
                     size="sm"
-                    className="transition-all duration-300 hover:bg-primary/20"
+                    className="transition-all duration-300 hover:scale-105"
                   >
                     Join Call
                     <Video className="ml-2 h-4 w-4" />
@@ -104,7 +110,7 @@ const AppointmentHistory = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="transition-all duration-300 hover:bg-primary/20"
+                    className="transition-all duration-300 hover:bg-primary/10"
                     onClick={() => handleViewDetails(appointment)}
                   >
                     <FileText className="mr-2 h-4 w-4" />
@@ -114,7 +120,7 @@ const AppointmentHistory = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="transition-all duration-300 hover:bg-primary/20"
+                  className="transition-all duration-300 hover:bg-primary/10"
                   onClick={() => handleChatWithDoctor(appointment.doctor)}
                 >
                   <MessageCircle className="mr-2 h-4 w-4" />
@@ -122,14 +128,14 @@ const AppointmentHistory = () => {
                 </Button>
               </div>
             </div>
-            <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <CalendarClock className="h-4 w-4" />
-                {appointment.date}
+            <div className="mt-4 flex items-center gap-6 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <CalendarClock className="h-4 w-4 text-primary" />
+                <span className="font-medium">{appointment.date}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                {appointment.time}
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary" />
+                <span className="font-medium">{appointment.time}</span>
               </div>
             </div>
           </div>
@@ -142,84 +148,84 @@ const AppointmentHistory = () => {
           setLoading(false);
         }
       }}>
-        <DialogContent className="sm:max-w-md animate-in fade-in-0 zoom-in-90">
+        <DialogContent className="sm:max-w-lg p-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <HeartPulseLoader size="lg" />
-              <p className="mt-4 text-muted-foreground">Loading appointment details...</p>
+              <p className="mt-4 text-muted-foreground font-medium">Loading appointment details...</p>
             </div>
           ) : selectedAppointment && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Appointment Details</h2>
-              <div className="space-y-4">
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <h2 className="text-2xl font-semibold tracking-tight">{selectedAppointment.doctor}</h2>
+                <p className="text-primary/80 font-medium">{selectedAppointment.specialty}</p>
+                <Badge variant="outline" className="mt-1">
+                  {selectedAppointment.status}
+                </Badge>
+              </div>
+              
+              <div className="flex gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4 text-primary" />
+                  <span className="font-medium">{selectedAppointment.date}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-primary" />
+                  <span className="font-medium">{selectedAppointment.time}</span>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              {selectedAppointment.summary && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-primary">Summary</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{selectedAppointment.summary}</p>
+                </div>
+              )}
+              
+              {selectedAppointment.recommendations && (
                 <div>
-                  <h3 className="font-medium text-lg">{selectedAppointment.doctor}</h3>
-                  <p className="text-primary/80">{selectedAppointment.specialty}</p>
+                  <h4 className="font-medium">Recommendations</h4>
+                  <p className="text-sm text-muted-foreground">{selectedAppointment.recommendations}</p>
                 </div>
-                
-                <div className="flex gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <CalendarClock className="h-4 w-4" />
-                    <span>{selectedAppointment.date}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    <span>{selectedAppointment.time}</span>
-                  </div>
+              )}
+              
+              {selectedAppointment.medications && selectedAppointment.medications.length > 0 && (
+                <div>
+                  <h4 className="font-medium">Prescribed Medications</h4>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground">
+                    {selectedAppointment.medications.map((med, i) => (
+                      <li key={i}>{med}</li>
+                    ))}
+                  </ul>
                 </div>
-                
-                {selectedAppointment.summary && (
-                  <div>
-                    <h4 className="font-medium">Summary</h4>
-                    <p className="text-sm text-muted-foreground">{selectedAppointment.summary}</p>
-                  </div>
-                )}
-                
-                {selectedAppointment.recommendations && (
-                  <div>
-                    <h4 className="font-medium">Recommendations</h4>
-                    <p className="text-sm text-muted-foreground">{selectedAppointment.recommendations}</p>
-                  </div>
-                )}
-                
-                {selectedAppointment.medications && selectedAppointment.medications.length > 0 && (
-                  <div>
-                    <h4 className="font-medium">Prescribed Medications</h4>
-                    <ul className="list-disc list-inside text-sm text-muted-foreground">
-                      {selectedAppointment.medications.map((med, i) => (
-                        <li key={i}>{med}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                
-                {selectedAppointment.followUp && (
-                  <div>
-                    <h4 className="font-medium">Follow-up</h4>
-                    <p className="text-sm text-muted-foreground">{selectedAppointment.followUp}</p>
-                  </div>
-                )}
-                
-                <div className="mt-4 flex justify-end">
-                  <Button 
-                    variant="outline"
-                    className="mr-2"
-                    onClick={() => {
-                      setSelectedAppointment(null);
-                    }}
-                  >
-                    Close
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setSelectedAppointment(null);
-                      handleChatWithDoctor(selectedAppointment.doctor);
-                    }}
-                  >
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Chat with Doctor
-                  </Button>
+              )}
+              
+              {selectedAppointment.followUp && (
+                <div>
+                  <h4 className="font-medium">Follow-up</h4>
+                  <p className="text-sm text-muted-foreground">{selectedAppointment.followUp}</p>
                 </div>
+              )}
+              
+              <div className="flex justify-end gap-3 pt-4">
+                <Button 
+                  variant="outline"
+                  onClick={() => setSelectedAppointment(null)}
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    setSelectedAppointment(null);
+                    handleChatWithDoctor(selectedAppointment.doctor);
+                  }}
+                  className="gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Chat with Doctor
+                </Button>
               </div>
             </div>
           )}
