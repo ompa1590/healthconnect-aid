@@ -70,7 +70,7 @@ const DashboardNavbar = ({
     return false;
   };
   
-  return <nav className="bg-white border-b border-gray-100 py-4 sticky top-0 z-20 shadow-sm">
+  return <nav className="bg-gradient-to-r from-white to-health-50/30 border-b border-gray-100 py-4 sticky top-0 z-20 shadow-sm">
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-10">
@@ -116,36 +116,36 @@ const DashboardNavbar = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-muted/20">
-                  <Avatar className="h-10 w-10 border border-muted">
+                  <Avatar className="h-10 w-10 border-2 border-primary/20">
                     <AvatarImage src="https://randomuser.me/api/portraits/men/54.jpg" alt={userName} />
-                    <AvatarFallback>{getInitials(userName)}</AvatarFallback>
+                    <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary">{getInitials(userName)}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 mt-1 border border-border/30 shadow-lg backdrop-blur-sm bg-white/90">
                 <DropdownMenuLabel className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  My Account
+                  <User className="h-4 w-4 text-primary" />
+                  <span className="text-primary">My Account</span>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/dashboard/profile")} className="cursor-pointer">
-                  <User className="h-4 w-4 mr-2" />
+                <DropdownMenuItem onClick={() => navigate("/dashboard/profile")} className="cursor-pointer hover:bg-primary/5">
+                  <User className="h-4 w-4 mr-2 text-muted-foreground" />
                   Profile Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/dashboard/medical-history")} className="cursor-pointer">
-                  <ClipboardList className="h-4 w-4 mr-2" />
+                <DropdownMenuItem onClick={() => navigate("/dashboard/medical-history")} className="cursor-pointer hover:bg-primary/5">
+                  <ClipboardList className="h-4 w-4 mr-2 text-muted-foreground" />
                   Medical History
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/dashboard/health-records")} className="cursor-pointer">
-                  <ClipboardList className="h-4 w-4 mr-2" />
+                <DropdownMenuItem onClick={() => navigate("/dashboard/health-records")} className="cursor-pointer hover:bg-primary/5">
+                  <ClipboardList className="h-4 w-4 mr-2 text-muted-foreground" />
                   Health Records
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/dashboard/treatment-options")} className="cursor-pointer">
-                  <Stethoscope className="h-4 w-4 mr-2" />
+                <DropdownMenuItem onClick={() => navigate("/dashboard/treatment-options")} className="cursor-pointer hover:bg-primary/5">
+                  <Stethoscope className="h-4 w-4 mr-2 text-muted-foreground" />
                   Treatment Options
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-500 hover:bg-red-50 hover:text-red-600">
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
