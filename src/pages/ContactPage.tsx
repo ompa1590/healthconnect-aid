@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import Navbar from "@/components/layout/Navbar";
@@ -17,8 +16,10 @@ import {
   Twitter, 
   Instagram,
   ArrowRight,
-  CheckCircle 
+  CheckCircle,
+  Facebook
 } from "lucide-react";
+import { XIcon } from "@/components/icons/XIcon";
 import { useToast } from "@/hooks/use-toast";
 
 interface FormData {
@@ -75,14 +76,6 @@ const ContactPage = () => {
       color: "secondary"
     },
     {
-      icon: MapPin,
-      title: "Location",
-      details: "123 Health Avenue, Toronto, ON",
-      action: "Get directions",
-      link: "https://maps.google.com",
-      color: "primary"
-    },
-    {
       icon: MessageSquare,
       title: "Live Chat",
       details: "Chat with our support team",
@@ -93,9 +86,10 @@ const ContactPage = () => {
   ];
 
   const socialLinks = [
-    { icon: Linkedin, name: "LinkedIn", link: "#", color: "bg-[#0077B5]" },
-    { icon: Twitter, name: "Twitter", link: "#", color: "bg-[#1DA1F2]" },
-    { icon: Instagram, name: "Instagram", link: "#", color: "bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCAF45]" },
+    { name: "Facebook", icon: Facebook, href: "#" },
+    { name: "Instagram", icon: Instagram, href: "#" },
+    { name: "X", icon: XIcon, href: "#" },
+    { name: "LinkedIn", icon: Linkedin, href: "#" },
   ];
 
   return (
@@ -140,15 +134,14 @@ const ContactPage = () => {
               <GlassCard className="p-6 animate-fade-in" style={{ animationDelay: "0.4s" }}>
                 <h3 className="text-lg font-semibold mb-4">Connect With Us</h3>
                 <div className="flex space-x-4">
-                  {socialLinks.map((social, index) => (
-                    <a 
-                      key={index} 
-                      href={social.link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className={`${social.color} text-white p-3 rounded-full hover:opacity-90 transition-opacity`}
+                  {socialLinks.map((social) => (
+                    <a
+                      key={social.name}
+                      href={social.href}
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                      aria-label={social.name}
                     >
-                      <social.icon className="h-5 w-5" />
+                      <social.icon size={20} />
                     </a>
                   ))}
                 </div>
@@ -270,29 +263,7 @@ const ContactPage = () => {
             </div>
           </div>
           
-          {/* Map Section */}
-          <div className="relative">
-            <GlassCard className="p-0 overflow-hidden animate-fade-in">
-              <div className="aspect-video rounded-xl bg-muted relative">
-                {/* Placeholder map UI */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <MapPin className="h-12 w-12 text-primary mx-auto mb-4 opacity-50" />
-                    <p className="text-muted-foreground">Interactive map would be displayed here</p>
-                  </div>
-                </div>
-                
-                {/* Location marker */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center relative">
-                    <div className="absolute w-12 h-12 bg-primary/30 rounded-full animate-ping"></div>
-                    <MapPin className="h-4 w-4 text-white" />
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-          </div>
+
         </section>
       </main>
       <Footer />

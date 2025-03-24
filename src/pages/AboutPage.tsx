@@ -154,41 +154,6 @@ const AboutPage = () => {
           </div>
         </section>
         
-        {/* Team Section */}
-        <section className="container mx-auto px-6 mb-20">
-          <div className="text-center mb-12">
-            <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-muted text-primary mb-4">Our Team</span>
-            <h2 className="text-3xl font-bold mb-4">Meet Our Medical Experts</h2>
-            <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
-              Our team of board-certified physicians and specialists are dedicated to providing
-              exceptional care through our telehealth platform.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {teamMembers.map((member, index) => <GlassCard key={index} className="p-0 overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-lg animate-fade-in" style={{
-            animationDelay: `${index * 0.1}s`
-          }}>
-                <div className={`bg-gradient-to-br ${member.gradient} p-6 pb-0`}>
-                  <div className="w-24 h-24 mx-auto bg-white rounded-full overflow-hidden mb-4">
-                    <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
-                  </div>
-                </div>
-                
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-center mb-1">{member.name}</h3>
-                  <p className="text-primary text-sm text-center mb-4">{member.role}</p>
-                  <p className="text-muted-foreground text-sm mb-3">{member.background}</p>
-                  <div className="flex items-center justify-center">
-                    <span className="px-3 py-1 rounded-full bg-muted text-xs font-medium">
-                      {member.specialty}
-                    </span>
-                  </div>
-                </div>
-              </GlassCard>)}
-          </div>
-        </section>
-        
         {/* Why Choose Us */}
         <section className="container mx-auto px-6">
           <div className="text-center mb-12">
