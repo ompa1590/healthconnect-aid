@@ -1,6 +1,6 @@
-
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Twitter, Linkedin, Heart } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Heart } from "lucide-react";
+import { XIcon } from "@/components/icons/XIcon";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -47,7 +47,7 @@ const Footer = () => {
   const socialLinks = [
     { name: "Facebook", icon: Facebook, href: "#" },
     { name: "Instagram", icon: Instagram, href: "#" },
-    { name: "Twitter", icon: Twitter, href: "#" },
+    { name: "X", icon: XIcon, href: "#" },
     { name: "LinkedIn", icon: Linkedin, href: "#" },
   ];
 

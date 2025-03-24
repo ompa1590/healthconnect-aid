@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import Navbar from "@/components/layout/Navbar";
@@ -17,8 +16,10 @@ import {
   Twitter, 
   Instagram,
   ArrowRight,
-  CheckCircle 
+  CheckCircle,
+  Facebook
 } from "lucide-react";
+import { XIcon } from "@/components/icons/XIcon";
 import { useToast } from "@/hooks/use-toast";
 
 interface FormData {
@@ -85,9 +86,10 @@ const ContactPage = () => {
   ];
 
   const socialLinks = [
-    { icon: Linkedin, name: "LinkedIn", link: "#", color: "bg-[#0077B5]" },
-    { icon: Twitter, name: "Twitter", link: "#", color: "bg-[#1DA1F2]" },
-    { icon: Instagram, name: "Instagram", link: "#", color: "bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCAF45]" },
+    { name: "Facebook", icon: Facebook, href: "#" },
+    { name: "Instagram", icon: Instagram, href: "#" },
+    { name: "X", icon: XIcon, href: "#" },
+    { name: "LinkedIn", icon: Linkedin, href: "#" },
   ];
 
   return (
@@ -132,15 +134,14 @@ const ContactPage = () => {
               <GlassCard className="p-6 animate-fade-in" style={{ animationDelay: "0.4s" }}>
                 <h3 className="text-lg font-semibold mb-4">Connect With Us</h3>
                 <div className="flex space-x-4">
-                  {socialLinks.map((social, index) => (
-                    <a 
-                      key={index} 
-                      href={social.link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className={`${social.color} text-white p-3 rounded-full hover:opacity-90 transition-opacity`}
+                  {socialLinks.map((social) => (
+                    <a
+                      key={social.name}
+                      href={social.href}
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                      aria-label={social.name}
                     >
-                      <social.icon className="h-5 w-5" />
+                      <social.icon size={20} />
                     </a>
                   ))}
                 </div>
