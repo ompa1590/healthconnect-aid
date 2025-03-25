@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -21,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VisitReasonDialog from "./VisitReasonDialog";
 import ConsultationNotesDialog from "./ConsultationNotesDialog";
 import OHIPBillingDialog from "./OHIPBillingDialog";
+import AvailabilityDialog from "./AvailabilityDialog";
 
 interface Appointment {
   id: number;
@@ -31,6 +31,13 @@ interface Appointment {
   date: Date;
   time: string;
   status: string;
+}
+
+interface AvailabilitySlot {
+  id: number;
+  day: string;
+  startTime: string;
+  endTime: string;
 }
 
 const ProviderAppointments = () => {
@@ -92,6 +99,14 @@ const ProviderAppointments = () => {
   const [notesAppointment, setNotesAppointment] = useState<number | null>(null);
   const [billingAppointment, setBillingAppointment] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
+  const [providerAvailability, setProviderAvailability] = useState<AvailabilitySlot[]>([
+    { id: 1, day: "Monday", startTime: "09:00", endTime: "17:00" },
+    { id: 2, day: "Tuesday", startTime: "09:00", endTime: "17:00" },
+    { id: 3, day: "Wednesday", startTime: "09:00", endTime: "17:00" },
+    { id: 4, day: "Thursday", startTime: "09:00", endTime: "17:00" },
+    { id: 5, day: "Friday", startTime: "09:00", endTime: "15:00" },
+  ]);
   const { toast } = useToast();
 
   const handleCancelAppointment = (appointmentId: number) => {
@@ -164,7 +179,7 @@ const ProviderAppointments = () => {
               className="pl-9"
             />
           </div>
-          <Button>
+          <Button onClick={() => setShowAvailabilityDialog(true)}>
             <Calendar className="mr-2 h-4 w-4" />
             Set Availability
           </Button>
@@ -426,6 +441,13 @@ const ProviderAppointments = () => {
           }}
         />
       )}
+
+      <AvailabilityDialog
+        isOpen={showAvailabilityDialog}
+        onClose={() => setShowAvailabilityDialog(false)}
+        onSave={handleSaveAvailability}
+        initialAvailability={providerAvailability}
+      />
     </div>
   );
 };
