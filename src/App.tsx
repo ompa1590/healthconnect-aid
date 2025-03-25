@@ -21,33 +21,9 @@ import HowItWorksPage from './pages/HowItWorksPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import DashboardLayout from "@/layouts/DashboardLayout";
+import SupportPage from './pages/dashboard/SupportPage';
 
 const App = () => {
-  React.useEffect(() => {
-    // Add Poppins font to the document head
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-    
-    // Add global styles for Poppins
-    const style = document.createElement('style');
-    style.textContent = `
-      body, html {
-        font-family: 'Poppins', sans-serif;
-      }
-      .font-poppins {
-        font-family: 'Poppins', sans-serif;
-      }
-    `;
-    document.head.appendChild(style);
-    
-    return () => {
-      document.head.removeChild(link);
-      document.head.removeChild(style);
-    };
-  }, []);
-
   return (
     <LanguageProvider>
       <Router>
@@ -78,6 +54,7 @@ const App = () => {
             <Route path="/dashboard/past-appointments" element={<PastAppointmentsPage />} />
             <Route path="/dashboard/book-appointment" element={<BookAppointment />} />
             <Route path="/dashboard/prescriptions" element={<PrescriptionsPage />} />
+            <Route path="/dashboard/support" element={<SupportPage />} />
           </Route>
         </Routes>
       </Router>

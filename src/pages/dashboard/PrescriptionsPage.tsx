@@ -3,7 +3,6 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import MyPrescriptions from "@/components/dashboard/MyPrescriptions";
 import CurrentPlans from "@/components/dashboard/CurrentPlans";
-import SupportOptions from "@/components/dashboard/SupportOptions";
 import MedicationReminders from "@/components/dashboard/MedicationReminders";
 import QuickHelp from "@/components/dashboard/QuickHelp";
 import BillingManagement from "@/components/dashboard/BillingManagement";
@@ -66,10 +65,6 @@ const PrescriptionsPage = () => {
             <CreditCard className="h-4 w-4 mr-2" />
             Billing
           </TabsTrigger>
-          <TabsTrigger value="support" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-            <LifeBuoy className="h-4 w-4 mr-2" />
-            Support & Help
-          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="prescriptions" className="space-y-8 animate-fade-in">
@@ -106,9 +101,6 @@ const PrescriptionsPage = () => {
         </TabsContent>
         
         <TabsContent value="support" className="space-y-8 animate-fade-in">
-          <GlassCard className="rounded-xl" variant="colored" borderEffect>
-            <SupportOptions />
-          </GlassCard>
           <Separator className="my-8" />
           <GlassCard className="rounded-xl" variant="accent" borderEffect>
             <QuickHelp />

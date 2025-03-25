@@ -152,11 +152,45 @@ export default {
         'neu': '5px 5px 10px #d1d9e6, -5px -5px 10px #ffffff'
       },
       fontFamily: {
-        sans: ['Inter var', 'SF Pro Display', 'system-ui', 'sans-serif'],
-        mono: ['SF Mono', 'monospace'],
-        display: ['Montserrat', 'system-ui', 'sans-serif'],
-        medical: ['Inter', 'SF Pro Display', 'system-ui', 'sans-serif'],
-        poppins: ['Poppins', 'system-ui', 'sans-serif']
+        sans: [
+          'Cal Sans',
+          'Plus Jakarta Sans',
+          'Inter',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'system-ui',
+          'sans-serif'
+        ],
+        heading: [
+          'Cal Sans',
+          'Plus Jakarta Sans',
+          'system-ui',
+          'sans-serif'
+        ],
+        body: [
+          'Inter',
+          'Plus Jakarta Sans',
+          'system-ui',
+          'sans-serif'
+        ],
+        mono: [
+          'JetBrains Mono',
+          'SF Mono',
+          'Menlo',
+          'monospace'
+        ],
+        display: [
+          'Cal Sans',
+          'Plus Jakarta Sans',
+          'system-ui',
+          'sans-serif'
+        ],
+        medical: [
+          'Plus Jakarta Sans',
+          'Inter',
+          'system-ui',
+          'sans-serif'
+        ]
       }
 		}
 	},

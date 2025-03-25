@@ -1,9 +1,8 @@
-
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import AppointmentScheduler from "@/components/dashboard/AppointmentScheduler";
 import AppointmentHistory from "@/components/dashboard/AppointmentHistory";
-import { CalendarDays, ClipboardList, Stethoscope, Loader2, Tag, PlusCircle, Pill, Sparkles, LineChart, UserCircle } from "lucide-react";
+import { CalendarDays, ClipboardList, Stethoscope, Loader2, Tag, PlusCircle, Pill, Sparkles, LineChart, UserCircle, MessageSquare, HelpCircle } from "lucide-react";
 import { useLocation, useNavigate, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +17,6 @@ import PastAppointmentsPage from "./PastAppointmentsPage";
 import PrescriptionsPage from "./PrescriptionsPage";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import BookAppointmentFlow from "@/components/dashboard/BookingFlow/BookAppointmentFlow";
-import HealthInsightsWidget from "@/components/dashboard/health-records/HealthInsightsWidget";
 import { GlassCard } from "@/components/ui/GlassCard";
 
 const Dashboard = () => {
@@ -97,6 +95,7 @@ const Dashboard = () => {
 
   const DashboardHome = () => (
     <div className="max-w-6xl mx-auto px-6 py-10">
+      {/* Welcome section */}
       <div className="mb-8 rounded-xl overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-r from-health-200/70 via-health-100/50 to-health-50/30 opacity-80"></div>
         <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
@@ -121,7 +120,8 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-      
+
+      {/* Current Treatment Card */}
       <GlassCard 
         className="mb-8 rounded-xl overflow-hidden"
         variant="colored"
@@ -166,8 +166,20 @@ const Dashboard = () => {
         </div>
       </GlassCard>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <HealthInsightsWidget className="md:col-span-3 lg:col-span-2" />
+      <h2 className="text-2xl font-medium mb-6 text-gray-800 flex items-center">
+        <CalendarDays className="h-6 w-6 mr-2 text-primary/70" />
+        Your Appointments
+      </h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <GlassCard 
+          className="rounded-xl"
+          variant="elevated"
+          hoverEffect
+          borderEffect
+        >
+          <h2 className="text-xl font-medium mb-4 text-gray-800">Upcoming Appointments</h2>
+          <AppointmentHistory />
+        </GlassCard>
         
         <GlassCard 
           className="lg:col-span-1 rounded-xl" 
@@ -224,48 +236,18 @@ const Dashboard = () => {
                 <Sparkles className="h-3 w-3 text-primary/70" />
               </div>
             </Button>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start text-left hover:bg-health-50/50 hover:border-health-200/50 transition-colors shadow-sm group" 
+              onClick={() => navigate("/dashboard/support")}
+            >
+              <HelpCircle className="mr-2 h-4 w-4 text-primary/70 group-hover:text-primary transition-colors" />
+              <span>Get Support</span>
+              <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                <MessageSquare className="h-3 w-3 text-primary/70" />
+              </div>
+            </Button>
           </div>
-        </GlassCard>
-      </div>
-      
-      <h2 className="text-2xl font-medium mb-6 text-gray-800 flex items-center">
-        <CalendarDays className="h-6 w-6 mr-2 text-primary/70" />
-        Your Appointments
-      </h2>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GlassCard 
-          className="rounded-xl"
-          variant="elevated"
-          hoverEffect
-          borderEffect
-        >
-          <h2 className="text-xl font-medium mb-4 text-gray-800">Upcoming Appointments</h2>
-          <AppointmentHistory />
-        </GlassCard>
-        
-        <GlassCard 
-          className="rounded-xl"
-          variant="gradient"
-          hoverEffect
-          borderEffect
-          accentColor="var(--primary)"
-        >
-          <h3 className="text-lg font-medium mb-3 text-gray-800 flex items-center">
-            <Sparkles className="h-5 w-5 mr-2 text-primary/70" />
-            Need Help?
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            Our support team is available 24/7 to assist you with any questions or concerns.
-          </p>
-          <Button 
-            variant="outline" 
-            className="w-full shadow-sm hover:shadow-md hover:bg-primary/5 border-primary/20 hover:border-primary/40 group"
-          >
-            Contact Support
-            <div className="ml-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-              <Sparkles className="h-4 w-4 text-primary" />
-            </div>
-          </Button>
         </GlassCard>
       </div>
     </div>
