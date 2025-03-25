@@ -1,8 +1,8 @@
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, FileText, Calendar, Phone, Pill, Stethoscope, AlertCircle, Shield, Users, Clock, Calendar as CalendarIcon } from "lucide-react";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { 
   Sheet, 
   SheetContent, 
@@ -540,26 +540,31 @@ const ProviderPatients = () => {
                         
                         {/* Consultation notes section */}
                         <div className="mt-3 border-t border-border/30 pt-3">
-                          <h5 className="text-sm font-medium text-muted-foreground mb-1.5 flex items-center">
+                          <h5 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
                             <FileText className="h-3.5 w-3.5 mr-1.5 text-primary" />
                             Consultation Notes
                           </h5>
-                          <div className="text-sm bg-muted/20 rounded-md p-3 relative">
-                            <p className="line-clamp-3">
+                          <div className="text-sm bg-muted/20 rounded-lg p-4 relative hover:bg-muted/30 transition-colors">
+                            <p className="pr-[120px] line-clamp-3">
                               {index === 0 
                                 ? "Patient reports stable blood pressure readings at home. Current medication regimen appears effective. Discussed importance of regular exercise and reduced sodium intake. Patient showing good understanding of condition management."
                                 : index === 1 
                                 ? "Patient describes reduction in anxiety symptoms since last visit. Sleep has improved from 4-5 hours to 6-7 hours per night. Still experiencing occasional panic symptoms, particularly in crowded settings. Has been practicing breathing techniques as advised with some benefit."
                                 : "Routine checkup shows all vitals within normal limits. Patient reports no new symptoms or concerns. Preventative health measures discussed including upcoming vaccinations."}
                             </p>
-                            <div className="absolute bottom-0 right-0 p-1">
+                            <div className="absolute top-1/2 -translate-y-1/2 right-3">
                               <Button 
-                                variant="ghost" 
+                                variant="outline" 
                                 size="sm" 
-                                className="h-7 text-xs"
+                                className={cn(
+                                  "h-8 bg-white hover:bg-primary hover:text-white",
+                                  "border border-border/50 hover:border-primary",
+                                  "shadow-sm flex items-center gap-1.5"
+                                )}
                                 onClick={() => handleOpenConsultationNotes(consultation)}
                               >
-                                View Full Notes
+                                <FileText className="h-3.5 w-3.5" />
+                                <span className="text-xs font-medium">View Notes</span>
                               </Button>
                             </div>
                           </div>

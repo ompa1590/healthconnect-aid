@@ -18,6 +18,7 @@ import CancelAppointmentDialog from "@/components/provider/CancelAppointmentDial
 import VisitReasonDialog from "@/components/provider/VisitReasonDialog";
 import ProviderPatientChat from "@/components/provider/ProviderPatientChat";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import NotificationsPopover from "@/components/notifications/NotificationsPopover";
 
 const ProviderDashboard = () => {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
@@ -52,25 +53,44 @@ const ProviderDashboard = () => {
     status: "upcoming",
     visitReason: "Patient seeking family planning counseling. Currently using hormonal contraception (oral) but experiencing side effects including mood changes and breakthrough bleeding. Interested in discussing long-term contraceptive options. No current plans for pregnancy but may want children in 3-5 years. Has history of mild endometriosis diagnosed 2 years ago. No known drug allergies."
   }]);
-  const [notifications, setNotifications] = useState([{
-    id: 1,
-    title: "New appointment",
-    description: "Sarah Johnson scheduled a consultation for today at 6:00 PM",
-    time: "10 minutes ago",
-    read: false
-  }, {
-    id: 2,
-    title: "Appointment reminder",
-    description: "You have an appointment with Michael Chen in 30 minutes",
-    time: "30 minutes ago",
-    read: false
-  }, {
-    id: 3,
-    title: "Document shared",
-    description: "Emma Williams shared her medical history with you",
-    time: "2 hours ago",
-    read: true
-  }]);
+  const [notifications, setNotifications] = useState([
+    {
+      id: "1",
+      type: "appointment" as const,
+      title: "New Appointment Request",
+      description: "Sarah Johnson has requested a consultation for tomorrow at 2:00 PM",
+      timestamp: "5 minutes ago",
+      read: false,
+      action: {
+        label: "Review Request",
+        href: "#"
+      }
+    },
+    {
+      id: "2",
+      type: "message" as const,
+      title: "Lab Results Ready",
+      description: "Michael Rodriguez's blood work results are ready for review",
+      timestamp: "1 hour ago",
+      read: false,
+      action: {
+        label: "View Results",
+        href: "#"
+      }
+    },
+    {
+      id: "3",
+      type: "report" as const,
+      title: "Patient Update",
+      description: "Emma Williams has updated her medical history",
+      timestamp: "2 hours ago",
+      read: true,
+      action: {
+        label: "View Profile",
+        href: "#"
+      }
+    }
+  ]);
   const [appointmentToCancel, setAppointmentToCancel] = useState<number | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<number | null>(null);
@@ -352,7 +372,7 @@ const ProviderDashboard = () => {
           <GlassCard className="overflow-hidden shadow-lg border-0 bg-gradient-to-br from-background to-background/60">
             <Tabs defaultValue="upcoming">
               <div className="flex justify-between items-center p-6 border-b border-border/30 bg-gradient-to-r from-primary/5 via-primary/10 to-transparent">
-                <h2 className="text-xl font-poppins font-semibold tracking-tight">Today's Appointments</h2>
+                <h2 className="text-xl font-poppins font-semibold tracking-tight">Your Schedule</h2>
                 <TabsList className="bg-background/60 backdrop-blur-sm border border-border/30">
                   <TabsTrigger value="upcoming" className="font-medium text-sm">Upcoming</TabsTrigger>
                   <TabsTrigger value="completed" className="font-medium text-sm">Completed</TabsTrigger>
@@ -503,6 +523,16 @@ const ProviderDashboard = () => {
     return appointments.find(a => a.id === selectedAppointment);
   };
 
+  const handleMarkAsRead = (id: string) => {
+    setNotifications(notifications.map(notification =>
+      notification.id === id ? { ...notification, read: true } : notification
+    ));
+  };
+
+  const handleClearAllNotifications = () => {
+    setNotifications(notifications.map(notification => ({ ...notification, read: true })));
+  };
+
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
 
   if (loading) {
@@ -641,35 +671,11 @@ const ProviderDashboard = () => {
                 <span className="text-secondary text-xl font-bold tracking-tight">Health</span>
               </div>
               <div className="flex items-center gap-2">
-                <Popover open={showNotifications} onOpenChange={setShowNotifications}>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" className="relative">
-                      <Bell className="h-5 w-5" />
-                      {unreadNotificationsCount > 0 && <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-                          {unreadNotificationsCount}
-                        </span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-0" align="end">
-                    <div className="flex items-center justify-between p-2 border-b">
-                      <h3 className="font-medium">Notifications</h3>
-                      <Button variant="ghost" size="sm" onClick={markAllNotificationsAsRead} className="text-xs">
-                        Mark all as read
-                      </Button>
-                    </div>
-                    <div className="max-h-80 overflow-auto">
-                      {notifications.length === 0 ? <div className="p-4 text-center text-muted-foreground">
-                          No notifications
-                        </div> : notifications.map(notification => <div key={notification.id} className={`p-3 border-b last:border-0 ${notification.read ? "" : "bg-muted/30"}`}>
-                            <div className="flex justify-between">
-                              <h4 className="text-sm font-medium">{notification.title}</h4>
-                              <span className="text-xs text-muted-foreground">{notification.time}</span>
-                            </div>
-                            <p className="text-xs mt-1">{notification.description}</p>
-                          </div>)}
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                <NotificationsPopover
+                  notifications={notifications}
+                  onMarkAsRead={handleMarkAsRead}
+                  onClearAll={handleClearAllNotifications}
+                />
                 <Button variant="ghost" size="sm" onClick={handleSignOut} className="hidden md:flex items-center">
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
