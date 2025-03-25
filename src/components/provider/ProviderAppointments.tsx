@@ -146,6 +146,14 @@ const ProviderAppointments = () => {
     });
   };
 
+  const handleSaveAvailability = (availability: AvailabilitySlot[]) => {
+    setProviderAvailability(availability);
+    toast({
+      title: "Availability Updated",
+      description: "Your availability settings have been saved successfully.",
+    });
+  };
+
   const getActiveAppointment = () => {
     return appointments.find(a => 
       a.id === cancelAppointment || 
