@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import MyPrescriptions from "@/components/dashboard/MyPrescriptions";
@@ -10,8 +9,9 @@ import PatientDoctorChat from "@/components/dashboard/PatientDoctorChat";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Home, Pill, MessageSquare, CreditCard, LifeBuoy, Sparkles } from "lucide-react";
+import { ArrowLeft, Home, Pill, MessageSquare, CreditCard, LifeBuoy, Sparkles, Heart } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
+import HealthInsightsWidget from "@/components/dashboard/health-records/HealthInsightsWidget";
 
 const PrescriptionsPage = () => {
   const navigate = useNavigate();
@@ -49,6 +49,10 @@ const PrescriptionsPage = () => {
       
       <Tabs defaultValue="prescriptions" className="mb-8">
         <TabsList className="mb-6 bg-white/70 backdrop-blur-sm p-1 rounded-lg border border-border/30">
+          <TabsTrigger value="my-health" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+            <Heart className="h-4 w-4 mr-2" />
+            My Health
+          </TabsTrigger>
           <TabsTrigger value="prescriptions" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
             <Pill className="h-4 w-4 mr-2" />
             Prescriptions
@@ -80,6 +84,14 @@ const PrescriptionsPage = () => {
               </GlassCard>
             </div>
           </div>
+        </TabsContent>
+        
+        <TabsContent value="my-health" className="space-y-8 animate-fade-in">
+        <div className="w-[75%]">
+          <GlassCard className="rounded-xl" variant="elevated" borderEffect>
+            <HealthInsightsWidget />
+          </GlassCard>
+        </div>
         </TabsContent>
         
         <TabsContent value="treatment-plans" className="space-y-8 animate-fade-in">

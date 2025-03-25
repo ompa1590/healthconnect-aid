@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Bell, CalendarClock, ClipboardList, Home, MessageSquare, Pill, Stethoscope, User, HelpCircle } from "lucide-react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { SupportOptions } from "./SupportOptions";
+import NotificationsPopover from "../notifications/NotificationsPopover";
 
 interface DashboardNavbarProps {
   userName: string;
@@ -70,6 +71,56 @@ const DashboardNavbar = ({
     }
     return false;
   };
+
+  // Add notifications state
+  const [notifications, setNotifications] = useState([
+    {
+      id: "1",
+      type: "appointment" as const,
+      title: "Appointment Confirmed",
+      description: "Your appointment with Dr. Sarah Johnson has been confirmed for tomorrow at 10:00 AM",
+      timestamp: "2 minutes ago",
+      read: false,
+      action: {
+        label: "View Appointment",
+        href: "/dashboard/appointments"
+      }
+    },
+    {
+      id: "2",
+      type: "message" as const,
+      title: "New Message from Dr. Williams",
+      description: "Your test results have been reviewed. Please check your messages.",
+      timestamp: "1 hour ago",
+      read: false,
+      action: {
+        label: "View Message",
+        href: "/dashboard/prescriptions"
+      }
+    },
+    {
+      id: "3",
+      type: "report" as const,
+      title: "Lab Results Available",
+      description: "Your recent lab test results are now available for viewing",
+      timestamp: "2 hours ago",
+      read: true,
+      action: {
+        label: "View Results",
+        href: "/dashboard/health-records"
+      }
+    }
+  ]);
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications(notifications.map(notification =>
+      notification.id === id ? { ...notification, read: true } : notification
+    ));
+  };
+
+  const handleClearAll = () => {
+    setNotifications(notifications.map(notification => ({ ...notification, read: true })));
+  };
   
   return <nav className="bg-gradient-to-r from-white to-health-50/30 border-b border-gray-100 py-4 sticky top-0 z-20 shadow-sm">
       <div className="max-w-6xl mx-auto px-6">
@@ -110,14 +161,17 @@ const DashboardNavbar = ({
           </div>
           
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5 text-gray-600" />
-              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">3</span>
-            </Button>
+            <NotificationsPopover
+              notifications={notifications}
+              onMarkAsRead={handleMarkAsRead}
+              onClearAll={handleClearAll}
+            />
             
-            <Button variant="ghost" size="icon">
-              <MessageSquare className="h-5 w-5 text-gray-600" />
-            </Button>
+            <Link to="/dashboard/prescriptions">
+              <Button variant="ghost" size="icon">
+                <MessageSquare className="h-5 w-5 text-gray-600" />
+              </Button>
+            </Link>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

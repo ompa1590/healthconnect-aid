@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { CircleAlert, Heart, HeartPulse, Activity, Pill, ShieldAlert, Info } from "lucide-react";
@@ -9,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface HealthInsightsProps {
   className?: string;
@@ -156,14 +156,18 @@ const HealthInsightsWidget: React.FC<HealthInsightsProps> = ({ className }) => {
     if (items.length === 0) return null;
     
     return (
-      <div className="space-y-2">
-        <h3 className="text-sm font-medium flex items-center gap-1.5" style={{ color }}>
+      <div className="space-y-3 p-4 rounded-lg bg-muted/10">
+        <h3 className="text-sm font-medium flex items-center gap-2" style={{ color }}>
           {icon}
           {title} ({items.length})
         </h3>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {items.map((item, index) => (
-            <Badge key={index} variant="outline" className="text-xs capitalize">
+            <Badge 
+              key={index} 
+              variant="outline" 
+              className="text-xs capitalize py-1 px-2"
+            >
               {item}
             </Badge>
           ))}
@@ -188,19 +192,19 @@ const HealthInsightsWidget: React.FC<HealthInsightsProps> = ({ className }) => {
   };
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Card className={cn("max-w-3xl mx-auto", className)}>
+      <CardHeader className="text-center">
+        <CardTitle className="flex items-center justify-center gap-2">
           <HeartPulse className="h-5 w-5 text-primary" />
           Health Insights
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="mx-auto max-w-md">
           Extracted from your verified medical documents
         </CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-4">
+          <div className="space-y-4 max-w-2xl mx-auto">
             <Skeleton className="h-[200px] w-full rounded-md" />
             <div className="space-y-2">
               <Skeleton className="h-4 w-24" />
@@ -212,12 +216,12 @@ const HealthInsightsWidget: React.FC<HealthInsightsProps> = ({ className }) => {
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className=" max-w-2xl mx-auto">
             <SampleDataNotice />
             
             {/* Health summary chart */}
             {pieData.length > 0 ? (
-              <div className="h-[200px] w-full relative">
+              <div className="h-[250px] w-full relative mx-auto max-w-lg">
                 <ChartContainer
                   config={{
                     conditions: { label: "Conditions", theme: { light: colors.conditions, dark: colors.conditions } },
@@ -256,41 +260,42 @@ const HealthInsightsWidget: React.FC<HealthInsightsProps> = ({ className }) => {
                 </ChartContainer>
               </div>
             ) : (
-              <div className="text-center py-6">
+              <div className="text-center py-8 bg-muted/10 rounded-lg">
                 <CircleAlert className="h-8 w-8 text-amber-500 mx-auto mb-2" />
                 <p className="text-muted-foreground">No health insights available yet</p>
               </div>
             )}
 
             {/* Categories */}
-            <div className="grid gap-4">
-              {renderCategoryItems(
-                insights.conditions, 
-                <Heart className="h-3.5 w-3.5" />, 
-                "Conditions", 
-                colors.conditions
-              )}
-              
-              {renderCategoryItems(
-                insights.allergies, 
-                <ShieldAlert className="h-3.5 w-3.5" />, 
-                "Allergies", 
-                colors.allergies
-              )}
-              
-              {renderCategoryItems(
-                insights.medications, 
-                <Pill className="h-3.5 w-3.5" />, 
-                "Medications", 
-                colors.medications
-              )}
-              
-              {renderCategoryItems(
-                insights.pastTreatments, 
-                <Activity className="h-3.5 w-3.5" />, 
-                "Past Treatments", 
-                colors.treatments
-              )}
+            <div className="grid gap-6 mt-8">
+              <div className="grid gap-6 sm:grid-cols-2">
+                {renderCategoryItems(
+                  insights.conditions, 
+                  <Heart className="h-4 w-4" />, 
+                  "Conditions", 
+                  colors.conditions
+                )}
+                {renderCategoryItems(
+                  insights.allergies, 
+                  <ShieldAlert className="h-4 w-4" />, 
+                  "Allergies", 
+                  colors.allergies
+                )}
+              </div>
+              <div className="grid gap-6 sm:grid-cols-2">
+                {renderCategoryItems(
+                  insights.medications, 
+                  <Pill className="h-4 w-4" />, 
+                  "Medications", 
+                  colors.medications
+                )}
+                {renderCategoryItems(
+                  insights.pastTreatments, 
+                  <Activity className="h-4 w-4" />, 
+                  "Past Treatments", 
+                  colors.treatments
+                )}
+              </div>
             </div>
           </div>
         )}
