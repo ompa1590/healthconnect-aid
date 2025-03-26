@@ -1,6 +1,6 @@
 
-import React from "react";
-import { Edit } from "lucide-react";
+import React, { useState } from "react";
+import { Edit, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import PatientHeader from "./PatientHeader";
@@ -9,6 +9,7 @@ import RecommendationsList from "./RecommendationsList";
 import MedicationsList from "./MedicationsList";
 import FollowUpInstructions from "./FollowUpInstructions";
 import ConsultationConfirmation from "./ConsultationConfirmation";
+import TranscriptDialog from "../TranscriptDialog";
 
 interface Medication {
   name: string;
@@ -58,6 +59,8 @@ const ConsultationDisplay: React.FC<ConsultationDisplayProps> = ({
   isSaving,
   legalText,
 }) => {
+  const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
+
   return (
     <div className="space-y-5">
       {/* Patient and Appointment Details */}
@@ -69,15 +72,26 @@ const ConsultationDisplay: React.FC<ConsultationDisplayProps> = ({
         />
         
         {!isConfirmed && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto"
-            onClick={onEditClick}
-          >
-            <Edit className="h-4 w-4 mr-1" />
-            Edit Notes
-          </Button>
+          <div className="ml-auto flex flex-col space-y-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="justify-center"
+              onClick={() => setIsTranscriptOpen(true)}
+            >
+              <FileText className="h-4 w-4 mr-1" />
+              View Transcript
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="justify-center"
+              onClick={onEditClick}
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              Edit Notes
+            </Button>
+          </div>
         )}
       </div>
 
@@ -110,6 +124,13 @@ const ConsultationDisplay: React.FC<ConsultationDisplayProps> = ({
           isSaving={isSaving}
         />
       )}
+
+      {/* Transcript Dialog */}
+      <TranscriptDialog 
+        isOpen={isTranscriptOpen}
+        onClose={() => setIsTranscriptOpen(false)}
+        patient={patient}
+      />
     </div>
   );
 };
