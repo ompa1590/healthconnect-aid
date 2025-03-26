@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,18 +37,16 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
   const [searchQuery, setSearchQuery] = useState("");
   const [conversations, setConversations] = useState<Record<string, Message[]>>({});
 
-  // Initialize dummy conversations for demo
   useEffect(() => {
     const dummyConversations: Record<string, Message[]> = {};
     
     patients.forEach(patient => {
-      // Generate some dummy messages for each patient
       const numMessages = Math.floor(Math.random() * 5) + 1;
       const patientMessages: Message[] = [];
       
       for (let i = 0; i < numMessages; i++) {
         const isProvider = i % 2 === 0;
-        const timeOffset = (numMessages - i) * 20 * 60000; // 20 minutes intervals
+        const timeOffset = (numMessages - i) * 20 * 60000;
         
         patientMessages.push({
           id: `msg-${patient.id}-${i}`,
@@ -62,13 +59,12 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
         });
       }
       
-      // Add one unread message from the patient if there are messages
       if (patientMessages.length > 0) {
         patientMessages.push({
           id: `msg-${patient.id}-unread`,
           sender: "patient",
           content: "I have a quick follow-up question about my prescription. Can I take it with food?",
-          timestamp: new Date(Date.now() - 5 * 60000), // 5 minutes ago
+          timestamp: new Date(Date.now() - 5 * 60000),
           read: false
         });
       }
@@ -78,7 +74,6 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
     
     setConversations(dummyConversations);
     
-    // Set first patient as active if there are patients
     if (patients.length > 0) {
       setActivePatient(patients[0].id);
     }
@@ -88,11 +83,9 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
     if (messageText.trim() === '' && attachments.length === 0) return;
     
     if (activePatient) {
-      // In a real app, this would be sent to an API
       console.log(`Sending message to ${activePatient}: ${messageText}`);
       console.log(`Attachments: ${attachments.map(a => a.name).join(', ')}`);
       
-      // Add to local conversation
       const newMessage: Message = {
         id: `msg-${Date.now()}`,
         sender: "provider",
@@ -109,7 +102,6 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
         [activePatient]: [...(prev[activePatient] || []), newMessage]
       }));
       
-      // Clear the input fields
       setMessageText("");
       setAttachments([]);
     }
@@ -156,10 +148,10 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
   );
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Patient Chat</h2>
+    <div className="px-4 py-5 md:p-6">
+      <h2 className="text-2xl font-bold mb-4 md:mb-6">Patient Chat</h2>
       
-      <Card className="h-[600px] flex flex-col">
+      <Card className="min-h-[500px] h-[calc(100vh-200px)] flex flex-col">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
@@ -185,7 +177,7 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
               </div>
             </div>
             
-            <ScrollArea className="h-[calc(600px-110px)]">
+            <ScrollArea className="h-[calc(100%-60px)]">
               <div className="divide-y">
                 {filteredPatients.map((patient) => {
                   const lastMessage = getLastMessage(patient.id);
@@ -260,11 +252,11 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
                   <div className="flex gap-2">
                     <Button variant="ghost" size="sm" className="gap-1">
                       <Calendar className="h-4 w-4" />
-                      View History
+                      <span className="hidden sm:inline">View History</span>
                     </Button>
                     <Button variant="ghost" size="sm" className="gap-1">
                       <Info className="h-4 w-4" />
-                      Patient Info
+                      <span className="hidden sm:inline">Patient Info</span>
                     </Button>
                   </div>
                 </div>
@@ -272,7 +264,6 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
                 <ScrollArea className="flex-1 p-4">
                   <div className="space-y-4">
                     {conversations[activePatient]?.map((message, index) => {
-                      // Check if we need a date separator
                       const showDateSeparator = index === 0 || 
                         formatDate(message.timestamp) !== formatDate(conversations[activePatient][index - 1].timestamp);
                       
@@ -293,19 +284,19 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
                           >
                             <div
                               className={cn(
-                                "max-w-[80%] rounded-lg p-3",
+                                "max-w-[85%] md:max-w-[80%] rounded-lg p-3",
                                 message.sender === "provider"
                                   ? "bg-primary text-primary-foreground"
                                   : "bg-muted"
                               )}
                             >
-                              <p>{message.content}</p>
+                              <p className="break-words">{message.content}</p>
                               {message.attachments && message.attachments.length > 0 && (
                                 <div className="mt-2 space-y-1">
                                   {message.attachments.map((attachment, i) => (
                                     <div key={i} className="flex items-center gap-1 text-xs">
                                       <PaperclipIcon className="h-3 w-3" />
-                                      <a href={attachment.url} className="underline">
+                                      <a href={attachment.url} className="underline truncate max-w-[200px]">
                                         {attachment.name}
                                       </a>
                                     </div>
@@ -417,7 +408,7 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
         </CardContent>
       </Card>
 
-      <div className="mt-8">
+      <div className="mt-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Quick Replies</CardTitle>
