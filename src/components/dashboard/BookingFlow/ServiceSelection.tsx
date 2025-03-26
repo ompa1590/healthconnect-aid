@@ -22,6 +22,19 @@ interface ServiceSelectionProps {
   onNext: () => void;
 }
 
+// Define the service type to ensure proper type checking
+interface EnhancedService {
+  title: string;
+  description: string;
+  price: string;
+  iconColor?: string;
+  benefits?: string[];
+  features?: string[]; // Making features optional since not all services have it
+  categoryId: string;
+  categoryTitle: string;
+  categoryIcon: React.ComponentType<any>;
+}
+
 const ServiceSelection = ({ 
   selectedService, 
   onSelectService, 
@@ -106,6 +119,7 @@ const ServiceSelection = ({
                     <h4 className="text-sm font-semibold">{service.title}</h4>
                     <p className="text-xs text-muted-foreground">{service.description}</p>
                     
+                    {/* Check if service has features property and it has items */}
                     {service.features && service.features.length > 0 && (
                       <div className="pt-2">
                         <span className="text-xs font-medium">Includes:</span>
@@ -114,6 +128,22 @@ const ServiceSelection = ({
                             <li key={idx} className="text-xs flex items-start">
                               <span className="h-1 w-1 rounded-full bg-primary mt-1.5 mr-2"></span>
                               <span>{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {/* If no features but has benefits, show them instead */}
+                    {(!service.features || service.features.length === 0) && 
+                     service.benefits && service.benefits.length > 0 && (
+                      <div className="pt-2">
+                        <span className="text-xs font-medium">Benefits:</span>
+                        <ul className="mt-1 space-y-1">
+                          {service.benefits.map((benefit, idx) => (
+                            <li key={idx} className="text-xs flex items-start">
+                              <span className="h-1 w-1 rounded-full bg-primary mt-1.5 mr-2"></span>
+                              <span>{benefit}</span>
                             </li>
                           ))}
                         </ul>
