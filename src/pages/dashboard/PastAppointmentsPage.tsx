@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   CalendarClock, 
   Clock, 
@@ -11,15 +11,26 @@ import {
   Search,
   ArrowLeft,
   Stethoscope,
-  Sparkles
+  Sparkles,
+  Filter,
+  ChevronRight
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format, isAfter, isBefore, parseISO } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Appointment = {
   id: number;
@@ -27,7 +38,7 @@ type Appointment = {
   specialty: string;
   date: string;
   time: string;
-  status: "completed";
+  status: "upcoming" | "completed";
   summary?: string;
   recommendations?: string;
   medications?: string[];
@@ -37,43 +48,37 @@ type Appointment = {
 const PastAppointmentsPage = () => {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+  const [showAllAppointments, setShowAllAppointments] = useState<boolean>(false);
   const navigate = useNavigate();
   
   const handleBackToHome = () => {
     navigate("/dashboard");
   };
   
-  const pastAppointments: Appointment[] = [
+  const allAppointments: Appointment[] = [
     {
       id: 1,
       doctor: "Dr. Michael Chen",
       specialty: "Dermatologist",
-      date: "February 29, 2024",
+      date: "2024-04-15",
       time: "2:30 PM",
-      status: "completed",
-      summary: "Patient presented with persistent rash on forearms. Diagnosed as contact dermatitis.",
-      recommendations: "Avoid scented soaps and detergents. Apply prescribed hydrocortisone cream twice daily.",
-      medications: ["Hydrocortisone 1% cream", "Cetirizine 10mg tablets"],
-      followUp: "Return in 2 weeks if symptoms persist."
+      status: "upcoming",
     },
     {
       id: 2,
-      doctor: "Dr. Sarah Johnson",
-      specialty: "General Practitioner",
-      date: "February 14, 2024",
-      time: "10:00 AM",
-      status: "completed",
-      summary: "Annual check-up. All vitals within normal range.",
-      recommendations: "Continue regular exercise and balanced diet.",
-      medications: [],
-      followUp: "Schedule next annual check-up in 12 months."
+      doctor: "Dr. Emily Rodriguez",
+      specialty: "Neurologist",
+      date: "2024-05-03",
+      time: "9:15 AM",
+      status: "upcoming",
     },
     {
       id: 3,
       doctor: "Dr. James Wilson",
       specialty: "Cardiologist",
-      date: "January 19, 2024",
-      time: "3:45 PM",
+      date: "2024-03-15",
+      time: "10:00 AM",
       status: "completed",
       summary: "Follow-up after mild palpitations. ECG showed normal sinus rhythm.",
       recommendations: "Continue monitoring. Reduce caffeine intake.",
@@ -82,9 +87,33 @@ const PastAppointmentsPage = () => {
     },
     {
       id: 4,
+      doctor: "Dr. Sarah Johnson",
+      specialty: "General Practitioner",
+      date: "2024-02-14",
+      time: "10:00 AM",
+      status: "completed",
+      summary: "Annual check-up. All vitals within normal range.",
+      recommendations: "Continue regular exercise and balanced diet.",
+      medications: [],
+      followUp: "Schedule next annual check-up in 12 months."
+    },
+    {
+      id: 5,
+      doctor: "Dr. Michael Chen",
+      specialty: "Dermatologist",
+      date: "2024-02-29",
+      time: "2:30 PM",
+      status: "completed",
+      summary: "Patient presented with persistent rash on forearms. Diagnosed as contact dermatitis.",
+      recommendations: "Avoid scented soaps and detergents. Apply prescribed hydrocortisone cream twice daily.",
+      medications: ["Hydrocortisone 1% cream", "Cetirizine 10mg tablets"],
+      followUp: "Return in 2 weeks if symptoms persist."
+    },
+    {
+      id: 6,
       doctor: "Dr. Lisa Patel",
       specialty: "Endocrinologist",
-      date: "December 4, 2023",
+      date: "2023-12-04",
       time: "1:15 PM",
       status: "completed",
       summary: "Thyroid function assessment. TSH slightly elevated.",
@@ -93,10 +122,10 @@ const PastAppointmentsPage = () => {
       followUp: "Blood work in 6 weeks to check medication efficacy."
     },
     {
-      id: 5,
+      id: 7,
       doctor: "Dr. Robert Garcia",
       specialty: "Psychiatrist",
-      date: "November 9, 2023",
+      date: "2023-11-09",
       time: "11:30 AM",
       status: "completed",
       summary: "Initial consultation for mild anxiety and sleep disturbance.",
@@ -106,14 +135,78 @@ const PastAppointmentsPage = () => {
     }
   ];
 
+  // Extract all unique specialties for the filter
+  const specialties = useMemo(() => {
+    return [...new Set(allAppointments.map(appointment => appointment.specialty))];
+  }, [allAppointments]);
+
+  // Filter and sort appointments
+  const filteredAppointments = useMemo(() => {
+    return allAppointments
+      .filter(appointment => 
+        (searchQuery === "" || 
+         appointment.doctor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         appointment.specialty.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        (selectedSpecialties.length === 0 || 
+         selectedSpecialties.includes(appointment.specialty))
+      )
+      .sort((a, b) => {
+        // Sort by date (most recent first)
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      });
+  }, [allAppointments, searchQuery, selectedSpecialties]);
+
+  // Split appointments into upcoming and past
+  const upcomingAppointments = useMemo(() => {
+    return filteredAppointments.filter(appointment => 
+      appointment.status === "upcoming"
+    );
+  }, [filteredAppointments]);
+
+  const pastAppointments = useMemo(() => {
+    return filteredAppointments.filter(appointment => 
+      appointment.status === "completed"
+    );
+  }, [filteredAppointments]);
+
+  // Limit the number of displayed appointments unless "View All" is clicked
+  const displayedUpcomingAppointments = showAllAppointments ? 
+    upcomingAppointments : 
+    upcomingAppointments.slice(0, 3);
+    
+  const displayedPastAppointments = showAllAppointments ? 
+    pastAppointments : 
+    pastAppointments.slice(0, 3);
+
   const openAppointmentDetails = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
   };
 
-  const filteredAppointments = pastAppointments.filter(appointment => 
-    appointment.doctor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    appointment.specialty.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Handle specialty filter selection
+  const handleSpecialtyToggle = (specialty: string) => {
+    setSelectedSpecialties(prev => {
+      if (prev.includes(specialty)) {
+        return prev.filter(s => s !== specialty);
+      } else {
+        return [...prev, specialty];
+      }
+    });
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedSpecialties([]);
+  };
+
+  const formatDisplayDate = (dateStr: string) => {
+    try {
+      const date = parseISO(dateStr);
+      return format(date, "MMMM d, yyyy");
+    } catch (error) {
+      return dateStr; // Return original string if parsing fails
+    }
+  };
 
   return (
     <main className="max-w-6xl mx-auto px-6 py-10 animate-fade-in">
@@ -128,7 +221,7 @@ const PastAppointmentsPage = () => {
           Back to Home
         </Button>
         <h1 className="text-3xl font-normal font-poppins flex items-center">
-          Past Appointments
+          Appointments
           <CalendarClock className="ml-2 h-6 w-6 text-primary/70" />
         </h1>
       </div>
@@ -143,73 +236,225 @@ const PastAppointmentsPage = () => {
                 <h2 className="text-xl font-medium">Your Medical Journey</h2>
               </div>
               <p className="text-muted-foreground max-w-2xl">
-                Review your past appointments, treatments, and medical recommendations.
+                Track your healthcare appointments, review past consultations, and manage upcoming visits.
               </p>
             </div>
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search appointments..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-white/80 backdrop-blur-sm border-border/30"
-              />
+            <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+              <div className="relative flex-1 md:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search appointments..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 bg-white/80 backdrop-blur-sm border-border/30"
+                />
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2 bg-white/80 backdrop-blur-sm">
+                    <Filter className="h-4 w-4" />
+                    Filter
+                    {selectedSpecialties.length > 0 && (
+                      <span className="bg-primary/20 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                        {selectedSpecialties.length}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Specialty</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {specialties.map((specialty) => (
+                    <DropdownMenuCheckboxItem
+                      key={specialty}
+                      checked={selectedSpecialties.includes(specialty)}
+                      onCheckedChange={() => handleSpecialtyToggle(specialty)}
+                    >
+                      {specialty}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearFilters} 
+                    className="w-full text-muted-foreground hover:text-foreground"
+                  >
+                    Clear Filters
+                  </Button>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
       </div>
       
-      <div className="space-y-4">
-        {filteredAppointments.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border border-border/30 backdrop-blur-sm">
-            No appointments found matching your search
-          </div>
-        ) : (
-          filteredAppointments.map((appointment) => (
-            <GlassCard 
-              key={appointment.id}
-              className="p-0 cursor-pointer hover:-translate-y-1 transition-all duration-300 animate-slide-up"
-              variant="elevated"
-              borderEffect
-              onClick={() => openAppointmentDetails(appointment)}
-            >
-              <div className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-start gap-4">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Stethoscope className="h-5 w-5 text-primary/80" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-medium font-poppins">{appointment.doctor}</h3>
-                      <p className="text-primary/80">{appointment.specialty}</p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 hover:bg-primary/10 transition-colors duration-200 group"
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span>View Details</span>
-                    <Sparkles className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </Button>
-                </div>
-                
-                <div className="flex gap-6 mt-4 text-muted-foreground">
-                  <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
-                    <CalendarClock className="h-4 w-4 text-primary/70" />
-                    <span>{appointment.date}</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
-                    <Clock className="h-4 w-4 text-primary/70" />
-                    <span>{appointment.time}</span>
-                  </div>
-                </div>
+      <Tabs defaultValue="upcoming" className="w-full">
+        <TabsList className="w-full sm:w-auto bg-muted/30 mb-6">
+          <TabsTrigger 
+            value="upcoming" 
+            className="flex-1 sm:flex-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+          >
+            Upcoming Appointments
+            {upcomingAppointments.length > 0 && (
+              <span className="ml-2 bg-primary/20 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                {upcomingAppointments.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger 
+            value="past" 
+            className="flex-1 sm:flex-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+          >
+            Past Appointments
+            {pastAppointments.length > 0 && (
+              <span className="ml-2 bg-primary/20 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                {pastAppointments.length}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="upcoming" className="mt-0">
+          <div className="space-y-4">
+            {displayedUpcomingAppointments.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border border-border/30 backdrop-blur-sm">
+                No upcoming appointments found
               </div>
-            </GlassCard>
-          ))
-        )}
-      </div>
+            ) : (
+              <>
+                {displayedUpcomingAppointments.map((appointment) => (
+                  <GlassCard 
+                    key={appointment.id}
+                    className="p-0 cursor-pointer hover:-translate-y-1 transition-all duration-300 animate-slide-up"
+                    variant="elevated"
+                    borderEffect
+                    onClick={() => openAppointmentDetails(appointment)}
+                  >
+                    <div className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-start gap-4">
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Stethoscope className="h-5 w-5 text-primary/80" />
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-medium font-poppins">{appointment.doctor}</h3>
+                            <p className="text-primary/80">{appointment.specialty}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 hover:bg-primary/10 transition-colors duration-200 group"
+                          >
+                            <FileText className="h-4 w-4" />
+                            <span>View Details</span>
+                            <Sparkles className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-6 mt-4 text-muted-foreground">
+                        <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
+                          <CalendarClock className="h-4 w-4 text-primary/70" />
+                          <span>{formatDisplayDate(appointment.date)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
+                          <Clock className="h-4 w-4 text-primary/70" />
+                          <span>{appointment.time}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </GlassCard>
+                ))}
+                
+                {upcomingAppointments.length > 3 && !showAllAppointments && (
+                  <div className="flex justify-center mt-6">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowAllAppointments(true)}
+                      className="group"
+                    >
+                      View All Appointments
+                      <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="past" className="mt-0">
+          <div className="space-y-4">
+            {displayedPastAppointments.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border border-border/30 backdrop-blur-sm">
+                No past appointments found matching your search
+              </div>
+            ) : (
+              <>
+                {displayedPastAppointments.map((appointment) => (
+                  <GlassCard 
+                    key={appointment.id}
+                    className="p-0 cursor-pointer hover:-translate-y-1 transition-all duration-300 animate-slide-up"
+                    variant="elevated"
+                    borderEffect
+                    onClick={() => openAppointmentDetails(appointment)}
+                  >
+                    <div className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-start gap-4">
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Stethoscope className="h-5 w-5 text-primary/80" />
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-medium font-poppins">{appointment.doctor}</h3>
+                            <p className="text-primary/80">{appointment.specialty}</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2 hover:bg-primary/10 transition-colors duration-200 group"
+                        >
+                          <FileText className="h-4 w-4" />
+                          <span>View Details</span>
+                          <Sparkles className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </Button>
+                      </div>
+                      
+                      <div className="flex gap-6 mt-4 text-muted-foreground">
+                        <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
+                          <CalendarClock className="h-4 w-4 text-primary/70" />
+                          <span>{formatDisplayDate(appointment.date)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
+                          <Clock className="h-4 w-4 text-primary/70" />
+                          <span>{appointment.time}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </GlassCard>
+                ))}
+                
+                {pastAppointments.length > 3 && !showAllAppointments && (
+                  <div className="flex justify-center mt-6">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowAllAppointments(true)}
+                      className="group"
+                    >
+                      View All Appointments
+                      <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={!!selectedAppointment} onOpenChange={(open) => !open && setSelectedAppointment(null)}>
         <DialogContent className="max-w-md sm:max-w-lg animate-in fade-in-0 zoom-in-90 bg-white/95 backdrop-blur-lg border border-border/30">
@@ -240,7 +485,7 @@ const PastAppointmentsPage = () => {
               <div className="flex gap-6 text-sm">
                 <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                   <CalendarClock className="h-4 w-4 text-primary/70" />
-                  <span>{selectedAppointment.date}</span>
+                  <span>{formatDisplayDate(selectedAppointment.date)}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                   <Clock className="h-4 w-4 text-primary/70" />
@@ -248,48 +493,70 @@ const PastAppointmentsPage = () => {
                 </div>
               </div>
 
-              {selectedAppointment.summary && (
-                <GlassCard className="!p-4 space-y-2" variant="subtle">
-                  <h4 className="font-medium flex items-center gap-2 font-poppins">
-                    <FileText className="h-4 w-4 text-primary" />
-                    Summary
-                  </h4>
-                  <p className="text-sm text-muted-foreground">{selectedAppointment.summary}</p>
-                </GlassCard>
-              )}
-
-              {selectedAppointment.recommendations && (
-                <GlassCard className="!p-4 space-y-2" variant="subtle">
-                  <h4 className="font-medium flex items-center gap-2 font-poppins">
-                    <MessageSquareText className="h-4 w-4 text-primary" />
-                    Recommendations
-                  </h4>
-                  <p className="text-sm text-muted-foreground">{selectedAppointment.recommendations}</p>
-                </GlassCard>
-              )}
-
-              {selectedAppointment.medications && selectedAppointment.medications.length > 0 && (
-                <GlassCard className="!p-4 space-y-2" variant="subtle">
-                  <h4 className="font-medium flex items-center gap-2 font-poppins">
-                    <Pill className="h-4 w-4 text-primary" />
-                    Prescribed Medications
-                  </h4>
-                  <ul className="list-disc list-inside text-sm text-muted-foreground pl-1">
-                    {selectedAppointment.medications.map((medication, index) => (
-                      <li key={index}>{medication}</li>
-                    ))}
-                  </ul>
-                </GlassCard>
-              )}
-
-              {selectedAppointment.followUp && (
+              {selectedAppointment.status === "upcoming" ? (
                 <GlassCard className="!p-4 space-y-2" variant="subtle">
                   <h4 className="font-medium flex items-center gap-2 font-poppins">
                     <CalendarClock className="h-4 w-4 text-primary" />
-                    Follow-up
+                    Upcoming Appointment
                   </h4>
-                  <p className="text-sm text-muted-foreground">{selectedAppointment.followUp}</p>
+                  <p className="text-sm text-muted-foreground">
+                    This appointment is scheduled for {formatDisplayDate(selectedAppointment.date)} at {selectedAppointment.time}.
+                  </p>
+                  <div className="pt-2 flex gap-2">
+                    <Button className="flex-1">
+                      Reschedule
+                    </Button>
+                    <Button variant="outline" className="flex-1">
+                      Cancel
+                    </Button>
+                  </div>
                 </GlassCard>
+              ) : (
+                <>
+                  {selectedAppointment.summary && (
+                    <GlassCard className="!p-4 space-y-2" variant="subtle">
+                      <h4 className="font-medium flex items-center gap-2 font-poppins">
+                        <FileText className="h-4 w-4 text-primary" />
+                        Summary
+                      </h4>
+                      <p className="text-sm text-muted-foreground">{selectedAppointment.summary}</p>
+                    </GlassCard>
+                  )}
+
+                  {selectedAppointment.recommendations && (
+                    <GlassCard className="!p-4 space-y-2" variant="subtle">
+                      <h4 className="font-medium flex items-center gap-2 font-poppins">
+                        <MessageSquareText className="h-4 w-4 text-primary" />
+                        Recommendations
+                      </h4>
+                      <p className="text-sm text-muted-foreground">{selectedAppointment.recommendations}</p>
+                    </GlassCard>
+                  )}
+
+                  {selectedAppointment.medications && selectedAppointment.medications.length > 0 && (
+                    <GlassCard className="!p-4 space-y-2" variant="subtle">
+                      <h4 className="font-medium flex items-center gap-2 font-poppins">
+                        <Pill className="h-4 w-4 text-primary" />
+                        Prescribed Medications
+                      </h4>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground pl-1">
+                        {selectedAppointment.medications.map((medication, index) => (
+                          <li key={index}>{medication}</li>
+                        ))}
+                      </ul>
+                    </GlassCard>
+                  )}
+
+                  {selectedAppointment.followUp && (
+                    <GlassCard className="!p-4 space-y-2" variant="subtle">
+                      <h4 className="font-medium flex items-center gap-2 font-poppins">
+                        <CalendarClock className="h-4 w-4 text-primary" />
+                        Follow-up
+                      </h4>
+                      <p className="text-sm text-muted-foreground">{selectedAppointment.followUp}</p>
+                    </GlassCard>
+                  )}
+                </>
               )}
 
               <div className="pt-2">
