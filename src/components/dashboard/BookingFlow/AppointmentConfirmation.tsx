@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Clock, User } from "lucide-react";
 import { format } from "date-fns";
+import Siri from "../../prescreening/PreScreeningAssistant";
+import RadialCard from "../../prescreening/PreScreeningAssistant";
 
 interface AppointmentConfirmationProps {
   appointmentDetails: {
@@ -96,12 +98,8 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
 
       {showPrescreening && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
-          <div className="fixed inset-4 z-50 rounded-lg border bg-background shadow-lg">
-            <iframe
-              src="https://www.tixaeagents.ai/app/na/render/dCNT2Pct710m7Dxr3Kyi/iframe"
-              className="w-full h-full rounded-lg"
-              frameBorder="0"
-            />
+          <div className="fixed inset-4 z-50 rounded-lg border bg-background shadow-lg p-6 overflow-y-auto">
+            <RadialCard autoStart={true}/>
             <Button
               onClick={togglePrescreening}
               className="absolute top-4 right-4"
