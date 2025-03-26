@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -27,6 +28,7 @@ export type ProviderFormData = {
   postalCode: string;
   phoneNumber: string;
   providerType: string;
+  customProviderType?: string; // Added for "Other" provider type
   registrationNumber: string;
   registrationExpiry: Date | undefined;
   specializations: string[];

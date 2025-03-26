@@ -1,10 +1,11 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, ShieldCheck, UserCheck } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface ProviderTypeStepProps {
   formData: ProviderFormData;
@@ -32,6 +33,7 @@ const ProviderTypeStep: React.FC<ProviderTypeStepProps> = ({ formData, updateFor
     { value: "social_worker", label: "Social Worker", description: "Support for social and emotional needs" },
     { value: "occupational_therapist", label: "Occupational Therapist", description: "Help with daily activities and skills" },
     { value: "speech_therapist", label: "Speech Therapist", description: "Speech and communication specialists" },
+    { value: "other", label: "Other Healthcare Provider", description: "Specify your healthcare provider type" },
   ];
 
   const renderProviderGroup = (
@@ -62,9 +64,23 @@ const ProviderTypeStep: React.FC<ProviderTypeStepProps> = ({ formData, updateFor
               id={provider.value}
               className="mt-1" 
             />
-            <div className="ml-3">
+            <div className="ml-3 w-full">
               <p className="font-medium">{provider.label}</p>
               <p className="text-sm text-muted-foreground">{provider.description}</p>
+              
+              {provider.value === "other" && formData.providerType === "other" && (
+                <div className="mt-3">
+                  <Label htmlFor="customProviderType" className="text-sm">Please specify your provider type</Label>
+                  <Input
+                    id="customProviderType"
+                    type="text"
+                    className="mt-1"
+                    placeholder="Enter your provider type"
+                    value={formData.customProviderType || ""}
+                    onChange={(e) => updateFormData({ customProviderType: e.target.value })}
+                  />
+                </div>
+              )}
             </div>
           </label>
         ))}

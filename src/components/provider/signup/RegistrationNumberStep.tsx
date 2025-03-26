@@ -27,6 +27,8 @@ const RegistrationNumberStep: React.FC<RegistrationNumberStepProps> = ({ formDat
         return "CCAP Number";
       case "physiotherapist":
         return "Physiotherapy Registration Number";
+      case "other":
+        return formData.customProviderType ? `${formData.customProviderType} Registration Number` : "Professional Registration Number";
       default:
         return "Professional Registration Number";
     }
