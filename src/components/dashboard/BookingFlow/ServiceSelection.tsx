@@ -40,8 +40,8 @@ const ServiceSelection = ({
   onSelectService, 
   onNext 
 }: ServiceSelectionProps) => {
-  // Flatten all services from all categories
-  const allServices = serviceCategories.flatMap(category => 
+  // Flatten all services from all categories and cast to EnhancedService type
+  const allServices: EnhancedService[] = serviceCategories.flatMap(category => 
     category.services.map(service => ({
       ...service,
       categoryId: category.id,
