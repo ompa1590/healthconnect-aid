@@ -494,74 +494,74 @@ const PastAppointmentsPage = () => {
               </div>
 
               {selectedAppointment.status === "upcoming" ? (
-                <GlassCard className="!p-4 space-y-2" variant="subtle">
-                  <h4 className="font-medium flex items-center gap-2 font-poppins">
-                    <CalendarClock className="h-4 w-4 text-primary" />
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-4 rounded-xl shadow-sm">
+                  <h4 className="font-medium flex items-center gap-2 font-poppins text-blue-700">
+                    <CalendarClock className="h-4 w-4 text-blue-500" />
                     Upcoming Appointment
                   </h4>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-blue-600 mt-2">
                     This appointment is scheduled for {formatDisplayDate(selectedAppointment.date)} at {selectedAppointment.time}.
                   </p>
-                  <div className="pt-2 flex gap-2">
-                    <Button className="flex-1">
+                  <div className="pt-2 flex gap-2 mt-3">
+                    <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
                       Reschedule
                     </Button>
-                    <Button variant="outline" className="flex-1">
+                    <Button variant="outline" className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50">
                       Cancel
                     </Button>
                   </div>
-                </GlassCard>
+                </div>
               ) : (
                 <>
                   {selectedAppointment.summary && (
-                    <GlassCard className="!p-4 space-y-2" variant="subtle">
-                      <h4 className="font-medium flex items-center gap-2 font-poppins">
-                        <FileText className="h-4 w-4 text-primary" />
+                    <div className="bg-gradient-to-r from-health-50 to-medical-light border border-health-200/40 p-4 rounded-xl shadow-sm">
+                      <h4 className="font-medium flex items-center gap-2 font-poppins text-primary">
+                        <FileText className="h-4 w-4 text-medical-DEFAULT" />
                         Summary
                       </h4>
-                      <p className="text-sm text-muted-foreground">{selectedAppointment.summary}</p>
-                    </GlassCard>
+                      <p className="text-sm text-muted-foreground mt-2">{selectedAppointment.summary}</p>
+                    </div>
                   )}
 
                   {selectedAppointment.recommendations && (
-                    <GlassCard className="!p-4 space-y-2" variant="subtle">
-                      <h4 className="font-medium flex items-center gap-2 font-poppins">
-                        <MessageSquareText className="h-4 w-4 text-primary" />
+                    <div className="bg-gradient-to-r from-wellness-light to-blue-50 border border-wellness-DEFAULT/20 p-4 rounded-xl shadow-sm">
+                      <h4 className="font-medium flex items-center gap-2 font-poppins text-green-700">
+                        <MessageSquareText className="h-4 w-4 text-wellness-DEFAULT" />
                         Recommendations
                       </h4>
-                      <p className="text-sm text-muted-foreground">{selectedAppointment.recommendations}</p>
-                    </GlassCard>
+                      <p className="text-sm text-muted-foreground mt-2">{selectedAppointment.recommendations}</p>
+                    </div>
                   )}
 
                   {selectedAppointment.medications && selectedAppointment.medications.length > 0 && (
-                    <GlassCard className="!p-4 space-y-2" variant="subtle">
-                      <h4 className="font-medium flex items-center gap-2 font-poppins">
-                        <Pill className="h-4 w-4 text-primary" />
+                    <div className="bg-gradient-to-r from-medical-light to-blue-50/50 border border-medical-DEFAULT/20 p-4 rounded-xl shadow-sm">
+                      <h4 className="font-medium flex items-center gap-2 font-poppins text-blue-700">
+                        <Pill className="h-4 w-4 text-medical-DEFAULT" />
                         Prescribed Medications
                       </h4>
-                      <ul className="list-disc list-inside text-sm text-muted-foreground pl-1">
+                      <ul className="list-disc list-inside text-sm text-muted-foreground pl-1 mt-2">
                         {selectedAppointment.medications.map((medication, index) => (
-                          <li key={index}>{medication}</li>
+                          <li key={index} className="mb-1">{medication}</li>
                         ))}
                       </ul>
-                    </GlassCard>
+                    </div>
                   )}
 
                   {selectedAppointment.followUp && (
-                    <GlassCard className="!p-4 space-y-2" variant="subtle">
-                      <h4 className="font-medium flex items-center gap-2 font-poppins">
-                        <CalendarClock className="h-4 w-4 text-primary" />
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 p-4 rounded-xl shadow-sm">
+                      <h4 className="font-medium flex items-center gap-2 font-poppins text-indigo-700">
+                        <CalendarClock className="h-4 w-4 text-indigo-500" />
                         Follow-up
                       </h4>
-                      <p className="text-sm text-muted-foreground">{selectedAppointment.followUp}</p>
-                    </GlassCard>
+                      <p className="text-sm text-muted-foreground mt-2">{selectedAppointment.followUp}</p>
+                    </div>
                   )}
                 </>
               )}
 
               <div className="pt-2">
                 <Button 
-                  className="w-full bg-primary/90 hover:bg-primary group"
+                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary group shadow-md"
                   onClick={() => setSelectedAppointment(null)}
                 >
                   Close
