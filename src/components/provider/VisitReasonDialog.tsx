@@ -1,6 +1,6 @@
 
 import React from "react";
-import { FileText, AlertCircle, Pill, Stethoscope, ClipboardList, Check } from "lucide-react";
+import { AlertCircle, FileText, Pill, Stethoscope, ClipboardList, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -95,13 +95,13 @@ const VisitReasonDialog: React.FC<VisitReasonDialogProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
             {conditions.length > 0 && (
               <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-white to-blue-50 p-4 shadow-sm hover:shadow transition-shadow">
-                <div className="flex items-center gap-2 mb-3 pb-1 border-b border-blue-100">
-                  <Stethoscope className="h-5 w-5 text-blue-600" />
-                  <h3 className="font-medium text-blue-800">Relevant Conditions</h3>
+                <div className="flex items-center gap-2 mb-2 pb-1 border-b border-blue-100">
+                  <Stethoscope className="h-4 w-4 text-blue-600" />
+                  <h3 className="font-medium text-sm text-blue-800">Relevant Conditions</h3>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {conditions.map((condition, index) => (
-                    <Badge key={index} variant="outline" className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100">
+                    <Badge key={index} variant="outline" className="text-xs py-0.5 px-1.5 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100">
                       {condition}
                     </Badge>
                   ))}
@@ -111,13 +111,13 @@ const VisitReasonDialog: React.FC<VisitReasonDialogProps> = ({
             
             {medications.length > 0 && (
               <div className="rounded-lg border border-green-200 bg-gradient-to-br from-white to-green-50 p-4 shadow-sm hover:shadow transition-shadow">
-                <div className="flex items-center gap-2 mb-3 pb-1 border-b border-green-100">
-                  <Pill className="h-5 w-5 text-green-600" />
-                  <h3 className="font-medium text-green-800">Current Medications</h3>
+                <div className="flex items-center gap-2 mb-2 pb-1 border-b border-green-100">
+                  <Pill className="h-4 w-4 text-green-600" />
+                  <h3 className="font-medium text-sm text-green-800">Current Medications</h3>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {medications.map((medication, index) => (
-                    <Badge key={index} variant="outline" className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100">
+                    <Badge key={index} variant="outline" className="text-xs py-0.5 px-1.5 bg-green-50 border-green-200 text-green-700 hover:bg-green-100">
                       {medication}
                     </Badge>
                   ))}
@@ -127,13 +127,13 @@ const VisitReasonDialog: React.FC<VisitReasonDialogProps> = ({
             
             {allergies.length > 0 && (
               <div className="rounded-lg border border-red-200 bg-gradient-to-br from-white to-red-50 p-4 shadow-sm hover:shadow transition-shadow">
-                <div className="flex items-center gap-2 mb-3 pb-1 border-b border-red-100">
-                  <AlertCircle className="h-5 w-5 text-red-600" />
-                  <h3 className="font-medium text-red-800">Allergies</h3>
+                <div className="flex items-center gap-2 mb-2 pb-1 border-b border-red-100">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <h3 className="font-medium text-sm text-red-800">Allergies</h3>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {allergies.map((allergy, index) => (
-                    <Badge key={index} variant="outline" className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100">
+                    <Badge key={index} variant="outline" className="text-xs py-0.5 px-1.5 bg-red-50 border-red-200 text-red-700 hover:bg-red-100">
                       {allergy}
                     </Badge>
                   ))}
