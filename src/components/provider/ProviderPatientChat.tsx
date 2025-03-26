@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,12 +9,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, Send, PaperclipIcon, MessageSquare, Search, Clock, Calendar, Info, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import PatientHistoryDialog from "./PatientHistoryDialog";
 
 type Patient = {
   id: string;
   name: string;
   appointmentType: string;
   lastSeen: Date;
+  medications?: string[];
+  conditions?: string[];
+  allergies?: string[];
 };
 
 type Message = {
@@ -25,6 +28,13 @@ type Message = {
   timestamp: Date;
   read: boolean;
   attachments?: { name: string; url: string }[];
+};
+
+type Appointment = {
+  date: Date;
+  reason: string;
+  provider: string;
+  notes?: string;
 };
 
 type ProviderPatientChatProps = {
@@ -37,11 +47,37 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
   const [attachments, setAttachments] = useState<File[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [conversations, setConversations] = useState<Record<string, Message[]>>({});
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
 
   useEffect(() => {
+    const patientsWithHistory = patients.map(patient => {
+      const possibleConditions = ["Hypertension", "Diabetes Type 2", "Asthma", "Migraines", "Arthritis"];
+      const possibleAllergies = ["Penicillin", "Peanuts", "Latex", "Shellfish", "Pollen"];
+      const possibleMedications = ["Lisinopril", "Metformin", "Albuterol", "Sumatriptan", "Ibuprofen"];
+      
+      const randomConditions = possibleConditions
+        .sort(() => 0.5 - Math.random())
+        .slice(0, Math.floor(Math.random() * 3));
+        
+      const randomAllergies = possibleAllergies
+        .sort(() => 0.5 - Math.random())
+        .slice(0, Math.floor(Math.random() * 3));
+        
+      const randomMedications = possibleMedications
+        .sort(() => 0.5 - Math.random())
+        .slice(0, Math.floor(Math.random() * 3));
+      
+      return {
+        ...patient,
+        conditions: randomConditions,
+        allergies: randomAllergies,
+        medications: randomMedications
+      };
+    });
+    
     const dummyConversations: Record<string, Message[]> = {};
     
-    patients.forEach(patient => {
+    patientsWithHistory.forEach(patient => {
       const numMessages = Math.floor(Math.random() * 5) + 1;
       const patientMessages: Message[] = [];
       
@@ -75,8 +111,8 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
     
     setConversations(dummyConversations);
     
-    if (patients.length > 0) {
-      setActivePatient(patients[0].id);
+    if (patientsWithHistory.length > 0) {
+      setActivePatient(patientsWithHistory[0].id);
     }
   }, [patients]);
 
@@ -144,7 +180,6 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
   };
 
   const getStatusColor = (patientId: string) => {
-    // Randomly assign status for demo
     const statuses = ['online', 'away', 'offline'];
     const hash = patientId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return statuses[hash % statuses.length];
@@ -159,6 +194,30 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
       default:
         return 'bg-gray-500';
     }
+  };
+
+  const getActivePatient = () => {
+    return activePatient ? patients.find(p => p.id === activePatient) : null;
+  };
+
+  const getPastAppointments = (patientId: string): Appointment[] => {
+    const appointments: Appointment[] = [];
+    
+    const numAppointments = Math.floor(Math.random() * 3) + 2;
+    const appointmentReasons = ["Annual Check-up", "Follow-up", "Urgent Care", "Consultation", "Prescription Renewal"];
+    const providerNames = ["Dr. Johnson", "Dr. Patel", "Dr. Garcia", "Dr. Williams", "Dr. Lee"];
+    
+    for (let i = 0; i < numAppointments; i++) {
+      const timeOffset = (i + 1) * 30 * 24 * 60 * 60 * 1000;
+      appointments.push({
+        date: new Date(Date.now() - timeOffset),
+        reason: appointmentReasons[Math.floor(Math.random() * appointmentReasons.length)],
+        provider: providerNames[Math.floor(Math.random() * providerNames.length)],
+        notes: Math.random() > 0.5 ? "Patient responded well to treatment. Follow-up in 3 months." : undefined
+      });
+    }
+    
+    return appointments.sort((a, b) => b.date.getTime() - a.date.getTime());
   };
 
   const filteredPatients = patients.filter(patient => 
@@ -273,7 +332,12 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" className="gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="gap-1"
+                    onClick={() => setIsHistoryDialogOpen(true)}
+                  >
                     <Calendar className="h-4 w-4" />
                     <span className="hidden sm:inline">View History</span>
                   </Button>
@@ -429,6 +493,15 @@ const ProviderPatientChat: React.FC<ProviderPatientChatProps> = ({ patients }) =
           )}
         </div>
       </CardContent>
+      
+      <PatientHistoryDialog 
+        open={isHistoryDialogOpen}
+        onOpenChange={setIsHistoryDialogOpen}
+        patient={activePatient ? {
+          ...getActivePatient()!,
+          pastAppointments: getPastAppointments(activePatient)
+        } : null}
+      />
     </Card>
   );
 };
