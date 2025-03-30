@@ -72,7 +72,7 @@ const ConsultationDisplay: React.FC<ConsultationDisplayProps> = ({
         />
         
         {!isConfirmed && (
-          <div className="ml-auto flex flex-col space-y-2">
+          <div className="flex flex-col space-y-2">
             <Button
               variant="outline"
               size="sm"
