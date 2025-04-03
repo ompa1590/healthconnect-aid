@@ -1,9 +1,11 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Clock, User } from "lucide-react";
 import { format } from "date-fns";
 import Siri from "../../prescreening/PreScreeningAssistant";
 import RadialCard from "../../prescreening/PreScreeningAssistant";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AppointmentConfirmationProps {
   appointmentDetails: {
@@ -17,9 +19,29 @@ interface AppointmentConfirmationProps {
 
 const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConfirmationProps) => {
   const [showPrescreening, setShowPrescreening] = useState(false);
+  const { toast } = useToast();
 
   const togglePrescreening = () => {
     setShowPrescreening(!showPrescreening);
+  };
+
+  const handlePrescreenLater = () => {
+    // Calculate 8 hours before appointment
+    const appointmentTime = new Date(appointmentDetails.date);
+    const [hours, minutes] = appointmentDetails.time.split(':');
+    appointmentTime.setHours(parseInt(hours), parseInt(minutes));
+    
+    const eightHoursBefore = new Date(appointmentTime);
+    eightHoursBefore.setHours(appointmentTime.getHours() - 8);
+    
+    // Format the date and time for display
+    const formattedDate = format(eightHoursBefore, "MMMM d, yyyy");
+    const formattedTime = format(eightHoursBefore, "h:mm a");
+    
+    toast({
+      title: "Pre-screening Reminder Set",
+      description: `You'll be reminded to complete your pre-screening on ${formattedDate} at ${formattedTime}.`,
+    });
   };
 
   return (
@@ -80,17 +102,29 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
         </p>
         
         <div className="space-y-3">
-          <Button onClick={onDone} size="lg" className="px-8">
-            Done
+          <Button 
+            onClick={togglePrescreening} 
+            size="lg" 
+            className="px-8"
+          >
+            {showPrescreening ? 'Close Prescreening' : 'Start Your Prescreening'}
           </Button>
-          <div>
+          <div className="flex gap-2 justify-center">
+            <Button
+              onClick={handlePrescreenLater}
+              variant="outline"
+              size="lg"
+              className="px-8 mt-2"
+            >
+              Prescreen Later
+            </Button>
             <Button 
-              onClick={togglePrescreening} 
+              onClick={onDone} 
               variant="outline" 
               size="lg" 
               className="px-8 mt-2"
             >
-              {showPrescreening ? 'Close Prescreening' : 'Start Your Prescreening'}
+              Done
             </Button>
           </div>
         </div>
