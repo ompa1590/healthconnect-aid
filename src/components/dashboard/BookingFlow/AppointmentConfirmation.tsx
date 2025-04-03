@@ -118,14 +118,6 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
             >
               Prescreen Later
             </Button>
-            <Button 
-              onClick={onDone} 
-              variant="outline" 
-              size="lg" 
-              className="px-8 mt-2"
-            >
-              Done
-            </Button>
           </div>
         </div>
       </div>
