@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,7 @@ import {
 interface DocumentListProps {
   documents: any[];
   isLoading: boolean;
-  isExtracting: {[key: string]: boolean};
+  isExtracting: { [key: string]: boolean };
   onExtractSummary: (id: string, path: string, name: string) => void;
   onDownload: (path: string, name: string) => void;
   onDelete: (id: string, path: string) => void;
@@ -65,7 +64,6 @@ const DocumentList: React.FC<DocumentListProps> = ({
     const matchesType = documentTypeFilter === "all" || 
       doc.document_type === documentTypeFilter;
     
-    // Date filtering logic based on month
     const matchesDate = dateFilter === "all" || (() => {
       const docDate = new Date(doc.uploaded_at);
       const currentMonth = docDate.getMonth();
@@ -224,9 +222,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
                   <h4 className="font-medium">{doc.document_name}</h4>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Badge variant="outline" className="text-xs">{doc.document_type}</Badge>
-                    <span>
-                      {new Date(doc.uploaded_at).toLocaleDateString()} 
-                    </span>
+                    <span>{new Date(doc.uploaded_at).toLocaleDateString()}</span>
                     {doc.summary_verified && (
                       <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                         Summary Verified
