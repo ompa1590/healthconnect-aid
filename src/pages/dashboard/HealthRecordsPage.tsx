@@ -219,30 +219,36 @@ const HealthRecordsPage = () => {
 
   const extractDocumentSummary = async (id: string, path: string, name: string) => {
     try {
-      setIsExtracting({...isExtracting, [id]: true});
-      
+      setIsExtracting({ ...isExtracting, [id]: true });
+  
+      // Download the file from storage (needed if summary isn’t cached)
       const { data, error } = await supabase
         .storage
         .from('medical_documents')
         .download(path);
-
+  
       if (error) {
         throw error;
       }
-
+  
       const fileBlob = new Blob([data]);
-      const summary = await parsePdfContent(new File([fileBlob], name));
-      
+      const file = new File([fileBlob], name);
+  
+      // Pass the id as fileId to parsePdfContent
+      console.log(`Calling parsePdfContent with file: ${name}, fileId: ${id}`);
+      const summary = await parsePdfContent(file, id);
+  
+      // Update the document with the summary (parsePdfContent already handles this, but we’ll keep it for UI consistency)
       await supabase
         .from('user_documents')
         .update({
-          document_summary: summary
+          document_summary: summary,
         })
         .eq('id', id);
-
+  
       setActiveDocumentSummary(summary);
       setShowSummaryDialog(true);
-      
+  
       toast({
         title: "Success",
         description: "Document summary extracted successfully",
@@ -255,10 +261,9 @@ const HealthRecordsPage = () => {
         variant: "destructive",
       });
     } finally {
-      setIsExtracting({...isExtracting, [id]: false});
+      setIsExtracting({ ...isExtracting, [id]: false });
     }
   };
-
   const verifyDocumentSummary = async () => {
     try {
       const docId = documents.find(doc => doc.document_summary === activeDocumentSummary)?.id;

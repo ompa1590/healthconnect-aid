@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { generateRealisticBodyMap } from "@/utils/documentParser";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -178,8 +177,7 @@ export const BodyMap: React.FC<BodyMapProps> = ({ markers, onSelectMarker, onAdd
           .map(marker => `${marker.bodyPart}: ${marker.diagnosis}`);
         
         // Generate the realistic body svg
-        const svg = await generateRealisticBodyMap(diagnoses, view);
-        setRealisticBodySvg(prev => ({...prev, [view]: svg}));
+       
       } catch (error) {
         console.error(`Error generating realistic body map for ${view} view:`, error);
         setRealisticBodySvg(prev => ({...prev, [view]: null}));

@@ -17,7 +17,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { BodyMap } from "./chart/BodyMap";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle, Clock, Save, Upload, FileCheck, Download } from "lucide-react";
-import { generateChartSummary, generateCompleteChart } from "@/utils/documentParser";
 import useVapi from "@/hooks/use-vapi";
 
 interface PatientChartDialogProps {
@@ -139,8 +138,6 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
           `${msg.role === 'assistant' ? 'Provider' : 'Patient'}: ${msg.text}`
         );
         
-        const aiSummary = await generateChartSummary(markers, patient.name, transcript);
-        setChartSummary(aiSummary);
       } catch (error) {
         console.error("Error generating AI summary:", error);
         toast({
@@ -203,19 +200,9 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
         });
 
         // Generate AI chart data
-        const chartData = await generateCompleteChart(
-          patient,
-          newMarkers,
-          { conversation }
-        );
+
+
         
-        setGeneratedBodyMaps({
-          front: chartData.frontView,
-          back: chartData.backView,
-          side: chartData.sideView
-        });
-        
-        setChartSummary(chartData.summary);
         setMarkers(newMarkers);
         
         toast({
