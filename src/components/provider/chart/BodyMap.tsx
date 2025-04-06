@@ -3,11 +3,12 @@ import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { generateRealisticBodyMap } from "@/utils/documentParser";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface BodyMapProps {
   markers: any[];
   onSelectMarker: (marker: any) => void;
-  onAddMarker: (bodyPart: string, position: { x: number, y: number }) => void;
+  onAddMarker: (bodyPart: string, position: { x: number, y: number }, view: string) => void;
 }
 
 interface BodyPart {
@@ -15,93 +16,161 @@ interface BodyPart {
   name: string;
   path: string;
   viewBox: string;
+  view: string;
 }
 
 export const BodyMap: React.FC<BodyMapProps> = ({ markers, onSelectMarker, onAddMarker }) => {
   const [hoveredPart, setHoveredPart] = useState<string | null>(null);
-  const [realisticBodySvg, setRealisticBodySvg] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [realisticBodySvg, setRealisticBodySvg] = useState<{front: string | null, back: string | null, side: string | null}>({
+    front: null,
+    back: null,
+    side: null
+  });
+  const [isLoading, setIsLoading] = useState({front: true, back: true, side: true});
+  const [activeView, setActiveView] = useState<"front" | "back" | "side">("front");
   
   // Define body parts with their SVG paths (used as fallback and for interactions)
-  const bodyParts: BodyPart[] = [
+  const getFrontBodyParts = (): BodyPart[] => [
     {
       id: "head",
       name: "Head",
       viewBox: "0 0 100 100",
-      path: "M50,15 C67,15 80,30 80,50 C80,70 67,85 50,85 C33,85 20,70 20,50 C20,30 33,15 50,15 Z"
+      path: "M50,15 C67,15 80,30 80,50 C80,70 67,85 50,85 C33,85 20,70 20,50 C20,30 33,15 50,15 Z",
+      view: "front"
     },
     {
       id: "chest",
       name: "Chest",
       viewBox: "0 0 100 100",
-      path: "M30,85 L70,85 L70,120 L30,120 Z"
+      path: "M30,85 L70,85 L70,120 L30,120 Z",
+      view: "front"
     },
     {
       id: "abdomen",
       name: "Abdomen",
       viewBox: "0 0 100 100",
-      path: "M30,120 L70,120 L70,155 L30,155 Z"
+      path: "M30,120 L70,120 L70,155 L30,155 Z",
+      view: "front"
     },
     {
       id: "left-arm",
       name: "Left Arm",
       viewBox: "0 0 100 100",
-      path: "M15,85 L30,85 L30,140 L15,155 Z"
+      path: "M15,85 L30,85 L30,140 L15,155 Z",
+      view: "front"
     },
     {
       id: "right-arm",
       name: "Right Arm",
       viewBox: "0 0 100 100",
-      path: "M70,85 L85,85 L85,155 L70,140 Z"
+      path: "M70,85 L85,85 L85,155 L70,140 Z",
+      view: "front"
     },
     {
       id: "left-leg",
       name: "Left Leg",
       viewBox: "0 0 100 100",
-      path: "M30,155 L45,155 L45,210 L30,210 Z"
+      path: "M30,155 L45,155 L45,210 L30,210 Z",
+      view: "front"
     },
     {
       id: "right-leg",
       name: "Right Leg",
       viewBox: "0 0 100 100",
-      path: "M55,155 L70,155 L70,210 L55,210 Z"
-    },
-    {
-      id: "left-shoulder",
-      name: "Left Shoulder",
-      viewBox: "0 0 100 100",
-      path: "M30,85 L15,85 L15,95 L30,95 Z"
-    },
-    {
-      id: "right-shoulder",
-      name: "Right Shoulder",
-      viewBox: "0 0 100 100",
-      path: "M70,85 L85,85 L85,95 L70,95 Z"
-    },
-    {
-      id: "left-ear",
-      name: "Left Ear",
-      viewBox: "0 0 100 100",
-      path: "M23,50 C18,40 20,30 25,25 C30,30 33,40 28,50 Z"
-    },
-    {
-      id: "right-ear",
-      name: "Right Ear",
-      viewBox: "0 0 100 100",
-      path: "M77,50 C82,40 80,30 75,25 C70,30 67,40 72,50 Z"
-    },
-    {
-      id: "pelvis",
-      name: "Pelvis",
-      viewBox: "0 0 100 100",
-      path: "M30,155 L70,155 L70,170 L30,170 Z"
-    },
+      path: "M55,155 L70,155 L70,210 L55,210 Z",
+      view: "front"
+    }
   ];
+  
+  const getBackBodyParts = (): BodyPart[] => [
+    {
+      id: "head-back",
+      name: "Head (back)",
+      viewBox: "0 0 100 100",
+      path: "M50,15 C67,15 80,30 80,50 C80,70 67,85 50,85 C33,85 20,70 20,50 C20,30 33,15 50,15 Z",
+      view: "back"
+    },
+    {
+      id: "upper-back",
+      name: "Upper Back",
+      viewBox: "0 0 100 100",
+      path: "M30,85 L70,85 L70,120 L30,120 Z",
+      view: "back"
+    },
+    {
+      id: "lower-back",
+      name: "Lower Back",
+      viewBox: "0 0 100 100",
+      path: "M30,120 L70,120 L70,155 L30,155 Z",
+      view: "back"
+    },
+    {
+      id: "left-arm-back",
+      name: "Left Arm (back)",
+      viewBox: "0 0 100 100",
+      path: "M15,85 L30,85 L30,140 L15,155 Z",
+      view: "back"
+    },
+    {
+      id: "right-arm-back",
+      name: "Right Arm (back)",
+      viewBox: "0 0 100 100",
+      path: "M70,85 L85,85 L85,155 L70,140 Z",
+      view: "back"
+    },
+    {
+      id: "left-leg-back",
+      name: "Left Leg (back)",
+      viewBox: "0 0 100 100",
+      path: "M30,155 L45,155 L45,210 L30,210 Z",
+      view: "back"
+    },
+    {
+      id: "right-leg-back",
+      name: "Right Leg (back)",
+      viewBox: "0 0 100 100",
+      path: "M55,155 L70,155 L70,210 L55,210 Z",
+      view: "back"
+    }
+  ];
+  
+  const getSideBodyParts = (): BodyPart[] => [
+    {
+      id: "head-side",
+      name: "Head (side)",
+      viewBox: "0 0 100 100",
+      path: "M60,15 C77,15 85,30 85,50 C85,70 77,85 60,85 C50,85 45,70 45,50 C45,30 50,15 60,15 Z",
+      view: "side"
+    },
+    {
+      id: "torso-side",
+      name: "Torso (side)",
+      viewBox: "0 0 100 100",
+      path: "M45,85 L75,85 L75,155 L45,155 Z",
+      view: "side"
+    },
+    {
+      id: "leg-side",
+      name: "Leg (side)",
+      viewBox: "0 0 100 100",
+      path: "M45,155 L75,155 L75,210 L45,210 Z",
+      view: "side"
+    }
+  ];
+
+  const getBodyParts = (): BodyPart[] => {
+    switch (activeView) {
+      case "front": return getFrontBodyParts();
+      case "back": return getBackBodyParts();
+      case "side": return getSideBodyParts();
+      default: return getFrontBodyParts();
+    }
+  };
 
   // Generate realistic body map based on markers
   useEffect(() => {
-    const fetchRealisticBody = async () => {
-      setIsLoading(true);
+    const fetchRealisticBody = async (view: "front" | "back" | "side") => {
+      setIsLoading(prev => ({...prev, [view]: true}));
       try {
         // Extract diagnoses from markers
         const diagnoses = markers
@@ -109,24 +178,24 @@ export const BodyMap: React.FC<BodyMapProps> = ({ markers, onSelectMarker, onAdd
           .map(marker => `${marker.bodyPart}: ${marker.diagnosis}`);
         
         // Generate the realistic body svg
-        const svg = await generateRealisticBodyMap(diagnoses);
-        setRealisticBodySvg(svg);
+        const svg = await generateRealisticBodyMap(diagnoses, view);
+        setRealisticBodySvg(prev => ({...prev, [view]: svg}));
       } catch (error) {
-        console.error("Error generating realistic body map:", error);
-        setRealisticBodySvg(null);
+        console.error(`Error generating realistic body map for ${view} view:`, error);
+        setRealisticBodySvg(prev => ({...prev, [view]: null}));
       } finally {
-        setIsLoading(false);
+        setIsLoading(prev => ({...prev, [view]: false}));
       }
     };
 
     // Only fetch if we have at least one marker with a diagnosis
     if (markers.some(marker => marker.diagnosis)) {
-      fetchRealisticBody();
+      fetchRealisticBody(activeView);
     } else {
-      setRealisticBodySvg(null);
-      setIsLoading(false);
+      setRealisticBodySvg(prev => ({...prev, [activeView]: null}));
+      setIsLoading(prev => ({...prev, [activeView]: false}));
     }
-  }, [markers.filter(marker => marker.diagnosis).length > 0]);
+  }, [markers.filter(marker => marker.diagnosis).length > 0, activeView]);
 
   // Handle clicking on a body part
   const handleBodyPartClick = (e: React.MouseEvent<SVGPathElement>, bodyPart: string) => {
@@ -142,7 +211,7 @@ export const BodyMap: React.FC<BodyMapProps> = ({ markers, onSelectMarker, onAdd
     const svgPoint = point.matrixTransform(svg.getScreenCTM()?.inverse());
     
     // Add new marker
-    onAddMarker(bodyPart, { x: svgPoint.x, y: svgPoint.y });
+    onAddMarker(bodyPart, { x: svgPoint.x, y: svgPoint.y }, activeView);
   };
 
   // Get severity color
@@ -158,7 +227,7 @@ export const BodyMap: React.FC<BodyMapProps> = ({ markers, onSelectMarker, onAdd
   // Create interactive layer on top of the realistic body map
   const renderInteractiveLayer = () => (
     <g className="interactive-layer">
-      {bodyParts.map((part) => (
+      {getBodyParts().map((part) => (
         <path
           key={part.id}
           d={part.path}
@@ -175,9 +244,26 @@ export const BodyMap: React.FC<BodyMapProps> = ({ markers, onSelectMarker, onAdd
     </g>
   );
 
+  // Filter markers for the current view
+  const viewMarkers = markers.filter(marker => 
+    (activeView === "front" && !marker.view) || marker.view === activeView
+  );
+
   return (
     <div className="relative">
-      {isLoading ? (
+      <Tabs 
+        value={activeView} 
+        onValueChange={(value) => setActiveView(value as "front" | "back" | "side")}
+        className="mb-4"
+      >
+        <TabsList className="grid grid-cols-3 w-full">
+          <TabsTrigger value="front">Anterior View</TabsTrigger>
+          <TabsTrigger value="back">Posterior View</TabsTrigger>
+          <TabsTrigger value="side">Lateral View</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      
+      {isLoading[activeView] ? (
         <Skeleton className="w-full h-[70vh] rounded-lg" />
       ) : (
         <div className="relative">
@@ -185,12 +271,16 @@ export const BodyMap: React.FC<BodyMapProps> = ({ markers, onSelectMarker, onAdd
             viewBox="0 0 100 230" 
             className="w-full max-h-[70vh]"
             style={{ border: "1px solid #eee", borderRadius: "8px", backgroundColor: "#FFFFFF" }}
-            dangerouslySetInnerHTML={realisticBodySvg ? { __html: realisticBodySvg } : undefined}
+            dangerouslySetInnerHTML={
+              realisticBodySvg[activeView] 
+                ? { __html: realisticBodySvg[activeView] as string } 
+                : undefined
+            }
           >
-            {!realisticBodySvg && (
+            {!realisticBodySvg[activeView] && (
               /* Fallback body outline if AI generation fails */
               <g>
-                {bodyParts.map((part) => (
+                {getBodyParts().map((part) => (
                   <path
                     key={part.id}
                     d={part.path}
@@ -204,18 +294,27 @@ export const BodyMap: React.FC<BodyMapProps> = ({ markers, onSelectMarker, onAdd
                   />
                 ))}
                 
-                {/* Face details */}
-                <ellipse cx="40" cy="40" rx="3" ry="4" fill="#1f2937" /> {/* Left eye */}
-                <ellipse cx="60" cy="40" rx="3" ry="4" fill="#1f2937" /> {/* Right eye */}
-                <path d="M45,60 Q50,65 55,60" stroke="#1f2937" strokeWidth="1" fill="none" /> {/* Mouth */}
+                {/* Face details for front view */}
+                {activeView === "front" && (
+                  <>
+                    <ellipse cx="40" cy="40" rx="3" ry="4" fill="#1f2937" /> {/* Left eye */}
+                    <ellipse cx="60" cy="40" rx="3" ry="4" fill="#1f2937" /> {/* Right eye */}
+                    <path d="M45,60 Q50,65 55,60" stroke="#1f2937" strokeWidth="1" fill="none" /> {/* Mouth */}
+                  </>
+                )}
+                
+                {/* Face details for side view */}
+                {activeView === "side" && (
+                  <ellipse cx="70" cy="40" rx="3" ry="4" fill="#1f2937" /> /* Side eye */
+                )}
               </g>
             )}
             
             {/* Add the interactive layer if using realistic body map */}
-            {realisticBodySvg && renderInteractiveLayer()}
+            {realisticBodySvg[activeView] && renderInteractiveLayer()}
             
-            {/* Markers */}
-            {markers.map((marker) => (
+            {/* Markers - only show markers for current view */}
+            {viewMarkers.map((marker) => (
               <g key={marker.id} onClick={() => onSelectMarker(marker)} style={{ cursor: "pointer" }}>
                 <circle
                   cx={marker.position.x}
@@ -235,23 +334,23 @@ export const BodyMap: React.FC<BodyMapProps> = ({ markers, onSelectMarker, onAdd
             <div 
               className="absolute bg-black/70 text-white px-2 py-1 text-xs rounded pointer-events-none"
               style={{ 
-                left: `${hoveredPart === "left-arm" ? 15 : hoveredPart === "right-arm" ? 85 : 50}%`,
-                top: hoveredPart === "head" ? "15%" : 
-                    hoveredPart === "chest" ? "40%" :
-                    hoveredPart === "abdomen" ? "50%" :
+                left: `${hoveredPart.includes("left") ? 15 : hoveredPart.includes("right") ? 85 : 50}%`,
+                top: hoveredPart.includes("head") ? "15%" : 
+                    hoveredPart.includes("chest") || hoveredPart.includes("upper") ? "40%" :
+                    hoveredPart.includes("abdomen") || hoveredPart.includes("lower") ? "50%" :
                     hoveredPart.includes("leg") ? "75%" :
                     hoveredPart.includes("ear") ? "25%" : "60%",
                 transform: "translate(-50%, -50%)"
               }}
             >
-              {bodyParts.find(part => part.id === hoveredPart)?.name || ""}
+              {getBodyParts().find(part => part.id === hoveredPart)?.name || ""}
             </div>
           )}
         </div>
       )}
       
       {/* Hovered marker info */}
-      {markers.map((marker, index) => (
+      {viewMarkers.map((marker) => (
         <div
           key={`tooltip-${marker.id}`}
           className="absolute hidden group-hover:block bg-white p-2 rounded-md shadow-lg border z-10"

@@ -132,13 +132,13 @@ Focus only on extracting factual medical information. Prioritize information tha
       model: 'mistral-large-latest',
       messages: [{
         role: 'user',
-        // Fix: Explicitly cast the content to any to avoid the type error
-        // The Mistral API can accept ContentChunk[] but TypeScript doesn't know that
-        content: content as any
+        content: content as any // Type assertion to avoid TypeScript errors
       }]
     });
 
-    return response.choices[0].message.content;
+    // Extract text content from response
+    const responseContent = response.choices[0].message.content;
+    return responseContent;
     
   } catch (error) {
     console.error('Error processing document with Mistral:', error);
@@ -147,18 +147,19 @@ Focus only on extracting factual medical information. Prioritize information tha
 };
 
 // Generate a realistic body map based on diagnoses
-export const generateRealisticBodyMap = async (diagnoses: string[]): Promise<string> => {
+export const generateRealisticBodyMap = async (diagnoses: string[], view: string = 'front'): Promise<string> => {
   try {
     const prompt = `Generate a detailed SVG code for a realistic human body outline with anatomical details. The SVG should:
-    1. Show a frontal view of a human body
+    1. Show a ${view} view of a human body (${view === 'front' ? 'frontal' : view === 'back' ? 'posterior' : 'side'} view)
     2. Include proportional head, torso, arms, and legs
-    3. Have subtle anatomical details like facial features, fingers, etc.
+    3. Have subtle anatomical details like facial features, joints, and muscle groups
     4. Use gentle gradients for depth
     5. Be suitable for a medical charting interface
     6. Use a viewBox of "0 0 100 230"
     7. Include only the SVG path data, no JavaScript
+    8. Make the drawing style similar to the professional medical body diagrams used in clinical settings
     
-    The SVG should highlight these conditions: ${diagnoses.join(", ")}
+    The SVG should highlight and annotate these conditions: ${diagnoses.join(", ")}
     
     Respond ONLY with the valid SVG code that I can directly use in an HTML document.`;
 
@@ -174,28 +175,35 @@ export const generateRealisticBodyMap = async (diagnoses: string[]): Promise<str
     const svgResponse = response.choices[0].message.content;
     const svgMatch = svgResponse.match(/<svg[^>]*>[\s\S]*<\/svg>/i);
     
-    return svgMatch ? svgMatch[0] : fallbackBodyMapSvg();
+    return svgMatch ? svgMatch[0] : fallbackBodyMapSvg(view);
   } catch (error) {
     console.error('Error generating realistic body map:', error);
-    return fallbackBodyMapSvg();
+    return fallbackBodyMapSvg(view);
   }
 };
 
 // Generate AI-enhanced chart summary
-export const generateChartSummary = async (markers: any[], patientName: string): Promise<string> => {
+export const generateChartSummary = async (markers: any[], patientName: string, transcript?: string[]): Promise<string> => {
   try {
     // Format markers into a string for the prompt
     const markersText = markers.map(m => 
       `- Body Part: ${m.bodyPart}, Diagnosis: ${m.diagnosis || "Undiagnosed"}, Severity: ${m.severity}, Notes: ${m.notes || "None"}, Chronic: ${m.chronic ? "Yes" : "No"}`
     ).join("\n");
 
-    const prompt = `You are a medical professional creating a comprehensive chart summary for a patient named ${patientName}.
+    let prompt = `You are a medical professional creating a comprehensive chart summary for a patient named ${patientName}.
     
     Based on the following documented conditions, create a detailed clinical summary that a healthcare provider would find useful:
     
     ${markersText}
-    
-    Include:
+    `;
+
+    // Add transcript context if available
+    if (transcript && transcript.length > 0) {
+      prompt += `\n\nAdditionally, here is the consultation transcript that may provide context:
+      ${transcript.join("\n")}`;
+    }
+
+    prompt += `\n\nInclude:
     1. An overview of the patient's condition
     2. Connections between symptoms if they appear related
     3. Potential concerns that should be monitored
@@ -216,6 +224,48 @@ export const generateChartSummary = async (markers: any[], patientName: string):
   } catch (error) {
     console.error('Error generating AI chart summary:', error);
     return fallbackChartSummary(markers, patientName);
+  }
+};
+
+// Generate a complete medical chart with multiple body views
+export const generateCompleteChart = async (
+  patientData: any, 
+  markers: any[], 
+  consultation: any
+): Promise<{frontView: string, backView: string, sideView: string, summary: string}> => {
+  try {
+    // Extract diagnoses from markers
+    const diagnoses = markers
+      .filter(marker => marker.diagnosis)
+      .map(marker => `${marker.bodyPart}: ${marker.diagnosis}`);
+
+    // Create transcript array from consultation if available
+    const transcript = consultation?.conversation?.map((msg: any) => 
+      `${msg.role === 'assistant' ? 'Provider' : 'Patient'}: ${msg.text}`
+    ) || [];
+
+    // Generate all three views in parallel
+    const [frontView, backView, sideView, summary] = await Promise.all([
+      generateRealisticBodyMap(diagnoses, 'front'),
+      generateRealisticBodyMap(diagnoses, 'back'),
+      generateRealisticBodyMap(diagnoses, 'side'),
+      generateChartSummary(markers, patientData.name, transcript)
+    ]);
+
+    return {
+      frontView,
+      backView,
+      sideView,
+      summary
+    };
+  } catch (error) {
+    console.error('Error generating complete chart:', error);
+    return {
+      frontView: fallbackBodyMapSvg('front'),
+      backView: fallbackBodyMapSvg('back'),
+      sideView: fallbackBodyMapSvg('side'),
+      summary: fallbackChartSummary(markers, patientData.name)
+    };
   }
 };
 
@@ -245,19 +295,40 @@ END OF SUMMARY
 };
 
 // Fallback SVG for body map
-const fallbackBodyMapSvg = (): string => {
-  return `<svg viewBox="0 0 100 230" xmlns="http://www.w3.org/2000/svg">
-    <path d="M50,15 C67,15 80,30 80,50 C80,70 67,85 50,85 C33,85 20,70 20,50 C20,30 33,15 50,15 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
-    <path d="M30,85 L70,85 L70,120 L30,120 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
-    <path d="M30,120 L70,120 L70,155 L30,155 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
-    <path d="M15,85 L30,85 L30,140 L15,155 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
-    <path d="M70,85 L85,85 L85,155 L70,140 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
-    <path d="M30,155 L45,155 L45,210 L30,210 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
-    <path d="M55,155 L70,155 L70,210 L55,210 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
-    <ellipse cx="40" cy="40" rx="3" ry="4" fill="#1f2937" />
-    <ellipse cx="60" cy="40" rx="3" ry="4" fill="#1f2937" />
-    <path d="M45,60 Q50,65 55,60" stroke="#1f2937" stroke-width="1" fill="none" />
-  </svg>`;
+const fallbackBodyMapSvg = (view: string = 'front'): string => {
+  if (view === 'front') {
+    return `<svg viewBox="0 0 100 230" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50,15 C67,15 80,30 80,50 C80,70 67,85 50,85 C33,85 20,70 20,50 C20,30 33,15 50,15 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M30,85 L70,85 L70,120 L30,120 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M30,120 L70,120 L70,155 L30,155 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M15,85 L30,85 L30,140 L15,155 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M70,85 L85,85 L85,155 L70,140 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M30,155 L45,155 L45,210 L30,210 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M55,155 L70,155 L70,210 L55,210 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <ellipse cx="40" cy="40" rx="3" ry="4" fill="#1f2937" />
+      <ellipse cx="60" cy="40" rx="3" ry="4" fill="#1f2937" />
+      <path d="M45,60 Q50,65 55,60" stroke="#1f2937" stroke-width="1" fill="none" />
+    </svg>`;
+  } else if (view === 'back') {
+    return `<svg viewBox="0 0 100 230" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50,15 C67,15 80,30 80,50 C80,70 67,85 50,85 C33,85 20,70 20,50 C20,30 33,15 50,15 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M30,85 L70,85 L70,120 L30,120 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M30,120 L70,120 L70,155 L30,155 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M15,85 L30,85 L30,140 L15,155 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M70,85 L85,85 L85,155 L70,140 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M30,155 L45,155 L45,210 L30,210 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M55,155 L70,155 L70,210 L55,210 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+    </svg>`;
+  } else { // side view
+    return `<svg viewBox="0 0 100 230" xmlns="http://www.w3.org/2000/svg">
+      <path d="M60,15 C77,15 85,30 85,50 C85,70 77,85 60,85 C50,85 45,70 45,50 C45,30 50,15 60,15 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M45,85 L75,85 L75,120 L45,120 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M45,120 L75,120 L75,155 L45,155 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M45,155 L60,155 L60,210 L45,210 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <path d="M60,155 L75,155 L75,210 L60,210 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+      <ellipse cx="70" cy="40" rx="3" ry="4" fill="#1f2937" />
+    </svg>`;
+  }
 };
 
 // Fallback function using the original mock implementation

@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from "react";
-import { FileText, X } from "lucide-react";
+import React, { useState } from "react";
+import { FileText, X, ChartBar } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import useVapi from "@/hooks/use-vapi";
 import Transcriber from "@/components/ui/transcriber";
+import PatientChartDialog from "./PatientChartDialog";
 
 interface TranscriptDialogProps {
   isOpen: boolean;
@@ -29,6 +30,9 @@ const TranscriptDialog: React.FC<TranscriptDialogProps> = ({
   onClose,
   patient,
 }) => {
+  const { conversation } = useVapi();
+  const [showChartDialog, setShowChartDialog] = useState(false);
+  
   // For demo purposes, we'll generate some mock conversation data
   // In a real implementation, this would be fetched from an API
   const mockConversation = [
@@ -75,39 +79,74 @@ const TranscriptDialog: React.FC<TranscriptDialogProps> = ({
       isFinal: true 
     }
   ];
+  
+  // Use actual conversation data if available, otherwise fall back to mock data
+  const displayConversation = conversation && conversation.length > 0 ? conversation : mockConversation;
+  
+  // Demo consultation data parsed from the conversation
+  const demoConsultationData = {
+    condition: "Forearm rash, Skin irritation",
+    diagnosis: "Contact dermatitis",
+    notes: "Patient reported itchiness, especially at night. Rash coincided with switch to new laundry detergent.",
+    severity: "moderate",
+    provider: "Dr. Chen",
+    chronic: false
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col overflow-hidden">
-        <DialogHeader className="flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10">
-                <FileText className="h-4 w-4 text-primary" />
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
+                <DialogTitle>Consultation Transcript</DialogTitle>
               </div>
-              <DialogTitle>Consultation Transcript</DialogTitle>
+              <DialogClose asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <X className="h-4 w-4" />
+                </Button>
+              </DialogClose>
             </div>
-            <DialogClose asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <X className="h-4 w-4" />
-              </Button>
-            </DialogClose>
+            <DialogDescription className="text-base font-medium">
+              Conversation with {patient.name} ({patient.id})
+            </DialogDescription>
+            <Badge variant="outline" className="mt-2 bg-primary/5 text-primary">
+              Video consultation
+            </Badge>
+          </DialogHeader>
+          
+          <ScrollArea className="flex-1 pr-4 overflow-y-auto mt-4 max-h-[calc(80vh-120px)]">
+            <div className="p-1">
+              <Transcriber conversation={displayConversation} />
+            </div>
+          </ScrollArea>
+          
+          <div className="flex justify-end mt-4 pt-4 border-t">
+            <Button 
+              variant="default" 
+              className="flex items-center" 
+              onClick={() => setShowChartDialog(true)}
+            >
+              <ChartBar className="mr-2 h-4 w-4" />
+              Generate Patient Chart
+            </Button>
           </div>
-          <DialogDescription className="text-base font-medium">
-            Conversation with {patient.name} ({patient.id})
-          </DialogDescription>
-          <Badge variant="outline" className="mt-2 bg-primary/5 text-primary">
-            Video consultation
-          </Badge>
-        </DialogHeader>
-        
-        <ScrollArea className="flex-1 pr-4 overflow-y-auto mt-4 max-h-[calc(80vh-120px)]">
-          <div className="p-1">
-            <Transcriber conversation={mockConversation} />
-          </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Patient Chart Dialog with auto-generate enabled */}
+      <PatientChartDialog 
+        open={showChartDialog}
+        onOpenChange={setShowChartDialog}
+        patient={patient}
+        consultationData={demoConsultationData}
+        autoGenerate={true}
+      />
+    </>
   );
 };
 

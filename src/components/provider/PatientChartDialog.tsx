@@ -16,13 +16,16 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { BodyMap } from "./chart/BodyMap";
 import { useToast } from "@/components/ui/use-toast";
-import { AlertCircle, Clock, Save, Upload } from "lucide-react";
-import { generateChartSummary } from "@/utils/documentParser";
+import { AlertCircle, Clock, Save, Upload, FileCheck, Download } from "lucide-react";
+import { generateChartSummary, generateCompleteChart } from "@/utils/documentParser";
+import useVapi from "@/hooks/use-vapi";
 
 interface PatientChartDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   patient: any;
+  consultationData?: any;
+  autoGenerate?: boolean;
 }
 
 interface ConditionMarker {
@@ -36,12 +39,15 @@ interface ConditionMarker {
   timestamp: Date;
   chronic: boolean;
   followUp?: Date | null;
+  view?: "front" | "back" | "side";
 }
 
 const PatientChartDialog: React.FC<PatientChartDialogProps> = ({ 
   open, 
   onOpenChange, 
-  patient 
+  patient,
+  consultationData,
+  autoGenerate = false
 }) => {
   const [activeTab, setActiveTab] = useState("body-map");
   const [markers, setMarkers] = useState<ConditionMarker[]>([]);
@@ -49,10 +55,28 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
   const [chartSummary, setChartSummary] = useState("");
   const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [isGeneratingChart, setIsGeneratingChart] = useState(false);
+  const [generatedBodyMaps, setGeneratedBodyMaps] = useState<{
+    front: string | null;
+    back: string | null;
+    side: string | null;
+  }>({
+    front: null,
+    back: null,
+    side: null
+  });
   const { toast } = useToast();
+  const { conversation } = useVapi();
+
+  // Auto-generate chart from consultation data when dialog opens
+  useEffect(() => {
+    if (open && autoGenerate && consultationData && markers.length === 0) {
+      handleGenerateFromConsultation();
+    }
+  }, [open, autoGenerate, consultationData]);
 
   // Function to add a new marker
-  const handleAddMarker = (bodyPart: string, position: { x: number; y: number }) => {
+  const handleAddMarker = (bodyPart: string, position: { x: number; y: number }, view: "front" | "back" | "side" = "front") => {
     const newMarker: ConditionMarker = {
       id: `marker-${Date.now()}`,
       bodyPart,
@@ -63,7 +87,8 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
       provider: "Dr. Chen",
       timestamp: new Date(),
       chronic: false,
-      followUp: null
+      followUp: null,
+      view
     };
     
     setMarkers([...markers, newMarker]);
@@ -109,7 +134,12 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
     if (!isEditingSummary) {
       setIsGeneratingSummary(true);
       try {
-        const aiSummary = await generateChartSummary(markers, patient.name);
+        // Create transcript array from conversation if available
+        const transcript = conversation?.map(msg => 
+          `${msg.role === 'assistant' ? 'Provider' : 'Patient'}: ${msg.text}`
+        );
+        
+        const aiSummary = await generateChartSummary(markers, patient.name, transcript);
         setChartSummary(aiSummary);
       } catch (error) {
         console.error("Error generating AI summary:", error);
@@ -124,6 +154,87 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
     }
   };
 
+  // Generate AI chart from consultation data
+  const handleGenerateFromConsultation = async () => {
+    setIsGeneratingChart(true);
+    try {
+      // Extract conditions from consultation data
+      const conditions = consultationData?.condition?.split(',') || [];
+      const diagnosis = consultationData?.diagnosis || '';
+      
+      // Create markers from conditions
+      if (conditions.length > 0) {
+        const newMarkers: ConditionMarker[] = [];
+        
+        // Front view markers
+        conditions.forEach((condition: string, index: number) => {
+          let bodyPart = condition.trim();
+          let x = 50; // center
+          let y = 100; // middle
+          
+          // Position differently based on body part
+          if (bodyPart.toLowerCase().includes('head')) {
+            y = 40;
+          } else if (bodyPart.toLowerCase().includes('chest') || bodyPart.toLowerCase().includes('lung')) {
+            y = 95;
+          } else if (bodyPart.toLowerCase().includes('abdomen') || bodyPart.toLowerCase().includes('stomach')) {
+            y = 130;
+          } else if (bodyPart.toLowerCase().includes('arm') || bodyPart.toLowerCase().includes('hand')) {
+            x = bodyPart.toLowerCase().includes('left') ? 20 : 80;
+            y = 120;
+          } else if (bodyPart.toLowerCase().includes('leg') || bodyPart.toLowerCase().includes('foot')) {
+            x = bodyPart.toLowerCase().includes('left') ? 40 : 60;
+            y = 180;
+          }
+          
+          newMarkers.push({
+            id: `marker-${Date.now()}-${index}`,
+            bodyPart,
+            position: { x, y },
+            diagnosis: diagnosis || "",
+            severity: consultationData?.severity || "moderate",
+            notes: consultationData?.notes || "",
+            provider: consultationData?.provider || "Dr. Chen",
+            timestamp: new Date(),
+            chronic: consultationData?.chronic || false,
+            followUp: consultationData?.followUp || null,
+            view: "front"
+          });
+        });
+
+        // Generate AI chart data
+        const chartData = await generateCompleteChart(
+          patient,
+          newMarkers,
+          { conversation }
+        );
+        
+        setGeneratedBodyMaps({
+          front: chartData.frontView,
+          back: chartData.backView,
+          side: chartData.sideView
+        });
+        
+        setChartSummary(chartData.summary);
+        setMarkers(newMarkers);
+        
+        toast({
+          title: "Chart Generated",
+          description: "AI has generated a patient chart based on consultation data",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating AI chart:", error);
+      toast({
+        variant: "destructive",
+        title: "Chart Generation Failed",
+        description: "Could not generate an AI chart. Please add markers manually."
+      });
+    } finally {
+      setIsGeneratingChart(false);
+    }
+  };
+
   // Function to handle file upload for patient images
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -134,6 +245,31 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
         description: `${file.name} has been added to patient chart`,
       });
     }
+  };
+
+  // Function to download the chart
+  const handleDownloadChart = () => {
+    const chartData = {
+      patient: patient,
+      markers: markers,
+      summary: chartSummary,
+      generatedAt: new Date().toISOString(),
+    };
+    
+    const blob = new Blob([JSON.stringify(chartData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${patient.name.replace(/\s+/g, '_')}_chart_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Chart Downloaded",
+      description: "Patient chart data has been downloaded as JSON",
+    });
   };
 
   // Function to save the chart
@@ -168,7 +304,7 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10 border-2 border-primary/10">
                 <AvatarFallback className="bg-primary/10 text-primary">
-                  {patient.name.split(' ').map(n => n[0]).join('')}
+                  {patient.name.split(' ').map((n: string) => n[0]).join('')}
                 </AvatarFallback>
               </Avatar>
               <DialogTitle className="text-xl">{patient.name}'s Chart</DialogTitle>
@@ -185,6 +321,29 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
         </DialogHeader>
         
         <div className="mt-4">
+          {consultationData && (
+            <div className="mb-4 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <FileCheck className="h-5 w-5 text-primary" />
+                <span className="text-sm font-medium">Consultation data available</span>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleGenerateFromConsultation}
+                disabled={isGeneratingChart}
+              >
+                {isGeneratingChart ? (
+                  <>
+                    <div className="animate-spin mr-2 h-4 w-4 border-b-2 rounded-full border-primary"></div>
+                    Generating...
+                  </>
+                ) : (
+                  "Generate Chart from Consultation"
+                )}
+              </Button>
+            </div>
+          )}
+          
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-3">
               <TabsTrigger value="body-map">Body Map</TabsTrigger>
@@ -203,7 +362,7 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
                     />
                   </div>
                   <div className="mt-4 text-sm text-muted-foreground">
-                    <p>Click on a body region to add a new condition marker. Click on existing markers to edit details.</p>
+                    <p>Click on a body region to add a new condition marker. Click on existing markers to edit details. Switch between views using the tabs above the diagram.</p>
                   </div>
                 </div>
                 
@@ -324,7 +483,14 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
                               <span className={`w-3 h-3 rounded-full ${getSeverityColor(marker.severity)}`}></span>
                               <span>{marker.bodyPart}</span>
                             </div>
-                            <span className="text-xs text-muted-foreground">{marker.diagnosis || "Undiagnosed"}</span>
+                            <div className="flex items-center gap-2">
+                              {marker.view && (
+                                <Badge variant="outline" className="text-xs">
+                                  {marker.view === 'front' ? 'Front' : marker.view === 'back' ? 'Back' : 'Side'}
+                                </Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground">{marker.diagnosis || "Undiagnosed"}</span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -355,6 +521,14 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
                       disabled={isGeneratingSummary}
                     >
                       Regenerate
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadChart}
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Export
                     </Button>
                   </div>
                 </div>
