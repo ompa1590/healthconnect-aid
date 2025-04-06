@@ -132,8 +132,9 @@ Focus only on extracting factual medical information. Prioritize information tha
       model: 'mistral-large-latest',
       messages: [{
         role: 'user',
-        // Fix: The content property can accept an array of ContentChunk objects
-        content
+        // Fix: Explicitly cast the content to any to avoid the type error
+        // The Mistral API can accept ContentChunk[] but TypeScript doesn't know that
+        content: content as any
       }]
     });
 
