@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, FileText, Calendar, Phone, Pill, Stethoscope, AlertCircle, Shield, Users, Clock, Calendar as CalendarIcon } from "lucide-react";
+import { Search, FileText, Calendar, Phone, Pill, Stethoscope, AlertCircle, Shield, Users, Clock, Calendar as CalendarIcon, BarChart } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { 
@@ -26,12 +26,15 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import SummaryDialog from "../dashboard/health-records/SummaryDialog";
 import { format } from "date-fns";
+import PatientChartDialog from "./PatientChartDialog";
 
 const ProviderPatients = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [recordsOpen, setRecordsOpen] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState(null);
   const [consultationNotesOpen, setConsultationNotesOpen] = useState(false);
+  const [chartDialogOpen, setChartDialogOpen] = useState(false);
+  const [patientForCharting, setPatientForCharting] = useState(null);
 
   const patients = [
     {
@@ -192,7 +195,11 @@ const ProviderPatients = () => {
     setConsultationNotesOpen(true);
   };
 
-  // Updated formatDate function to use date-fns format
+  const handleOpenChartDialog = (patient) => {
+    setPatientForCharting(patient);
+    setChartDialogOpen(true);
+  };
+
   const formatDate = (dateString) => {
     return format(new Date(dateString), "MMM d, yyyy");
   };
@@ -252,6 +259,15 @@ const ProviderPatients = () => {
               </div>
               
               <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="bg-background border-secondary/20 text-secondary hover:bg-secondary/5 hover:border-secondary/40 shadow-sm"
+                  onClick={() => handleOpenChartDialog(patient)}
+                >
+                  <BarChart className="mr-2 h-4 w-4" />
+                  Chart
+                </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -702,6 +718,15 @@ Notes signed electronically by Dr. Michael Chen, MD, FRCPC on ${selectedConsulta
           onVerify={() => {
             setConsultationNotesOpen(false);
           }}
+        />
+      )}
+
+      {/* Patient Chart Dialog */}
+      {patientForCharting && (
+        <PatientChartDialog
+          open={chartDialogOpen}
+          onOpenChange={setChartDialogOpen}
+          patient={patientForCharting}
         />
       )}
     </div>
