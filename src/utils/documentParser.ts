@@ -1,14 +1,16 @@
+
 // documentParser.ts
 import { Mistral } from '@mistralai/mistralai';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client with environment variables
-const supabaseUrl = "https://juwznmplmnkfpmrmrrfv.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1d3pubXBsbW5rZnBtcm1ycmZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE4OTI2MjksImV4cCI6MjA1NzQ2ODYyOX0.G8P3sYB6S-AAMK1HeLhSTTjcmga833SiGdC_URIkT5w";
+const supabaseUrl = import.meta.env.VITE_NEXT_PUBLIC_SUPABASE_URL || "https://juwznmplmnkfpmrmrrfv.supabase.co";
+const supabaseKey = import.meta.env.VITE_NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1d3pubXBsbW5rZnBtcm1ycmZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE4OTI2MjksImV4cCI6MjA1NzQ2ODYyOX0.G8P3sYB6S-AAMK1HeLhSTTjcmga833SiGdC_URIkT5w";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Initialize Mistral client with environment variable
-const mistralClient = new Mistral({ apiKey: 'luKfKb9Bw0pxi6sjPZYtsVHdtNimFzFh' });
+const apiKey = import.meta.env.VITE_MISTRAL_API_KEY || 'luKfKb9Bw0pxi6sjPZYtsVHdtNimFzFh';
+const mistralClient = new Mistral({ apiKey });
 
 // Define the correct types for Mistral content chunks
 type TextContentChunk = {
@@ -130,7 +132,8 @@ Focus only on extracting factual medical information. Prioritize information tha
       model: 'mistral-large-latest',
       messages: [{
         role: 'user',
-        content: content as unknown as (string | ContentChunk[])
+        // Fix: The content property can accept an array of ContentChunk objects
+        content
       }]
     });
 
