@@ -173,9 +173,14 @@ export const generateRealisticBodyMap = async (diagnoses: string[], view: string
 
     // Extract just the SVG code from the response
     const svgResponse = response.choices[0].message.content;
-    const svgMatch = svgResponse.match(/<svg[^>]*>[\s\S]*<\/svg>/i);
     
-    return svgMatch ? svgMatch[0] : fallbackBodyMapSvg(view);
+    // Type guard to ensure we're working with a string
+    if (typeof svgResponse === 'string') {
+      const svgMatch = svgResponse.match(/<svg[^>]*>[\s\S]*<\/svg>/i);
+      return svgMatch ? svgMatch[0] : fallbackBodyMapSvg(view);
+    }
+    
+    return fallbackBodyMapSvg(view);
   } catch (error) {
     console.error('Error generating realistic body map:', error);
     return fallbackBodyMapSvg(view);

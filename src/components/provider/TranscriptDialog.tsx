@@ -25,6 +25,14 @@ interface TranscriptDialogProps {
   };
 }
 
+// Define the TranscriptMessage type to match what Transcriber expects
+interface TranscriptMessage {
+  role: string;
+  text: string;
+  timestamp: string;
+  isFinal: boolean;
+}
+
 const TranscriptDialog: React.FC<TranscriptDialogProps> = ({
   isOpen,
   onClose,
@@ -78,10 +86,17 @@ const TranscriptDialog: React.FC<TranscriptDialogProps> = ({
       timestamp: "2:06 PM", 
       isFinal: true 
     }
-  ];
+  ] as TranscriptMessage[]; // Type assertion to match the TranscriptMessage interface
   
   // Use actual conversation data if available, otherwise fall back to mock data
-  const displayConversation = conversation && conversation.length > 0 ? conversation : mockConversation;
+  // Transform the conversation data to match TranscriptMessage format
+  const displayConversation = conversation && conversation.length > 0 
+    ? conversation.map(msg => ({
+        ...msg,
+        timestamp: msg.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isFinal: true
+      })) as TranscriptMessage[]
+    : mockConversation;
   
   // Demo consultation data parsed from the conversation
   const demoConsultationData = {
