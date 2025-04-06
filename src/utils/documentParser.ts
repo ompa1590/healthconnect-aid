@@ -146,6 +146,120 @@ Focus only on extracting factual medical information. Prioritize information tha
   }
 };
 
+// Generate a realistic body map based on diagnoses
+export const generateRealisticBodyMap = async (diagnoses: string[]): Promise<string> => {
+  try {
+    const prompt = `Generate a detailed SVG code for a realistic human body outline with anatomical details. The SVG should:
+    1. Show a frontal view of a human body
+    2. Include proportional head, torso, arms, and legs
+    3. Have subtle anatomical details like facial features, fingers, etc.
+    4. Use gentle gradients for depth
+    5. Be suitable for a medical charting interface
+    6. Use a viewBox of "0 0 100 230"
+    7. Include only the SVG path data, no JavaScript
+    
+    The SVG should highlight these conditions: ${diagnoses.join(", ")}
+    
+    Respond ONLY with the valid SVG code that I can directly use in an HTML document.`;
+
+    const response = await mistralClient.chat.complete({
+      model: 'mistral-large-latest',
+      messages: [{
+        role: 'user',
+        content: prompt
+      }]
+    });
+
+    // Extract just the SVG code from the response
+    const svgResponse = response.choices[0].message.content;
+    const svgMatch = svgResponse.match(/<svg[^>]*>[\s\S]*<\/svg>/i);
+    
+    return svgMatch ? svgMatch[0] : fallbackBodyMapSvg();
+  } catch (error) {
+    console.error('Error generating realistic body map:', error);
+    return fallbackBodyMapSvg();
+  }
+};
+
+// Generate AI-enhanced chart summary
+export const generateChartSummary = async (markers: any[], patientName: string): Promise<string> => {
+  try {
+    // Format markers into a string for the prompt
+    const markersText = markers.map(m => 
+      `- Body Part: ${m.bodyPart}, Diagnosis: ${m.diagnosis || "Undiagnosed"}, Severity: ${m.severity}, Notes: ${m.notes || "None"}, Chronic: ${m.chronic ? "Yes" : "No"}`
+    ).join("\n");
+
+    const prompt = `You are a medical professional creating a comprehensive chart summary for a patient named ${patientName}.
+    
+    Based on the following documented conditions, create a detailed clinical summary that a healthcare provider would find useful:
+    
+    ${markersText}
+    
+    Include:
+    1. An overview of the patient's condition
+    2. Connections between symptoms if they appear related
+    3. Potential concerns that should be monitored
+    4. Recommendations for follow-up based on standard medical practice
+    5. Any critical warnings that would be important for continuity of care
+    
+    Format the summary in a professional medical chart style with clear sections and medical terminology.`;
+
+    const response = await mistralClient.chat.complete({
+      model: 'mistral-large-latest',
+      messages: [{
+        role: 'user',
+        content: prompt
+      }]
+    });
+
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error('Error generating AI chart summary:', error);
+    return fallbackChartSummary(markers, patientName);
+  }
+};
+
+// Fallback function for chart summary
+const fallbackChartSummary = (markers: any[], patientName: string): string => {
+  if (markers.length === 0) {
+    return "No conditions have been documented for this patient.";
+  }
+  
+  const summary = `
+Patient Chart Summary for ${patientName}
+Generated on: ${new Date().toLocaleString()}
+
+DOCUMENTED CONDITIONS:
+${markers.map(marker => `
+• ${marker.bodyPart.toUpperCase()}: ${marker.diagnosis || "Undiagnosed"}
+  Severity: ${marker.severity.charAt(0).toUpperCase() + marker.severity.slice(1)}
+  ${marker.chronic ? "CHRONIC CONDITION" : "Acute condition"}
+  Notes: ${marker.notes || "No additional notes"}
+  Documented by: ${marker.provider} on ${marker.timestamp.toLocaleString()}
+  ${marker.followUp ? `Follow-up scheduled: ${marker.followUp.toLocaleDateString()}` : "No follow-up scheduled"}
+`).join('')}
+
+END OF SUMMARY
+`;
+  return summary;
+};
+
+// Fallback SVG for body map
+const fallbackBodyMapSvg = (): string => {
+  return `<svg viewBox="0 0 100 230" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50,15 C67,15 80,30 80,50 C80,70 67,85 50,85 C33,85 20,70 20,50 C20,30 33,15 50,15 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+    <path d="M30,85 L70,85 L70,120 L30,120 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+    <path d="M30,120 L70,120 L70,155 L30,155 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+    <path d="M15,85 L30,85 L30,140 L15,155 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+    <path d="M70,85 L85,85 L85,155 L70,140 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+    <path d="M30,155 L45,155 L45,210 L30,210 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+    <path d="M55,155 L70,155 L70,210 L55,210 Z" fill="#f3f4f6" stroke="#1f2937" stroke-width="0.5"/>
+    <ellipse cx="40" cy="40" rx="3" ry="4" fill="#1f2937" />
+    <ellipse cx="60" cy="40" rx="3" ry="4" fill="#1f2937" />
+    <path d="M45,60 Q50,65 55,60" stroke="#1f2937" stroke-width="1" fill="none" />
+  </svg>`;
+};
+
 // Fallback function using the original mock implementation
 const fallbackParsePdfContent = (file: File): Promise<string> => {
   return new Promise((resolve) => {

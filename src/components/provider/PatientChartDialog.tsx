@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { BodyMap } from "./chart/BodyMap";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle, Clock, Save, Upload } from "lucide-react";
+import { generateChartSummary } from "@/utils/documentParser";
 
 interface PatientChartDialogProps {
   open: boolean;
@@ -47,6 +48,7 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
   const [selectedMarker, setSelectedMarker] = useState<ConditionMarker | null>(null);
   const [chartSummary, setChartSummary] = useState("");
   const [isEditingSummary, setIsEditingSummary] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const { toast } = useToast();
 
   // Function to add a new marker
@@ -78,9 +80,6 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
     if (selectedMarker && selectedMarker.id === id) {
       setSelectedMarker({ ...selectedMarker, ...updates });
     }
-    
-    // Generate updated summary
-    generateChartSummary(updatedMarkers);
   };
 
   // Function to delete a marker
@@ -91,35 +90,38 @@ const PatientChartDialog: React.FC<PatientChartDialogProps> = ({
     if (selectedMarker && selectedMarker.id === id) {
       setSelectedMarker(null);
     }
-    
-    // Generate updated summary
-    generateChartSummary(updatedMarkers);
   };
 
+  // Generate AI chart summary when markers change or tab changes to summary
+  useEffect(() => {
+    if (activeTab === "summary" && markers.length > 0) {
+      updateChartSummary();
+    }
+  }, [activeTab, markers.filter(m => m.diagnosis).length]);
+
   // Function to generate chart summary based on markers
-  const generateChartSummary = (currentMarkers: ConditionMarker[]) => {
-    if (currentMarkers.length === 0) {
+  const updateChartSummary = async () => {
+    if (markers.length === 0) {
       setChartSummary("No conditions have been documented for this patient.");
       return;
     }
-    
-    const summary = `
-Patient Chart Summary for ${patient.name}
-Generated on: ${new Date().toLocaleString()}
 
-DOCUMENTED CONDITIONS:
-${currentMarkers.map(marker => `
-• ${marker.bodyPart.toUpperCase()}: ${marker.diagnosis || "Undiagnosed"}
-  Severity: ${marker.severity.charAt(0).toUpperCase() + marker.severity.slice(1)}
-  ${marker.chronic ? "CHRONIC CONDITION" : "Acute condition"}
-  Notes: ${marker.notes || "No additional notes"}
-  Documented by: ${marker.provider} on ${marker.timestamp.toLocaleString()}
-  ${marker.followUp ? `Follow-up scheduled: ${marker.followUp.toLocaleDateString()}` : "No follow-up scheduled"}
-`).join('')}
-
-END OF SUMMARY
-`;
-    setChartSummary(summary);
+    if (!isEditingSummary) {
+      setIsGeneratingSummary(true);
+      try {
+        const aiSummary = await generateChartSummary(markers, patient.name);
+        setChartSummary(aiSummary);
+      } catch (error) {
+        console.error("Error generating AI summary:", error);
+        toast({
+          variant: "destructive",
+          title: "Summary Generation Failed",
+          description: "Could not generate an AI summary. Using fallback summary instead."
+        });
+      } finally {
+        setIsGeneratingSummary(false);
+      }
+    }
   };
 
   // Function to handle file upload for patient images
@@ -151,6 +153,11 @@ END OF SUMMARY
       case "low": return "bg-green-500";
       default: return "bg-blue-500";
     }
+  };
+
+  // Force regeneration of summary
+  const handleRegenerateSummary = () => {
+    updateChartSummary();
   };
 
   return (
@@ -331,18 +338,35 @@ END OF SUMMARY
             
             <TabsContent value="summary" className="mt-4">
               <div className="border rounded-lg p-4">
-                <div className="flex justify-between mb-4">
-                  <h3 className="font-medium">Chart Summary</h3>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setIsEditingSummary(!isEditingSummary)}
-                  >
-                    {isEditingSummary ? "View" : "Edit"}
-                  </Button>
+                <div className="flex justify-between mb-4 items-center">
+                  <h3 className="font-medium">AI-Generated Chart Summary</h3>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setIsEditingSummary(!isEditingSummary)}
+                    >
+                      {isEditingSummary ? "View" : "Edit"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRegenerateSummary}
+                      disabled={isGeneratingSummary}
+                    >
+                      Regenerate
+                    </Button>
+                  </div>
                 </div>
                 
-                {isEditingSummary ? (
+                {isGeneratingSummary ? (
+                  <div className="min-h-[300px] flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                      <p className="text-sm text-muted-foreground">Generating AI summary...</p>
+                    </div>
+                  </div>
+                ) : isEditingSummary ? (
                   <Textarea 
                     value={chartSummary}
                     onChange={(e) => setChartSummary(e.target.value)}

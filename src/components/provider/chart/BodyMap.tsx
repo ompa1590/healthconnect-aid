@@ -1,6 +1,8 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { generateRealisticBodyMap } from "@/utils/documentParser";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BodyMapProps {
   markers: any[];
@@ -17,8 +19,10 @@ interface BodyPart {
 
 export const BodyMap: React.FC<BodyMapProps> = ({ markers, onSelectMarker, onAddMarker }) => {
   const [hoveredPart, setHoveredPart] = useState<string | null>(null);
+  const [realisticBodySvg, setRealisticBodySvg] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Define body parts with their SVG paths
+  // Define body parts with their SVG paths (used as fallback and for interactions)
   const bodyParts: BodyPart[] = [
     {
       id: "head",
@@ -94,6 +98,36 @@ export const BodyMap: React.FC<BodyMapProps> = ({ markers, onSelectMarker, onAdd
     },
   ];
 
+  // Generate realistic body map based on markers
+  useEffect(() => {
+    const fetchRealisticBody = async () => {
+      setIsLoading(true);
+      try {
+        // Extract diagnoses from markers
+        const diagnoses = markers
+          .filter(marker => marker.diagnosis)
+          .map(marker => `${marker.bodyPart}: ${marker.diagnosis}`);
+        
+        // Generate the realistic body svg
+        const svg = await generateRealisticBodyMap(diagnoses);
+        setRealisticBodySvg(svg);
+      } catch (error) {
+        console.error("Error generating realistic body map:", error);
+        setRealisticBodySvg(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Only fetch if we have at least one marker with a diagnosis
+    if (markers.some(marker => marker.diagnosis)) {
+      fetchRealisticBody();
+    } else {
+      setRealisticBodySvg(null);
+      setIsLoading(false);
+    }
+  }, [markers.filter(marker => marker.diagnosis).length > 0]);
+
   // Handle clicking on a body part
   const handleBodyPartClick = (e: React.MouseEvent<SVGPathElement>, bodyPart: string) => {
     // Calculate position relative to the SVG
@@ -121,70 +155,100 @@ export const BodyMap: React.FC<BodyMapProps> = ({ markers, onSelectMarker, onAdd
     }
   };
 
+  // Create interactive layer on top of the realistic body map
+  const renderInteractiveLayer = () => (
+    <g className="interactive-layer">
+      {bodyParts.map((part) => (
+        <path
+          key={part.id}
+          d={part.path}
+          fill="transparent"
+          stroke="transparent"
+          strokeWidth="0.5"
+          onMouseEnter={() => setHoveredPart(part.id)}
+          onMouseLeave={() => setHoveredPart(null)}
+          onClick={(e) => handleBodyPartClick(e, part.name)}
+          style={{ cursor: "pointer" }}
+          data-body-part={part.name}
+        />
+      ))}
+    </g>
+  );
+
   return (
     <div className="relative">
-      <svg 
-        viewBox="0 0 100 230" 
-        className="w-full max-h-[70vh]"
-        style={{ border: "1px solid #eee", borderRadius: "8px", backgroundColor: "#FFFFFF" }}
-      >
-        {/* Body outline */}
-        <g>
-          {bodyParts.map((part) => (
-            <path
-              key={part.id}
-              d={part.path}
-              fill={hoveredPart === part.id ? "#e6f7ff" : "#f3f4f6"}
-              stroke="#1f2937"
-              strokeWidth="0.5"
-              onMouseEnter={() => setHoveredPart(part.id)}
-              onMouseLeave={() => setHoveredPart(null)}
-              onClick={(e) => handleBodyPartClick(e, part.name)}
-              style={{ cursor: "pointer" }}
-            />
-          ))}
+      {isLoading ? (
+        <Skeleton className="w-full h-[70vh] rounded-lg" />
+      ) : (
+        <div className="relative">
+          <svg 
+            viewBox="0 0 100 230" 
+            className="w-full max-h-[70vh]"
+            style={{ border: "1px solid #eee", borderRadius: "8px", backgroundColor: "#FFFFFF" }}
+            dangerouslySetInnerHTML={realisticBodySvg ? { __html: realisticBodySvg } : undefined}
+          >
+            {!realisticBodySvg && (
+              /* Fallback body outline if AI generation fails */
+              <g>
+                {bodyParts.map((part) => (
+                  <path
+                    key={part.id}
+                    d={part.path}
+                    fill={hoveredPart === part.id ? "#e6f7ff" : "#f3f4f6"}
+                    stroke="#1f2937"
+                    strokeWidth="0.5"
+                    onMouseEnter={() => setHoveredPart(part.id)}
+                    onMouseLeave={() => setHoveredPart(null)}
+                    onClick={(e) => handleBodyPartClick(e, part.name)}
+                    style={{ cursor: "pointer" }}
+                  />
+                ))}
+                
+                {/* Face details */}
+                <ellipse cx="40" cy="40" rx="3" ry="4" fill="#1f2937" /> {/* Left eye */}
+                <ellipse cx="60" cy="40" rx="3" ry="4" fill="#1f2937" /> {/* Right eye */}
+                <path d="M45,60 Q50,65 55,60" stroke="#1f2937" strokeWidth="1" fill="none" /> {/* Mouth */}
+              </g>
+            )}
+            
+            {/* Add the interactive layer if using realistic body map */}
+            {realisticBodySvg && renderInteractiveLayer()}
+            
+            {/* Markers */}
+            {markers.map((marker) => (
+              <g key={marker.id} onClick={() => onSelectMarker(marker)} style={{ cursor: "pointer" }}>
+                <circle
+                  cx={marker.position.x}
+                  cy={marker.position.y}
+                  r="4"
+                  className={cn(
+                    getSeverityColor(marker.severity),
+                    "stroke-white stroke-1 hover:stroke-2"
+                  )}
+                />
+              </g>
+            ))}
+          </svg>
           
-          {/* Face details */}
-          <ellipse cx="40" cy="40" rx="3" ry="4" fill="#1f2937" /> {/* Left eye */}
-          <ellipse cx="60" cy="40" rx="3" ry="4" fill="#1f2937" /> {/* Right eye */}
-          <path d="M45,60 Q50,65 55,60" stroke="#1f2937" strokeWidth="1" fill="none" /> {/* Mouth */}
-        </g>
-        
-        {/* Markers */}
-        {markers.map((marker) => (
-          <g key={marker.id} onClick={() => onSelectMarker(marker)} style={{ cursor: "pointer" }}>
-            <circle
-              cx={marker.position.x}
-              cy={marker.position.y}
-              r="4"
-              className={cn(
-                getSeverityColor(marker.severity),
-                "stroke-white stroke-1 hover:stroke-2"
-              )}
-            />
-          </g>
-        ))}
-        
-        {/* Body part labels that appear on hover */}
-        {hoveredPart && (
-          <foreignObject x="0" y="0" width="100" height="230">
+          {/* Body part labels that appear on hover */}
+          {hoveredPart && (
             <div 
               className="absolute bg-black/70 text-white px-2 py-1 text-xs rounded pointer-events-none"
               style={{ 
                 left: `${hoveredPart === "left-arm" ? 15 : hoveredPart === "right-arm" ? 85 : 50}%`,
                 top: hoveredPart === "head" ? "15%" : 
-                     hoveredPart === "chest" ? "40%" :
-                     hoveredPart === "abdomen" ? "50%" :
-                     hoveredPart.includes("leg") ? "75%" :
-                     hoveredPart.includes("ear") ? "25%" : "60%",
+                    hoveredPart === "chest" ? "40%" :
+                    hoveredPart === "abdomen" ? "50%" :
+                    hoveredPart.includes("leg") ? "75%" :
+                    hoveredPart.includes("ear") ? "25%" : "60%",
                 transform: "translate(-50%, -50%)"
               }}
             >
               {bodyParts.find(part => part.id === hoveredPart)?.name || ""}
             </div>
-          </foreignObject>
-        )}
-      </svg>
+          )}
+        </div>
+      )}
       
       {/* Hovered marker info */}
       {markers.map((marker, index) => (
