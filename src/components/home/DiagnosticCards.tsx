@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ArrowRight, Plus } from "lucide-react";
@@ -11,6 +10,7 @@ const DiagnosticCards = () => {
       id: 1,
       title: "Metabolic Health",
       color: "from-red-200 to-red-100",
+      darkBorder: "dark:border-red-400",
       isAvailable: true,
       tags: ["Diabetes", "Prediabetes", "High Cholesterol"],
       link: "/services/metabolic-health",
@@ -19,6 +19,7 @@ const DiagnosticCards = () => {
       id: 2,
       title: "Heart Health",
       color: "from-blue-200 to-blue-100",
+      darkBorder: "dark:border-blue-400",
       isAvailable: false,
       comingSoon: true,
       tags: ["Heart Disease", "Blood Pressure", "Cholesterol"],
@@ -28,6 +29,7 @@ const DiagnosticCards = () => {
       id: 3,
       title: "360° Health",
       color: "from-amber-200 to-green-100",
+      darkBorder: "dark:border-green-400",
       isAvailable: false,
       comingSoon: true,
       tags: ["Vitamins", "Hormones", "20+ tests", "Biological age"],
@@ -50,14 +52,14 @@ const DiagnosticCards = () => {
           {diagnosticCategories.map((category) => (
             <GlassCard 
               key={category.id}
-              className={`overflow-hidden transform transition-all duration-300 hover:translate-y-[-4px] relative`}
+              className={`overflow-hidden transform transition-all duration-300 hover:translate-y-[-4px] relative bg-white dark:bg-gray-900 text-black dark:text-white border border-gray-200 dark:shadow-lg ${category.darkBorder}`}
             >
               {/* Gradient background */}
-              <div className={`absolute inset-0 bg-gradient-to-b ${category.color} opacity-50 rounded-2xl`}></div>
+              <div className={`absolute inset-0 bg-gradient-to-b ${category.color} dark:from-gray-800 dark:to-gray-700 opacity-50 rounded-2xl`}></div>
               
               <div className="relative h-full flex flex-col justify-between p-6">
                 {category.comingSoon && (
-                  <div className="text-sm text-blue-500 font-medium mb-2">Coming soon</div>
+                  <div className="text-sm text-blue-500 dark:text-blue-300 font-medium mb-2">Coming soon</div>
                 )}
                 
                 <h3 className="text-2xl font-bold mb-6">{category.title}</h3>
@@ -67,7 +69,7 @@ const DiagnosticCards = () => {
                     <Badge 
                       key={idx} 
                       variant="outline" 
-                      className={`bg-white/80 backdrop-blur-sm rounded-full`}
+                      className={`bg-white/80 dark:bg-gray-800/80 text-black dark:text-white backdrop-blur-sm rounded-full`}
                     >
                       {tag}
                     </Badge>

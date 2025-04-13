@@ -19,6 +19,7 @@ export type SignupFormData = {
   name: string;
   province: string;
   healthCardNumber: string;
+  healthCardVersion: string;
   healthCardProvince?: string;
   healthCardExpiry?: string;
   isHealthCardValid?: boolean;
@@ -48,6 +49,7 @@ const PatientSignup = () => {
     name: "",
     province: "",
     healthCardNumber: "",
+    healthCardVersion: "",
     healthCardProvince: "",
     healthCardExpiry: "",
     isHealthCardValid: false,

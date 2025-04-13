@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import CaptchaComponent from "@/components/auth/CaptchaComponent";
-import { TermsDialog, PrivacyDialog } from "./LegalPopups";
+import { TermsDialog, PrivacyDialog, HIPAAComplianceDialog } from "./LegalPopups";
 
 interface SignupCompleteProps {
   formData: SignupFormData;
@@ -327,10 +326,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           <TermsDialog>
             <span className="text-primary hover:underline cursor-pointer">Terms and Conditions</span>
           </TermsDialog>{" "}
-          and{" "}
+          ,{" "}
           <PrivacyDialog>
             <span className="text-primary hover:underline cursor-pointer">Privacy Policy</span>
-          </PrivacyDialog>
+          </PrivacyDialog>{" "}
+          and{" "}
+          <HIPAAComplianceDialog>
+            <span className="text-primary hover:underline cursor-pointer">HIPAA Compliance</span>
+          </HIPAAComplianceDialog>
         </label>
       </div>
       
