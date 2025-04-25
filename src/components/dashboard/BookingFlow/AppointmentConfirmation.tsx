@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Clock, User } from "lucide-react";
@@ -32,8 +33,8 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
     eightHoursBefore.setHours(appointmentTime.getHours() - 8);
     
     // Format the date and time for display
-    const formattedDate = dateFormat(eightHoursBefore, "MMMM d, yyyy");
-    const formattedTime = dateFormat(eightHoursBefore, "h:mm a");
+    const formattedDate = format(eightHoursBefore, "MMMM d, yyyy");
+    const formattedTime = format(eightHoursBefore, "h:mm a");
     
     toast({
       title: "Pre-screening Reminder Set",
