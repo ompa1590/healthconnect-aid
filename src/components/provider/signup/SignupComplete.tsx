@@ -31,6 +31,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [showRateLimitDialog, setShowRateLimitDialog] = useState(false);
   const [captchaInstanceId, setCaptchaInstanceId] = useState(() => `captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
   const captchaElementId = useRef(`captcha-element-${Date.now()}`).current;
   
@@ -98,12 +99,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         // Always reset captcha on any error
         resetCaptcha();
         
-        if (error.message.includes("rate limit") || error.message.includes("429")) {
-          toast({
-            title: "Rate limit exceeded",
-            description: "Too many registration attempts. Please try again after some time.",
-            variant: "destructive"
-          });
+        // Handle specific error types
+        if (error.message.includes("rate limit") || error.message.includes("429") || 
+            error.status === 429 || error.code === "over_email_send_rate_limit") {
+          // Show rate limit dialog instead of toast for this specific error
+          setShowRateLimitDialog(true);
         } else if (error.message.includes("already-seen-response") || error.message.includes("captcha")) {
           toast({
             title: "Captcha verification failed",
@@ -148,6 +148,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setShowSuccessDialog(false);
     // Navigate to provider login page
     navigate('/provider-login');
+  };
+
+  const handleRateLimitDialogClose = () => {
+    setShowRateLimitDialog(false);
+    setSubmitting(false);
   };
   
   return (
@@ -225,6 +230,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </Button>
       </div>
       
+      {/* Success Dialog */}
       <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -236,6 +242,30 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           <AlertDialogFooter>
             <AlertDialogAction onClick={handleSuccessDialogClose}>
               Continue to Login
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Rate Limit Dialog */}
+      <AlertDialog open={showRateLimitDialog} onOpenChange={setShowRateLimitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Email Rate Limit Reached</AlertDialogTitle>
+            <AlertDialogDescription>
+              <p className="mb-4">
+                We've detected that too many registration attempts have been made in a short period. 
+                This is a security measure by our email provider to prevent abuse.
+              </p>
+              <p>
+                Please try again after a few minutes or use a different email address. If you continue 
+                to experience issues, please contact our support team.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleRateLimitDialogClose}>
+              OK, I'll Try Later
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
