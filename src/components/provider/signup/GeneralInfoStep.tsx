@@ -28,26 +28,45 @@ interface GeneralInfoStepProps {
   updateFormData: (data: Partial<ProviderFormData>) => void;
 }
 
+// Update ProviderFormData to match the interface in ProviderSignup.tsx
 interface ProviderFormData {
+  email: string;
+  password: string;
   firstName: string;
   lastName: string;
-  email: string;
+  dateOfBirth: Date | undefined;
+  address: string;
+  city: string;
+  province: string;
+  postalCode: string;
   phoneNumber: string;
+  providerType: string;
+  customProviderType?: string;
+  registrationNumber: string;
+  registrationExpiry: Date | undefined;
+  specializations: string[];
+  servicesOffered: string[];
+  biography: string;
+  availability: {
+    [key: string]: {
+      isAvailable: boolean;
+      startTime: string;
+      endTime: string;
+    };
+  };
+  profilePicture?: File;
+  certificateFile?: File;
+  certificateSummary?: string;
+  certificateVerified?: boolean;
+  signatureImage?: string;
+  // Add the missing properties
   gender: string;
-  dateOfBirth: Date | null;
-  experience?: string;
   addressLine1: string;
   addressLine2?: string;
   landmark?: string;
-  city: string;
   state: string;
   zipCode: string;
-  providerType: string;
-  specializations: string[];
-  registrationNumber: string;
-  registrationExpiry: Date | null;
-  availability: any;
-  biography: string;
+  experience?: string;
 }
 
 const GeneralInfoStep: React.FC<GeneralInfoStepProps> = ({ formData, updateFormData }) => {

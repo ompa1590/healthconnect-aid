@@ -46,6 +46,14 @@ export type ProviderFormData = {
   certificateSummary?: string;
   certificateVerified?: boolean;
   signatureImage?: string;
+  // Add missing properties needed by GeneralInfoStep
+  gender: string;
+  addressLine1: string;
+  addressLine2?: string;
+  landmark?: string;
+  state: string;
+  zipCode: string;
+  experience?: string;
 };
 
 const defaultAvailability = {
@@ -78,6 +86,11 @@ const ProviderSignup = () => {
     servicesOffered: [],
     biography: "",
     availability: defaultAvailability,
+    // Initialize the new required fields
+    gender: "",
+    addressLine1: "",
+    state: "",
+    zipCode: "",
   });
   const [stepErrors, setStepErrors] = useState<string | null>(null);
   
