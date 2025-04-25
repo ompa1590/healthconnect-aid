@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { 
@@ -6,10 +7,10 @@ import {
   Clock, 
   Video, 
   FileText, 
-  XCircle, 
   Search,
   Calendar,
-  DollarSign 
+  DollarSign,
+  Loader2 
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import CancelAppointmentDialog from "./CancelAppointmentDialog";
@@ -21,16 +22,24 @@ import VisitReasonDialog from "./VisitReasonDialog";
 import ConsultationNotesDialog from "./ConsultationNotesDialog";
 import OHIPBillingDialog from "./OHIPBillingDialog";
 import AvailabilityDialog from "./AvailabilityDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Appointment {
-  id: number;
-  patient: string;
-  patientId: string;
-  age: number;
-  reason: string;
-  date: Date;
-  time: string;
+  id: string;
+  patient_id: string;
+  provider_id: string;
+  service: string;
+  booking_date: string;
+  booking_time: string;
   status: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  patient_name?: string;
+  patientId?: string; // For backwards compatibility
+  reason?: string; // For backwards compatibility with existing components
+  date?: Date; // For backwards compatibility
+  time?: string; // For backwards compatibility
 }
 
 interface AvailabilitySlot {
@@ -41,63 +50,14 @@ interface AvailabilitySlot {
 }
 
 const ProviderAppointments = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    {
-      id: 1,
-      patient: "Emily Johnson",
-      patientId: "PTN-CE550N",
-      age: 34,
-      reason: "Annual checkup",
-      date: new Date(2024, 2, 22),
-      time: "09:00 - 09:30 AM",
-      status: "upcoming",
-    },
-    {
-      id: 2,
-      patient: "Michael Rodriguez",
-      patientId: "PTN-MR421K",
-      age: 52,
-      reason: "Diabetes management",
-      date: new Date(2024, 2, 22),
-      time: "10:30 - 11:00 AM",
-      status: "upcoming",
-    },
-    {
-      id: 3,
-      patient: "Sarah Parker",
-      patientId: "PTN-SP785Q",
-      age: 28,
-      reason: "Psychiatry consultation",
-      date: new Date(2024, 2, 21),
-      time: "02:00 - 02:30 PM",
-      status: "completed",
-    },
-    {
-      id: 4,
-      patient: "Emma Williams",
-      patientId: "PTN-EW334P",
-      age: 42,
-      reason: "Family Planning counseling",
-      date: new Date(2024, 2, 23),
-      time: "11:15 - 11:45 AM",
-      status: "upcoming",
-    },
-    {
-      id: 5,
-      patient: "James Anderson",
-      patientId: "PTN-JA652T",
-      age: 38,
-      reason: "Follow-up consultation",
-      date: new Date(2024, 2, 23),
-      time: "03:30 - 04:00 PM",
-      status: "upcoming",
-    }
-  ]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  const [cancelAppointment, setCancelAppointment] = useState<number | null>(null);
-  const [visitReasonAppointment, setVisitReasonAppointment] = useState<number | null>(null);
-  const [notesAppointment, setNotesAppointment] = useState<number | null>(null);
-  const [billingAppointment, setBillingAppointment] = useState<number | null>(null);
+  const [cancelAppointment, setCancelAppointment] = useState<string | null>(null);
+  const [visitReasonAppointment, setVisitReasonAppointment] = useState<string | null>(null);
+  const [notesAppointment, setNotesAppointment] = useState<string | null>(null);
+  const [billingAppointment, setBillingAppointment] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
   const [providerAvailability, setProviderAvailability] = useState<AvailabilitySlot[]>([
@@ -109,41 +69,137 @@ const ProviderAppointments = () => {
   ]);
   const { toast } = useToast();
 
-  const handleCancelAppointment = (appointmentId: number) => {
+  // Fetch appointments for the provider
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get current user session
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        setError('No authenticated session found');
+        setLoading(false);
+        return;
+      }
+
+      const providerId = sessionData.session.user.id;
+      
+      // Get appointments for this provider
+      const { data, error: appointmentsError } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          profiles!patient_id(name, id)
+        `)
+        .eq('provider_id', providerId);
+      
+      if (appointmentsError) throw appointmentsError;
+      
+      if (data) {
+        // Process the appointments data to add patient names
+        const processedAppointments = data.map((apt: any) => {
+          // Format the appointment data to match the expected structure
+          // including backward compatibility with existing components
+          return {
+            id: apt.id,
+            patient_id: apt.patient_id,
+            provider_id: apt.provider_id,
+            service: apt.service,
+            booking_date: apt.booking_date,
+            booking_time: apt.booking_time,
+            status: apt.status,
+            notes: apt.notes,
+            created_at: apt.created_at,
+            updated_at: apt.updated_at,
+            patient_name: apt.profiles?.name || 'Unknown Patient',
+            patientId: apt.profiles?.id || apt.patient_id, // For backward compatibility
+            reason: apt.service, // For backward compatibility
+            date: new Date(apt.booking_date), // For backward compatibility
+            time: apt.booking_time, // For backward compatibility
+          };
+        });
+        
+        setAppointments(processedAppointments);
+      }
+    } catch (err: any) {
+      console.error('Error fetching provider appointments:', err);
+      setError(err.message || 'Failed to fetch appointments');
+      toast({
+        title: "Error",
+        description: "Failed to load appointments. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update appointment status
+  const updateAppointmentStatus = async (id: string, status: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('appointments')
+        .update({ status })
+        .eq('id', id)
+        .select();
+      
+      if (error) throw error;
+      
+      if (data) {
+        toast({
+          title: "Success",
+          description: `Appointment status updated to ${status}.`,
+        });
+        
+        // Refresh appointments
+        fetchAppointments();
+        return data[0];
+      }
+    } catch (err: any) {
+      console.error('Error updating appointment:', err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to update appointment status.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+  // Fetch appointments when component mounts
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
+  const handleCancelAppointment = (appointmentId: string) => {
     setCancelAppointment(appointmentId);
   };
 
-  const handleViewVisitReason = (appointmentId: number) => {
+  const handleViewVisitReason = (appointmentId: string) => {
     setVisitReasonAppointment(appointmentId);
   };
 
-  const handleViewNotes = (appointmentId: number) => {
+  const handleViewNotes = (appointmentId: string) => {
     setNotesAppointment(appointmentId);
   };
 
-  const handleBillingClaim = (appointmentId: number) => {
+  const handleBillingClaim = (appointmentId: string) => {
     setBillingAppointment(appointmentId);
   };
 
-  const handleConfirmCancel = (reason: string, details?: string) => {
-    const updatedAppointments = appointments.map(appointment => {
-      if (appointment.id === cancelAppointment) {
-        return {
-          ...appointment,
-          status: "cancelled"
-        };
+  const handleConfirmCancel = async (reason: string) => {
+    if (!cancelAppointment) return;
+    
+    try {
+      const result = await updateAppointmentStatus(cancelAppointment, 'cancelled');
+      if (result) {
+        setCancelAppointment(null);
       }
-      return appointment;
-    });
-    
-    setAppointments(updatedAppointments);
-    
-    setCancelAppointment(null);
-    
-    toast({
-      title: "Appointment Cancelled",
-      description: `The appointment has been cancelled successfully.`,
-    });
+    } catch (error) {
+      console.error("Error cancelling appointment:", error);
+    }
   };
 
   const handleSaveAvailability = (availability: AvailabilitySlot[]) => {
@@ -164,14 +220,40 @@ const ProviderAppointments = () => {
   };
 
   const filteredAppointments = appointments.filter(appointment => 
-    appointment.patient.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    appointment.reason.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    appointment.patientId.toLowerCase().includes(searchQuery.toLowerCase())
+    appointment.patient_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    appointment.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    appointment.patientId?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatAppointmentDate = (date: Date) => {
     return format(date, "MMMM d, yyyy");
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading appointments...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+        <p className="text-red-700">Error: {error}</p>
+        <Button 
+          variant="outline" 
+          className="mt-4"
+          onClick={() => fetchAppointments()}
+        >
+          Try Again
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -213,14 +295,14 @@ const ProviderAppointments = () => {
             </div>
             
             <TabsContent value="upcoming" className="pt-2 space-y-1">
-              {filteredAppointments.filter(a => a.status === "upcoming").length === 0 ? (
+              {filteredAppointments.filter(a => a.status === "confirmed").length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   No upcoming appointments found
                 </div>
               ) : (
                 filteredAppointments
-                  .filter(a => a.status === "upcoming")
-                  .sort((a, b) => a.date.getTime() - b.date.getTime())
+                  .filter(a => a.status === "confirmed")
+                  .sort((a, b) => new Date(a.booking_date).getTime() - new Date(b.booking_date).getTime())
                   .map((appointment) => (
                     <div
                       key={appointment.id}
@@ -229,14 +311,14 @@ const ProviderAppointments = () => {
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-start gap-3">
                           <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold shadow-sm">
-                            {appointment.patient.split(' ').map(n => n[0]).join('')}
+                            {appointment.patient_name?.split(' ').map(n => n[0]).join('') || 'P'}
                           </div>
                           <div>
-                            <h3 className="font-semibold font-poppins text-lg leading-tight tracking-tight">{appointment.reason}</h3>
+                            <h3 className="font-semibold font-poppins text-lg leading-tight tracking-tight">{appointment.service}</h3>
                             <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                               <span className="font-medium text-primary/80">{appointment.patientId}</span> 
                               <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50"></span> 
-                              {appointment.patient}
+                              {appointment.patient_name}
                             </p>
                           </div>
                         </div>
@@ -244,11 +326,11 @@ const ProviderAppointments = () => {
                         <div className="flex flex-wrap items-center gap-3 md:gap-5 text-sm ml-13">
                           <div className="flex items-center gap-1.5 bg-primary/5 px-3 py-1.5 rounded-full shadow-sm">
                             <CalendarClock className="h-4 w-4 text-primary" />
-                            <span className="font-medium">{formatAppointmentDate(appointment.date)}</span>
+                            <span className="font-medium">{formatAppointmentDate(new Date(appointment.booking_date))}</span>
                           </div>
                           <div className="flex items-center gap-1.5 bg-primary/5 px-3 py-1.5 rounded-full shadow-sm">
                             <Clock className="h-4 w-4 text-primary" />
-                            <span className="font-medium">{appointment.time}</span>
+                            <span className="font-medium">{appointment.booking_time}</span>
                           </div>
                           <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full shadow-sm">
                             <Video className="h-4 w-4" />
@@ -300,14 +382,14 @@ const ProviderAppointments = () => {
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-start gap-3">
                           <div className="w-12 h-12 bg-primary/5 rounded-full flex items-center justify-center text-primary font-semibold shadow-sm">
-                            {appointment.patient.split(' ').map(n => n[0]).join('')}
+                            {appointment.patient_name?.split(' ').map(n => n[0]).join('') || 'P'}
                           </div>
                           <div>
-                            <h3 className="font-semibold font-poppins tracking-tight">{appointment.reason}</h3>
+                            <h3 className="font-semibold font-poppins tracking-tight">{appointment.service}</h3>
                             <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                               <span className="font-medium text-primary/80">{appointment.patientId}</span>
                               <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50"></span>
-                              {appointment.patient}
+                              {appointment.patient_name}
                             </p>
                           </div>
                         </div>
@@ -315,11 +397,11 @@ const ProviderAppointments = () => {
                         <div className="flex flex-wrap items-center gap-3 md:gap-5 text-sm ml-13">
                           <div className="flex items-center gap-1.5">
                             <CalendarClock className="h-4 w-4 text-muted-foreground" />
-                            <span>{formatAppointmentDate(appointment.date)}</span>
+                            <span>{formatAppointmentDate(new Date(appointment.booking_date))}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>{appointment.time}</span>
+                            <span>{appointment.booking_time}</span>
                           </div>
                         </div>
                         
@@ -365,14 +447,14 @@ const ProviderAppointments = () => {
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-start gap-3">
                           <div className="w-12 h-12 bg-muted/50 rounded-full flex items-center justify-center text-muted-foreground font-semibold shadow-sm">
-                            {appointment.patient.split(' ').map(n => n[0]).join('')}
+                            {appointment.patient_name?.split(' ').map(n => n[0]).join('') || 'P'}
                           </div>
                           <div>
-                            <h3 className="font-semibold font-poppins line-through tracking-tight">{appointment.reason}</h3>
+                            <h3 className="font-semibold font-poppins line-through tracking-tight">{appointment.service}</h3>
                             <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                               <span className="font-medium text-muted/80">{appointment.patientId}</span>
                               <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50"></span>
-                              {appointment.patient}
+                              {appointment.patient_name}
                             </p>
                             <p className="text-xs text-destructive mt-1">Cancelled</p>
                           </div>
@@ -381,11 +463,11 @@ const ProviderAppointments = () => {
                         <div className="flex flex-wrap items-center gap-3 md:gap-5 text-sm ml-13">
                           <div className="flex items-center gap-1.5">
                             <CalendarClock className="h-4 w-4 text-muted-foreground" />
-                            <span className="line-through">{formatAppointmentDate(appointment.date)}</span>
+                            <span className="line-through">{formatAppointmentDate(new Date(appointment.booking_date))}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span className="line-through">{appointment.time}</span>
+                            <span className="line-through">{appointment.booking_time}</span>
                           </div>
                         </div>
                       </div>
@@ -400,8 +482,8 @@ const ProviderAppointments = () => {
       <CancelAppointmentDialog
         isOpen={cancelAppointment !== null}
         onClose={() => setCancelAppointment(null)}
-        appointmentId={cancelAppointment || 0}
-        patientName={getActiveAppointment()?.patient || ""}
+        appointmentId={Number(cancelAppointment) || 0}
+        patientName={getActiveAppointment()?.patient_name || ""}
         onConfirmCancel={handleConfirmCancel}
       />
 
@@ -410,10 +492,10 @@ const ProviderAppointments = () => {
           isOpen={visitReasonAppointment !== null}
           onClose={() => setVisitReasonAppointment(null)}
           appointment={{
-            id: getActiveAppointment()?.id || 0,
-            patientName: getActiveAppointment()?.patient || "",
+            id: Number(getActiveAppointment()?.id || 0),
+            patientName: getActiveAppointment()?.patient_name || "",
             patientId: getActiveAppointment()?.patientId || "",
-            appointmentType: getActiveAppointment()?.reason || "",
+            appointmentType: getActiveAppointment()?.service || "",
             date: getActiveAppointment()?.date || new Date(),
             time: getActiveAppointment()?.time || "",
           }}
@@ -425,10 +507,10 @@ const ProviderAppointments = () => {
           isOpen={notesAppointment !== null}
           onClose={() => setNotesAppointment(null)}
           appointment={{
-            id: getActiveAppointment()?.id || 0,
-            patient: getActiveAppointment()?.patient || "",
+            id: Number(getActiveAppointment()?.id || 0),
+            patient: getActiveAppointment()?.patient_name || "",
             patientId: getActiveAppointment()?.patientId || "",
-            reason: getActiveAppointment()?.reason || "",
+            reason: getActiveAppointment()?.service || "",
             date: getActiveAppointment()?.date || new Date(),
             time: getActiveAppointment()?.time || "",
           }}
@@ -440,10 +522,10 @@ const ProviderAppointments = () => {
           isOpen={billingAppointment !== null}
           onClose={() => setBillingAppointment(null)}
           appointment={{
-            id: getActiveAppointment()?.id || 0,
-            patient: getActiveAppointment()?.patient || "",
+            id: Number(getActiveAppointment()?.id || 0),
+            patient: getActiveAppointment()?.patient_name || "",
             patientId: getActiveAppointment()?.patientId || "",
-            reason: getActiveAppointment()?.reason || "",
+            reason: getActiveAppointment()?.service || "",
             date: getActiveAppointment()?.date || new Date(),
             time: getActiveAppointment()?.time || "",
           }}

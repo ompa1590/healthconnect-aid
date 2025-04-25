@@ -13,7 +13,8 @@ import {
   Stethoscope,
   Sparkles,
   Filter,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -31,19 +32,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-type Appointment = {
-  id: number;
-  doctor: string;
-  specialty: string;
-  date: string;
-  time: string;
-  status: "upcoming" | "completed";
-  summary?: string;
-  recommendations?: string;
-  medications?: string[];
-  followUp?: string;
-};
+import { useAppointments, Appointment } from "@/hooks/useAppointments";
+import { useProviders } from "@/hooks/useProviders";
 
 const PastAppointmentsPage = () => {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -52,121 +42,56 @@ const PastAppointmentsPage = () => {
   const [showAllAppointments, setShowAllAppointments] = useState<boolean>(false);
   const navigate = useNavigate();
   
+  const { appointments, loading, error } = useAppointments();
+  const { providers } = useProviders();
+  
   const handleBackToHome = () => {
     navigate("/dashboard");
   };
-  
-  const allAppointments: Appointment[] = [
-    {
-      id: 1,
-      doctor: "Dr. Michael Chen",
-      specialty: "Dermatologist",
-      date: "2024-04-15",
-      time: "2:30 PM",
-      status: "upcoming",
-    },
-    {
-      id: 2,
-      doctor: "Dr. Emily Rodriguez",
-      specialty: "Neurologist",
-      date: "2024-05-03",
-      time: "9:15 AM",
-      status: "upcoming",
-    },
-    {
-      id: 3,
-      doctor: "Dr. James Wilson",
-      specialty: "Cardiologist",
-      date: "2024-03-15",
-      time: "10:00 AM",
-      status: "completed",
-      summary: "Follow-up after mild palpitations. ECG showed normal sinus rhythm.",
-      recommendations: "Continue monitoring. Reduce caffeine intake.",
-      medications: ["Propranolol 10mg as needed"],
-      followUp: "Return in 3 months for follow-up ECG."
-    },
-    {
-      id: 4,
-      doctor: "Dr. Sarah Johnson",
-      specialty: "General Practitioner",
-      date: "2024-02-14",
-      time: "10:00 AM",
-      status: "completed",
-      summary: "Annual check-up. All vitals within normal range.",
-      recommendations: "Continue regular exercise and balanced diet.",
-      medications: [],
-      followUp: "Schedule next annual check-up in 12 months."
-    },
-    {
-      id: 5,
-      doctor: "Dr. Michael Chen",
-      specialty: "Dermatologist",
-      date: "2024-02-29",
-      time: "2:30 PM",
-      status: "completed",
-      summary: "Patient presented with persistent rash on forearms. Diagnosed as contact dermatitis.",
-      recommendations: "Avoid scented soaps and detergents. Apply prescribed hydrocortisone cream twice daily.",
-      medications: ["Hydrocortisone 1% cream", "Cetirizine 10mg tablets"],
-      followUp: "Return in 2 weeks if symptoms persist."
-    },
-    {
-      id: 6,
-      doctor: "Dr. Lisa Patel",
-      specialty: "Endocrinologist",
-      date: "2023-12-04",
-      time: "1:15 PM",
-      status: "completed",
-      summary: "Thyroid function assessment. TSH slightly elevated.",
-      recommendations: "Regular monitoring of thyroid function.",
-      medications: ["Levothyroxine 25mcg daily"],
-      followUp: "Blood work in 6 weeks to check medication efficacy."
-    },
-    {
-      id: 7,
-      doctor: "Dr. Robert Garcia",
-      specialty: "Psychiatrist",
-      date: "2023-11-09",
-      time: "11:30 AM",
-      status: "completed",
-      summary: "Initial consultation for mild anxiety and sleep disturbance.",
-      recommendations: "Practice recommended mindfulness techniques and sleep hygiene.",
-      medications: ["Melatonin 3mg before bedtime as needed"],
-      followUp: "Follow-up in 4 weeks to assess progress."
-    }
-  ];
 
   // Extract all unique specialties for the filter
   const specialties = useMemo(() => {
-    return [...new Set(allAppointments.map(appointment => appointment.specialty))];
-  }, [allAppointments]);
+    return [...new Set(providers.flatMap(provider => provider.specializations || []))];
+  }, [providers]);
 
   // Filter and sort appointments
   const filteredAppointments = useMemo(() => {
-    return allAppointments
+    return appointments
       .filter(appointment => 
         (searchQuery === "" || 
-         appointment.doctor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         appointment.specialty.toLowerCase().includes(searchQuery.toLowerCase())) &&
+         appointment.provider_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         appointment.service.toLowerCase().includes(searchQuery.toLowerCase())) &&
         (selectedSpecialties.length === 0 || 
-         selectedSpecialties.includes(appointment.specialty))
+         providers.some(p => 
+           p.id === appointment.provider_id && 
+           p.specializations?.some(s => selectedSpecialties.includes(s))
+         ))
       )
       .sort((a, b) => {
         // Sort by date (most recent first)
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+        return new Date(b.booking_date).getTime() - new Date(a.booking_date).getTime();
       });
-  }, [allAppointments, searchQuery, selectedSpecialties]);
+  }, [appointments, searchQuery, selectedSpecialties, providers]);
 
   // Split appointments into upcoming and past
   const upcomingAppointments = useMemo(() => {
-    return filteredAppointments.filter(appointment => 
-      appointment.status === "upcoming"
-    );
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return filteredAppointments.filter(appointment => {
+      const appointmentDate = new Date(appointment.booking_date);
+      return appointmentDate >= today && appointment.status !== "cancelled";
+    });
   }, [filteredAppointments]);
 
   const pastAppointments = useMemo(() => {
-    return filteredAppointments.filter(appointment => 
-      appointment.status === "completed"
-    );
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return filteredAppointments.filter(appointment => {
+      const appointmentDate = new Date(appointment.booking_date);
+      return appointmentDate < today || appointment.status === "completed";
+    });
   }, [filteredAppointments]);
 
   // Limit the number of displayed appointments unless "View All" is clicked
@@ -207,6 +132,32 @@ const PastAppointmentsPage = () => {
       return dateStr; // Return original string if parsing fails
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[70vh]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading appointments...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-red-500">Error loading appointments: {error}</p>
+        <Button 
+          variant="outline" 
+          className="mt-4"
+          onClick={handleBackToHome}
+        >
+          Return to Dashboard
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <main className="max-w-6xl mx-auto px-6 py-10 animate-fade-in">
@@ -338,8 +289,8 @@ const PastAppointmentsPage = () => {
                             <Stethoscope className="h-5 w-5 text-primary/80" />
                           </div>
                           <div>
-                            <h3 className="text-xl font-medium font-poppins">{appointment.doctor}</h3>
-                            <p className="text-primary/80">{appointment.specialty}</p>
+                            <h3 className="text-xl font-medium font-poppins">{appointment.provider_name}</h3>
+                            <p className="text-primary/80">{appointment.service}</p>
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -358,11 +309,11 @@ const PastAppointmentsPage = () => {
                       <div className="flex gap-6 mt-4 text-muted-foreground">
                         <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                           <CalendarClock className="h-4 w-4 text-primary/70" />
-                          <span>{formatDisplayDate(appointment.date)}</span>
+                          <span>{formatDisplayDate(appointment.booking_date)}</span>
                         </div>
                         <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                           <Clock className="h-4 w-4 text-primary/70" />
-                          <span>{appointment.time}</span>
+                          <span>{appointment.booking_time}</span>
                         </div>
                       </div>
                     </div>
@@ -409,8 +360,8 @@ const PastAppointmentsPage = () => {
                             <Stethoscope className="h-5 w-5 text-primary/80" />
                           </div>
                           <div>
-                            <h3 className="text-xl font-medium font-poppins">{appointment.doctor}</h3>
-                            <p className="text-primary/80">{appointment.specialty}</p>
+                            <h3 className="text-xl font-medium font-poppins">{appointment.provider_name}</h3>
+                            <p className="text-primary/80">{appointment.service}</p>
                           </div>
                         </div>
                         <Button
@@ -427,11 +378,11 @@ const PastAppointmentsPage = () => {
                       <div className="flex gap-6 mt-4 text-muted-foreground">
                         <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                           <CalendarClock className="h-4 w-4 text-primary/70" />
-                          <span>{formatDisplayDate(appointment.date)}</span>
+                          <span>{formatDisplayDate(appointment.booking_date)}</span>
                         </div>
                         <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                           <Clock className="h-4 w-4 text-primary/70" />
-                          <span>{appointment.time}</span>
+                          <span>{appointment.booking_time}</span>
                         </div>
                       </div>
                     </div>
@@ -477,30 +428,30 @@ const PastAppointmentsPage = () => {
                   <User2 className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-lg font-poppins">{selectedAppointment.doctor}</h3>
-                  <p className="text-primary/80">{selectedAppointment.specialty}</p>
+                  <h3 className="font-medium text-lg font-poppins">{selectedAppointment.provider_name}</h3>
+                  <p className="text-primary/80">{selectedAppointment.service}</p>
                 </div>
               </div>
 
               <div className="flex gap-6 text-sm">
                 <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                   <CalendarClock className="h-4 w-4 text-primary/70" />
-                  <span>{formatDisplayDate(selectedAppointment.date)}</span>
+                  <span>{formatDisplayDate(selectedAppointment.booking_date)}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                   <Clock className="h-4 w-4 text-primary/70" />
-                  <span>{selectedAppointment.time}</span>
+                  <span>{selectedAppointment.booking_time}</span>
                 </div>
               </div>
 
-              {selectedAppointment.status === "upcoming" ? (
+              {new Date(selectedAppointment.booking_date) > new Date() ? (
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-4 rounded-xl shadow-sm">
                   <h4 className="font-medium flex items-center gap-2 font-poppins text-blue-700">
                     <CalendarClock className="h-4 w-4 text-blue-500" />
                     Upcoming Appointment
                   </h4>
                   <p className="text-sm text-blue-600 mt-2">
-                    This appointment is scheduled for {formatDisplayDate(selectedAppointment.date)} at {selectedAppointment.time}.
+                    This appointment is scheduled for {formatDisplayDate(selectedAppointment.booking_date)} at {selectedAppointment.booking_time}.
                   </p>
                   <div className="pt-2 flex gap-2 mt-3">
                     <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
@@ -513,49 +464,35 @@ const PastAppointmentsPage = () => {
                 </div>
               ) : (
                 <>
-                  {selectedAppointment.summary && (
+                  {selectedAppointment.notes && (
                     <div className="bg-gradient-to-r from-health-50 to-medical-light border border-health-200/40 p-4 rounded-xl shadow-sm">
                       <h4 className="font-medium flex items-center gap-2 font-poppins text-primary">
                         <FileText className="h-4 w-4 text-medical-DEFAULT" />
-                        Summary
+                        Appointment Notes
                       </h4>
-                      <p className="text-sm text-muted-foreground mt-2">{selectedAppointment.summary}</p>
+                      <p className="text-sm text-muted-foreground mt-2">{selectedAppointment.notes}</p>
                     </div>
                   )}
 
-                  {selectedAppointment.recommendations && (
-                    <div className="bg-gradient-to-r from-wellness-light to-blue-50 border border-wellness-DEFAULT/20 p-4 rounded-xl shadow-sm">
-                      <h4 className="font-medium flex items-center gap-2 font-poppins text-green-700">
-                        <MessageSquareText className="h-4 w-4 text-wellness-DEFAULT" />
-                        Recommendations
-                      </h4>
-                      <p className="text-sm text-muted-foreground mt-2">{selectedAppointment.recommendations}</p>
-                    </div>
-                  )}
+                  <div className="bg-gradient-to-r from-wellness-light to-blue-50 border border-wellness-DEFAULT/20 p-4 rounded-xl shadow-sm">
+                    <h4 className="font-medium flex items-center gap-2 font-poppins text-green-700">
+                      <MessageSquareText className="h-4 w-4 text-wellness-DEFAULT" />
+                      Service Details
+                    </h4>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {selectedAppointment.service} appointment with {selectedAppointment.provider_name}
+                    </p>
+                  </div>
 
-                  {selectedAppointment.medications && selectedAppointment.medications.length > 0 && (
-                    <div className="bg-gradient-to-r from-medical-light to-blue-50/50 border border-medical-DEFAULT/20 p-4 rounded-xl shadow-sm">
-                      <h4 className="font-medium flex items-center gap-2 font-poppins text-blue-700">
-                        <Pill className="h-4 w-4 text-medical-DEFAULT" />
-                        Prescribed Medications
-                      </h4>
-                      <ul className="list-disc list-inside text-sm text-muted-foreground pl-1 mt-2">
-                        {selectedAppointment.medications.map((medication, index) => (
-                          <li key={index} className="mb-1">{medication}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {selectedAppointment.followUp && (
-                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 p-4 rounded-xl shadow-sm">
-                      <h4 className="font-medium flex items-center gap-2 font-poppins text-indigo-700">
-                        <CalendarClock className="h-4 w-4 text-indigo-500" />
-                        Follow-up
-                      </h4>
-                      <p className="text-sm text-muted-foreground mt-2">{selectedAppointment.followUp}</p>
-                    </div>
-                  )}
+                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 p-4 rounded-xl shadow-sm">
+                    <h4 className="font-medium flex items-center gap-2 font-poppins text-indigo-700">
+                      <CalendarClock className="h-4 w-4 text-indigo-500" />
+                      Follow-up
+                    </h4>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      If needed, you can schedule a follow-up appointment with your healthcare provider.
+                    </p>
+                  </div>
                 </>
               )}
 

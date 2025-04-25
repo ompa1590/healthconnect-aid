@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,13 +16,14 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
+import { useServices } from "@/hooks/useServices";
+import { useProviders } from "@/hooks/useProviders";
+import { useAppointments } from "@/hooks/useAppointments";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 const BookAppointment = () => {
   const [appointmentType, setAppointmentType] = useState("");
@@ -38,41 +39,40 @@ const BookAppointment = () => {
     {type: 'ai', content: 'Hello! I\'ll be conducting your pre-diagnostic assessment to help your doctor prepare for your appointment. Let\'s start with what symptoms you\'re experiencing?'}
   ]);
   const [aiInput, setAiInput] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
+  
   const { toast } = useToast();
-
-  // Mock data
-  const appointmentTypes = [
-    "New patient consultation",
-    "Follow-up appointment",
-    "Medication review",
-    "Mental health consultation",
-    "Chronic disease management"
-  ];
-
-  const specialties = [
-    "General Practitioner",
-    "Dermatologist",
-    "Psychiatrist",
-    "Gynecologist",
-    "Endocrinologist",
-    "Cardiologist"
-  ];
-
-  const doctors = {
-    "General Practitioner": ["Dr. Emily Chen", "Dr. Michael Johnson", "Dr. Sarah Williams"],
-    "Dermatologist": ["Dr. David Lee", "Dr. Jessica Taylor"],
-    "Psychiatrist": ["Dr. Robert Garcia", "Dr. Patricia Miller"],
-    "Gynecologist": ["Dr. Linda Martinez", "Dr. Amanda Davis"],
-    "Endocrinologist": ["Dr. Thomas Wilson", "Dr. Rebecca Brown"],
-    "Cardiologist": ["Dr. William Smith", "Dr. Elizabeth Jones"]
+  const { services, loading: servicesLoading } = useServices();
+  const { providers, loading: providersLoading } = useProviders();
+  const { createAppointment } = useAppointments();
+  
+  // Get current user ID
+  useEffect(() => {
+    const getUserId = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        setUserId(data.session.user.id);
+      }
+    };
+    
+    getUserId();
+  }, []);
+  
+  // Generate available time slots based on date
+  const generateTimeSlots = () => {
+    // Default time slots
+    const defaultSlots = [
+      "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", 
+      "11:00 AM", "11:30 AM", "1:00 PM", "1:30 PM",
+      "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM",
+      "4:00 PM", "4:30 PM"
+    ];
+    
+    // In a real application, you'd filter these based on provider availability
+    return defaultSlots;
   };
-
-  const timeSlots = [
-    "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", 
-    "11:00 AM", "11:30 AM", "1:00 PM", "1:30 PM",
-    "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM",
-    "4:00 PM", "4:30 PM"
-  ];
+  
+  const timeSlots = generateTimeSlots();
 
   const goToNextStep = () => {
     if (currentStep < 3) {
@@ -86,12 +86,37 @@ const BookAppointment = () => {
     }
   };
 
-  const handleBookAppointment = () => {
-    // Would be replaced with actual API call to book appointment
-    toast({
-      title: "Appointment Booked",
-      description: `Your appointment with ${selectedDoctor} on ${selectedDate?.toLocaleDateString()} at ${selectedTime} has been confirmed.`,
-    });
+  const handleBookAppointment = async () => {
+    if (!userId || !selectedDoctor || !selectedDate || !selectedTime || !appointmentType) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields to book your appointment.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const appointmentData = {
+      patient_id: userId,
+      provider_id: selectedDoctor,
+      service: appointmentType,
+      booking_date: format(selectedDate, 'yyyy-MM-dd'),
+      booking_time: selectedTime,
+      notes: reasonForVisit,
+      status: 'confirmed'
+    };
+    
+    const result = await createAppointment(appointmentData);
+    
+    if (result) {
+      // Close the dialog after successful booking
+      // This assumes the component is used in a dialog that has onClose prop
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/dashboard';
+        }
+      }, 2000);
+    }
   };
 
   // Handle AI assessment
@@ -135,6 +160,12 @@ const BookAppointment = () => {
       title: "Pre-assessment Complete",
       description: "Your pre-diagnostic assessment has been saved and will be shared with your doctor before your appointment.",
     });
+  };
+  
+  // Get Provider Name
+  const getProviderName = (id: string) => {
+    const provider = providers.find(p => p.id === id);
+    return provider ? `${provider.first_name} ${provider.last_name}` : 'Unknown Provider';
   };
 
   return (
@@ -185,62 +216,77 @@ const BookAppointment = () => {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="appointmentType">Appointment Type</Label>
-                <Select 
-                  value={appointmentType} 
-                  onValueChange={setAppointmentType}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select appointment type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {appointmentTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {servicesLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading services...</p>
+                ) : (
+                  <Select 
+                    value={appointmentType} 
+                    onValueChange={setAppointmentType}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select appointment type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {services.map((service) => (
+                        <SelectItem key={service.id} value={service.name}>
+                          {service.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               
               <div>
                 <Label htmlFor="specialty">Doctor Specialty</Label>
-                <Select 
-                  value={specialtyNeeded} 
-                  onValueChange={setSpecialtyNeeded}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select specialty" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {specialties.map((specialty) => (
-                      <SelectItem key={specialty} value={specialty}>
-                        {specialty}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {providersLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading specialties...</p>
+                ) : (
+                  <Select 
+                    value={specialtyNeeded} 
+                    onValueChange={setSpecialtyNeeded}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select specialty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from(new Set(providers.flatMap(p => p.specializations || []))).map((specialty) => (
+                        <SelectItem key={specialty} value={specialty}>
+                          {specialty}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               
               <div>
                 <Label htmlFor="doctor">Select Doctor</Label>
-                <Select 
-                  value={selectedDoctor} 
-                  onValueChange={setSelectedDoctor}
-                  disabled={!specialtyNeeded}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={specialtyNeeded ? "Select a doctor" : "Select specialty first"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {specialtyNeeded && 
-                      doctors[specialtyNeeded as keyof typeof doctors]?.map((doctor) => (
-                        <SelectItem key={doctor} value={doctor}>
-                          {doctor}
-                        </SelectItem>
-                      ))
-                    }
-                  </SelectContent>
-                </Select>
+                {providersLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading doctors...</p>
+                ) : (
+                  <Select 
+                    value={selectedDoctor} 
+                    onValueChange={setSelectedDoctor}
+                    disabled={!specialtyNeeded}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={specialtyNeeded ? "Select a doctor" : "Select specialty first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {providers
+                        .filter(provider => 
+                          provider.specializations?.includes(specialtyNeeded)
+                        )
+                        .map((provider) => (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            {`${provider.first_name} ${provider.last_name}`}
+                          </SelectItem>
+                        ))
+                      }
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
             
@@ -255,12 +301,18 @@ const BookAppointment = () => {
               {selectedDoctor ? (
                 <div className="space-y-3">
                   <div className="h-24 w-24 bg-muted rounded-full mx-auto mb-4"></div>
-                  <h4 className="font-medium text-center">{selectedDoctor}</h4>
+                  <h4 className="font-medium text-center">{getProviderName(selectedDoctor)}</h4>
                   <p className="text-sm text-muted-foreground text-center">{specialtyNeeded}</p>
                   <div className="text-sm mt-4">
-                    <p className="mb-2">• 15+ years of experience</p>
-                    <p className="mb-2">• Certified by the Canadian Medical Association</p>
-                    <p>• Specializes in {specialtyNeeded?.toLowerCase()} care</p>
+                    {providers.find(p => p.id === selectedDoctor)?.biography ? (
+                      <p className="mb-2">{providers.find(p => p.id === selectedDoctor)?.biography}</p>
+                    ) : (
+                      <>
+                        <p className="mb-2">• 15+ years of experience</p>
+                        <p className="mb-2">• Certified by the Canadian Medical Association</p>
+                        <p>• Specializes in {specialtyNeeded?.toLowerCase() || 'healthcare'} care</p>
+                      </>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -344,7 +396,7 @@ const BookAppointment = () => {
             <h3 className="font-medium mb-2">Appointment Summary</h3>
             <div className="space-y-2 text-sm">
               <p><span className="font-medium">Type:</span> {appointmentType}</p>
-              <p><span className="font-medium">Doctor:</span> {selectedDoctor}</p>
+              <p><span className="font-medium">Doctor:</span> {getProviderName(selectedDoctor)}</p>
               <p><span className="font-medium">Date:</span> {selectedDate?.toLocaleDateString()}</p>
               <p><span className="font-medium">Time:</span> {selectedTime}</p>
               <p><span className="font-medium">Reason:</span> {reasonForVisit}</p>
@@ -450,12 +502,12 @@ const BookAppointment = () => {
       {/* AI Assessment Dialog */}
       <Dialog open={openAIDialog} onOpenChange={setOpenAIDialog}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Pre-Appointment Assessment</DialogTitle>
-            <DialogDescription>
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Pre-Appointment Assessment</h2>
+            <p className="text-muted-foreground">
               Please answer a few questions to help your doctor prepare for your appointment.
-            </DialogDescription>
-          </DialogHeader>
+            </p>
+          </div>
           
           <div className="h-64 overflow-y-auto border border-border/50 rounded-md p-4 mb-4">
             {aiMessages.map((msg, index) => (
@@ -475,6 +527,9 @@ const BookAppointment = () => {
             <div className="text-center space-y-4">
               <CheckCircle className="h-8 w-8 text-green-600 mx-auto" />
               <p>Pre-assessment complete! Thank you for your responses.</p>
+              <Button onClick={completeAIAssessment}>
+                Complete Assessment
+              </Button>
             </div>
           ) : (
             <div className="flex space-x-2">
@@ -491,11 +546,6 @@ const BookAppointment = () => {
           )}
           
           <DialogFooter>
-            {aiAssessmentComplete && (
-              <Button type="button" onClick={completeAIAssessment}>
-                Complete Assessment
-              </Button>
-            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
