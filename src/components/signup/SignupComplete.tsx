@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle, Upload, Loader2 } from "lucide-react";
@@ -23,10 +23,16 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [uploadProgress, setUploadProgress] = useState(0);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaVerified, setCaptchaVerified] = useState(false);
-  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
+  const [captchaInstanceId, setCaptchaInstanceId] = useState(() => `patient-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const captchaElementId = useRef(`patient-captcha-element-${Date.now()}`).current;
   
-  // Validate that all required fields are present
+  const resetCaptcha = useCallback(() => {
+    setCaptchaToken(null);
+    setCaptchaVerified(false);
+    setCaptchaInstanceId(`patient-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
+  }, []);
+  
   const validateRequiredFields = () => {
     if (!formData.name || !formData.name.trim()) {
       return "Full name is required";
@@ -46,16 +52,12 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     return null;
   };
   
-  // Force re-render of captcha on component mount to ensure it's visible
   useEffect(() => {
-    // Reset and regenerate captcha with unique key
-    setCaptchaKey(Date.now().toString());
-    setCaptchaVerified(false);
-    setCaptchaToken(null);
-  }, []);
+    resetCaptcha();
+  }, [resetCaptcha]);
   
   const handleCaptchaVerify = (token: string) => {
-    console.log("Captcha verified with token:", token);
+    console.log("Captcha verified with token");
     setCaptchaToken(token);
     setCaptchaVerified(true);
   };
@@ -108,7 +110,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       setLoading(true);
       setError(null);
       
-      // Validate all required fields
       const validationError = validateRequiredFields();
       if (validationError) {
         setError(validationError);
@@ -132,7 +133,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         return;
       }
       
-      console.log("Starting signup with captcha token:", captchaToken);
+      console.log("Starting signup with captcha token");
       
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -145,9 +146,13 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         },
       });
       
-      if (error) throw error;
-      
-      console.log("Signup successful:", data);
+      if (error) {
+        console.error("Error during signup:", error);
+        resetCaptcha();
+        setError(error.message || "There was an error creating your account. Please try again.");
+        setLoading(false);
+        return;
+      }
       
       if (!data.user) {
         throw new Error("Failed to create user account");
@@ -207,8 +212,10 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       });
       
       navigate('/dashboard');
+      
     } catch (error) {
       console.error("Error during signup:", error);
+      resetCaptcha();
       setError(error.message || "There was an error creating your account. Please try again.");
       toast({
         title: "Signup failed",
@@ -297,11 +304,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           Please complete the security check below to verify you're human.
         </p>
         
-        <div className="flex justify-center mb-4" id="captcha-container">
+        <div className="flex justify-center mb-4" id={captchaElementId} key={`captcha-wrapper-${captchaInstanceId}`}>
           <CaptchaComponent 
-            captchaId={`signup-captcha-${captchaKey}`}
+            captchaId={`signup-captcha-${captchaInstanceId}`}
             onVerify={handleCaptchaVerify}
-            callbackName="signupCaptchaCallback"
+            callbackName={`signupCaptchaCallback_${captchaInstanceId}`}
           />
         </div>
         
