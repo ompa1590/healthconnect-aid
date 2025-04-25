@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import { 
   CalendarClock, 
@@ -49,12 +48,10 @@ const PastAppointmentsPage = () => {
     navigate("/dashboard");
   };
 
-  // Extract all unique specialties for the filter
   const specialties = useMemo(() => {
     return [...new Set(providers.flatMap(provider => provider.specializations || []))];
   }, [providers]);
 
-  // Filter and sort appointments
   const filteredAppointments = useMemo(() => {
     return appointments
       .filter(appointment => 
@@ -68,12 +65,10 @@ const PastAppointmentsPage = () => {
          ))
       )
       .sort((a, b) => {
-        // Sort by date (most recent first)
         return new Date(b.booking_date).getTime() - new Date(a.booking_date).getTime();
       });
   }, [appointments, searchQuery, selectedSpecialties, providers]);
 
-  // Split appointments into upcoming and past
   const upcomingAppointments = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -94,7 +89,6 @@ const PastAppointmentsPage = () => {
     });
   }, [filteredAppointments]);
 
-  // Limit the number of displayed appointments unless "View All" is clicked
   const displayedUpcomingAppointments = showAllAppointments ? 
     upcomingAppointments : 
     upcomingAppointments.slice(0, 3);
@@ -107,7 +101,6 @@ const PastAppointmentsPage = () => {
     setSelectedAppointment(appointment);
   };
 
-  // Handle specialty filter selection
   const handleSpecialtyToggle = (specialty: string) => {
     setSelectedSpecialties(prev => {
       if (prev.includes(specialty)) {
@@ -118,7 +111,6 @@ const PastAppointmentsPage = () => {
     });
   };
 
-  // Clear all filters
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedSpecialties([]);

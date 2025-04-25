@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Table,
@@ -25,12 +24,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks/useAuth";
-import { format as dateFormat } from "date-fns";
+import { format } from "date-fns";
 import { Download, FileText, Printer, Share2, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
-// Define the Prescription type
 interface Prescription {
   id: string;
   name: string;
@@ -52,12 +50,9 @@ const MyPrescriptions = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Fetch prescriptions
   useEffect(() => {
-    // Simulating API call
     const fetchPrescriptions = async () => {
       try {
-        // Replace with actual API call
         const mockPrescriptions = [
           {
             id: '1',
@@ -186,7 +181,7 @@ const MyPrescriptions = () => {
                       <TableCell className="font-medium">{prescription.name}</TableCell>
                       <TableCell>{prescription.dosage}</TableCell>
                       <TableCell>{prescription.prescribedBy}</TableCell>
-                      <TableCell>{dateFormat(prescription.dateIssued, 'MMM d, yyyy')}</TableCell>
+                      <TableCell>{format(prescription.dateIssued, 'MMM d, yyyy')}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={getStatusColor(prescription.status)}>
                           {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
@@ -229,7 +224,6 @@ const MyPrescriptions = () => {
         </CardContent>
       </Card>
 
-      {/* Prescription Details Dialog */}
       {selectedPrescription && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-md">
@@ -261,11 +255,11 @@ const MyPrescriptions = () => {
                   </div>
                   <div>
                     <p className="text-muted-foreground">Date Issued</p>
-                    <p className="font-medium">{dateFormat(selectedPrescription.dateIssued, 'MMM d, yyyy')}</p>
+                    <p className="font-medium">{format(selectedPrescription.dateIssued, 'MMM d, yyyy')}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Expires</p>
-                    <p className="font-medium">{dateFormat(selectedPrescription.expiryDate, 'MMM d, yyyy')}</p>
+                    <p className="font-medium">{format(selectedPrescription.expiryDate, 'MMM d, yyyy')}</p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-muted-foreground">Instructions</p>

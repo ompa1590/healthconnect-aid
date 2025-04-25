@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import AppointmentScheduler from "@/components/dashboard/AppointmentScheduler";
@@ -15,7 +16,7 @@ import TreatmentOptionsPage from "./TreatmentOptionsPage";
 import HealthRecordsPage from "./HealthRecordsPage";
 import PastAppointmentsPage from "./PastAppointmentsPage";
 import PrescriptionsPage from "./PrescriptionsPage";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
 import BookAppointmentFlow from "@/components/dashboard/BookingFlow/BookAppointmentFlow";
 import { GlassCard } from "@/components/ui/GlassCard";
 
@@ -115,7 +116,9 @@ const Dashboard = () => {
                   Book a New Appointment
                 </Button>
               </DialogTrigger>
-              <BookAppointmentFlow onClose={() => setBookingDialogOpen(false)} />
+              <DialogContent className="sm:max-w-[900px] p-0">
+                <BookAppointmentFlow onClose={() => setBookingDialogOpen(false)} />
+              </DialogContent>
             </Dialog>
           </div>
         </div>

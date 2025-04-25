@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -69,13 +68,11 @@ const ProviderAppointments = () => {
   ]);
   const { toast } = useToast();
 
-  // Fetch appointments for the provider
   const fetchAppointments = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get current user session
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData.session) {
@@ -86,7 +83,6 @@ const ProviderAppointments = () => {
 
       const providerId = sessionData.session.user.id;
       
-      // Get appointments for this provider
       const { data, error: appointmentsError } = await supabase
         .from('appointments')
         .select(`
@@ -98,10 +94,7 @@ const ProviderAppointments = () => {
       if (appointmentsError) throw appointmentsError;
       
       if (data) {
-        // Process the appointments data to add patient names
         const processedAppointments = data.map((apt: any) => {
-          // Format the appointment data to match the expected structure
-          // including backward compatibility with existing components
           return {
             id: apt.id,
             patient_id: apt.patient_id,
@@ -114,10 +107,10 @@ const ProviderAppointments = () => {
             created_at: apt.created_at,
             updated_at: apt.updated_at,
             patient_name: apt.profiles?.name || 'Unknown Patient',
-            patientId: apt.profiles?.id || apt.patient_id, // For backward compatibility
-            reason: apt.service, // For backward compatibility
-            date: new Date(apt.booking_date), // For backward compatibility
-            time: apt.booking_time, // For backward compatibility
+            patientId: apt.profiles?.id || apt.patient_id,
+            reason: apt.service,
+            date: new Date(apt.booking_date),
+            time: apt.booking_time,
           };
         });
         
@@ -136,7 +129,6 @@ const ProviderAppointments = () => {
     }
   };
 
-  // Update appointment status
   const updateAppointmentStatus = async (id: string, status: string) => {
     try {
       const { data, error } = await supabase
@@ -153,7 +145,6 @@ const ProviderAppointments = () => {
           description: `Appointment status updated to ${status}.`,
         });
         
-        // Refresh appointments
         fetchAppointments();
         return data[0];
       }
@@ -168,7 +159,6 @@ const ProviderAppointments = () => {
     }
   };
 
-  // Fetch appointments when component mounts
   useEffect(() => {
     fetchAppointments();
   }, []);

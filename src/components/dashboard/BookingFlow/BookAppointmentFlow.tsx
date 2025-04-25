@@ -15,7 +15,11 @@ import { useAuth } from "@/hooks/useAuth";
 
 export type BookingStep = "service" | "doctor" | "time" | "confirmation";
 
-const BookAppointmentFlow = () => {
+interface BookAppointmentFlowProps {
+  onClose?: () => void;
+}
+
+const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
   const { user } = useAuth();
   const { createAppointment } = useAppointments();
   const { toast } = useToast();
@@ -63,6 +67,10 @@ const BookAppointmentFlow = () => {
           title: "Appointment booked successfully!",
           description: "Your appointment has been confirmed.",
         });
+        
+        if (onClose) {
+          onClose();
+        }
       } catch (error) {
         console.error("Failed to book appointment:", error);
         toast({

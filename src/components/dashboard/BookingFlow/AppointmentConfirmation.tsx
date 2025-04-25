@@ -1,8 +1,7 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Clock, User } from "lucide-react";
-import { format as dateFormat } from "date-fns";
+import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 
 interface AppointmentConfirmationProps {
@@ -76,7 +75,7 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
             <div>
               <p className="text-sm font-medium">Date</p>
               <p className="text-sm text-muted-foreground">
-                {dateFormat(appointmentDetails.date, "EEEE, MMMM d, yyyy")}
+                {format(appointmentDetails.date, "EEEE, MMMM d, yyyy")}
               </p>
             </div>
           </div>
@@ -101,22 +100,12 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
         
         <div className="space-y-3">
           <Button 
-            onClick={togglePrescreening} 
+            onClick={onDone} 
             size="lg" 
             className="px-8"
           >
-            {showPrescreening ? 'Close Prescreening' : 'Start Your Prescreening'}
+            Return to Dashboard
           </Button>
-          <div className="flex gap-2 justify-center">
-            <Button
-              onClick={handlePrescreenLater}
-              variant="outline"
-              size="lg"
-              className="px-8 mt-2"
-            >
-              Prescreen Later
-            </Button>
-          </div>
         </div>
       </div>
 
