@@ -38,13 +38,25 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     // Set mounted flag
     mountedRef.current = true;
     
-    // Clear any existing hCaptcha widget in this element if it exists
-    if (window.hcaptcha && captchaId && document.getElementById(captchaId)) {
+    // Clean up any existing widget first to prevent "Only one captcha is permitted per parent container" error
+    if (window.hcaptcha) {
       try {
-        window.hcaptcha.reset(captchaId);
-        window.hcaptcha.remove(captchaId);
+        if (widgetIdRef.current) {
+          window.hcaptcha.reset(widgetIdRef.current);
+          window.hcaptcha.remove(widgetIdRef.current);
+          widgetIdRef.current = null;
+        }
+        
+        // Additional cleanup by element ID
+        if (document.getElementById(captchaId)) {
+          try {
+            window.hcaptcha.remove(captchaId);
+          } catch (error) {
+            console.log("No captcha to remove by ID");
+          }
+        }
       } catch (error) {
-        console.log("No previous captcha to clean up");
+        console.log("Error during captcha cleanup:", error);
       }
     }
     
@@ -55,15 +67,6 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       
       if (window.hcaptcha) {
         try {
-          // Reset any existing widget
-          if (widgetIdRef.current) {
-            try {
-              window.hcaptcha.reset(widgetIdRef.current);
-            } catch (error) {
-              console.log("Error resetting captcha:", error);
-            }
-          }
-          
           // Render a new captcha widget
           const widgetId = window.hcaptcha.render(captchaId, {
             sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
@@ -136,6 +139,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       if (window.hcaptcha && widgetIdRef.current) {
         try {
           window.hcaptcha.reset(widgetIdRef.current);
+          window.hcaptcha.remove(widgetIdRef.current);
         } catch (error) {
           console.error("Error resetting captcha during cleanup:", error);
         }

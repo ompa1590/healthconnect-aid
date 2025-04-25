@@ -33,23 +33,27 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   
-  // Clean reset of captcha when component mounts
+  // Force a completely new captcha instance when component mounts
   useEffect(() => {
-    // Generate a unique key for the captcha to ensure it's completely fresh
-    setCaptchaKey(Date.now().toString());
+    // Generate a completely unique captcha initialization key
+    const uniqueKey = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    setCaptchaKey(uniqueKey);
+    setCaptchaToken(null);
   }, []);
   
   // Handle captcha verification
   const handleCaptchaVerify = (token: string) => {
-    console.log("Captcha verified, setting token:", token);
+    console.log("Captcha verified, got new token");
     setCaptchaToken(token);
   };
   
   // Complete reset of captcha (used after errors)
   const resetCaptcha = () => {
-    // Generate a new captcha key to force a complete re-render and clear state
-    setCaptchaKey(Date.now().toString());
+    // Generate a completely unique key to force a complete DOM re-render
+    const uniqueKey = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    setCaptchaKey(uniqueKey);
     setCaptchaToken(null);
+    console.log("Captcha completely reset with new key:", uniqueKey);
   };
   
   const handleCreateAccount = async () => {
@@ -74,6 +78,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setSubmitting(true);
     
     try {
+      console.log("Starting signup with captcha token");
+      
       // Attempt to sign up the provider
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -99,7 +105,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       if (error) {
         console.error("Error during sign up:", error);
         
-        // Handle rate limiting errors specifically
+        // Handle specific error cases
         if (error.message.includes("rate limit") || error.message.includes("429")) {
           toast({
             title: "Rate limit exceeded",
@@ -112,6 +118,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             description: "Please complete the captcha verification again.",
             variant: "destructive"
           });
+          // Force a completely new captcha instance
+          resetCaptcha();
         } else {
           toast({
             title: "Sign up failed",
@@ -120,8 +128,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           });
         }
         
-        // Reset captcha for a fresh attempt
-        resetCaptcha();
         setSubmitting(false);
       } else {
         console.log("Provider signup successful:", data);
@@ -181,7 +187,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </ol>
         </div>
         
-        {/* Captcha container with unique key to prevent duplicate initialization */}
+        {/* Each captcha gets a completely unique container ID */}
         <div className="py-4 flex justify-center" id={`captcha-container-${captchaKey}`}>
           <CaptchaComponent 
             captchaId={`provider-signup-captcha-${captchaKey}`}
