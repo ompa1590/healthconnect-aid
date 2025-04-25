@@ -17,6 +17,11 @@ import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import VisitReasonDialog from "./VisitReasonDialog";
+import ConsultationNotesDialog from "./ConsultationNotesDialog";
+import OHIPBillingDialog from "./OHIPBillingDialog";
+import AvailabilityDialog from "./AvailabilityDialog";
 
 interface Appointment {
   id: string;
