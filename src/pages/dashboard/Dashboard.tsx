@@ -16,7 +16,7 @@ import TreatmentOptionsPage from "./TreatmentOptionsPage";
 import HealthRecordsPage from "./HealthRecordsPage";
 import PastAppointmentsPage from "./PastAppointmentsPage";
 import PrescriptionsPage from "./PrescriptionsPage";
-import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import BookAppointmentFlow from "@/components/dashboard/BookingFlow/BookAppointmentFlow";
 import { GlassCard } from "@/components/ui/GlassCard";
 
@@ -101,7 +101,7 @@ const Dashboard = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-health-200/70 via-health-100/50 to-health-50/30 opacity-80"></div>
         <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
         <div className="relative p-8 border border-health-200/30 rounded-xl">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+          <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-4">
             <div>
               <h1 className="text-3xl font-normal text-gray-800 mb-2 flex items-center">
                 Welcome back, <span className="font-medium ml-1.5 text-primary">{userName}</span>
@@ -117,6 +117,7 @@ const Dashboard = () => {
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[900px] p-0">
+                <DialogTitle className="sr-only">Book Appointment</DialogTitle>
                 <BookAppointmentFlow onClose={() => setBookingDialogOpen(false)} />
               </DialogContent>
             </Dialog>
