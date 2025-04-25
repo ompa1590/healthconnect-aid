@@ -45,56 +45,61 @@ export const useAppointments = () => {
         .eq('id', session.user.id)
         .single();
       
-      let appointmentsQuery;
+      let appointmentsData = [];
       
       if (providerProfile) {
         // User is a provider, fetch appointments where they are the provider
-        appointmentsQuery = await supabase
+        const { data, error: appointmentsError } = await supabase
           .from('appointments')
-          .select(`
-            *,
-            profiles!patient_id(name)
-          `)
+          .select('*')
           .eq('provider_id', session.user.id)
           .order('booking_date', { ascending: true });
+          
+        if (appointmentsError) throw appointmentsError;
+        appointmentsData = data || [];
+        
+        // Get patient names separately
+        for (let apt of appointmentsData) {
+          const { data: patientData, error: patientError } = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('id', apt.patient_id)
+            .single();
+            
+          if (!patientError && patientData) {
+            apt.patient_name = patientData.name || 'Anonymous Patient';
+          } else {
+            apt.patient_name = 'Unknown Patient';
+          }
+        }
       } else {
         // User is a patient, fetch their appointments
-        appointmentsQuery = await supabase
+        const { data, error: appointmentsError } = await supabase
           .from('appointments')
-          .select(`
-            *,
-            provider_profiles!provider_id(first_name, last_name)
-          `)
+          .select('*')
           .eq('patient_id', session.user.id)
           .order('booking_date', { ascending: true });
-      }
-
-      if (appointmentsQuery.error) {
-        throw appointmentsQuery.error;
+          
+        if (appointmentsError) throw appointmentsError;
+        appointmentsData = data || [];
+        
+        // Get provider names separately
+        for (let apt of appointmentsData) {
+          const { data: providerData, error: providerError } = await supabase
+            .from('provider_profiles')
+            .select('first_name, last_name')
+            .eq('id', apt.provider_id)
+            .single();
+            
+          if (!providerError && providerData) {
+            apt.provider_name = `${providerData.first_name || ''} ${providerData.last_name || ''}`.trim() || 'Unknown Provider';
+          } else {
+            apt.provider_name = 'Unknown Provider';
+          }
+        }
       }
       
-      // Process the appointments data
-      const processedAppointments = appointmentsQuery.data.map((apt: any) => {
-        let providerName = 'Unknown Provider';
-        let patientName = 'Unknown Patient';
-        
-        if (apt.provider_profiles) {
-          const { first_name = '', last_name = '' } = apt.provider_profiles;
-          providerName = `${first_name} ${last_name}`.trim();
-        }
-        
-        if (apt.profiles) {
-          patientName = apt.profiles.name || 'Anonymous Patient';
-        }
-        
-        return {
-          ...apt,
-          provider_name: providerName,
-          patient_name: patientName
-        };
-      });
-      
-      setAppointments(processedAppointments);
+      setAppointments(appointmentsData);
     } catch (err: any) {
       console.error('Error fetching appointments:', err);
       setError(err.message || 'Failed to fetch appointments');
