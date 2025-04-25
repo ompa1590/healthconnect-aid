@@ -33,18 +33,21 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   
-  // Refresh the captcha when the component mounts or when we need a fresh token
+  // Clean reset of captcha when component mounts
   useEffect(() => {
+    // Generate a unique key for the captcha to ensure it's completely fresh
     setCaptchaKey(Date.now().toString());
   }, []);
   
+  // Handle captcha verification
   const handleCaptchaVerify = (token: string) => {
     console.log("Captcha verified, setting token:", token);
     setCaptchaToken(token);
   };
   
+  // Complete reset of captcha (used after errors)
   const resetCaptcha = () => {
-    // Generate a new captcha key to force a complete re-render
+    // Generate a new captcha key to force a complete re-render and clear state
     setCaptchaKey(Date.now().toString());
     setCaptchaToken(null);
   };
@@ -87,19 +90,36 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             province: formData.province || '',
             postalCode: formData.postalCode || '',
             phoneNumber: formData.phoneNumber || '',
-            isNewUser: true // Flag to identify new users for welcome modal
+            isNewUser: true
           },
-          captchaToken: captchaToken  // Pass the captcha token to Supabase
+          captchaToken: captchaToken
         }
       });
       
       if (error) {
         console.error("Error during sign up:", error);
-        toast({
-          title: "Sign up failed",
-          description: error.message,
-          variant: "destructive"
-        });
+        
+        // Handle rate limiting errors specifically
+        if (error.message.includes("rate limit") || error.message.includes("429")) {
+          toast({
+            title: "Rate limit exceeded",
+            description: "Too many registration attempts. Please try again after some time or use a different email.",
+            variant: "destructive"
+          });
+        } else if (error.message.includes("already-seen-response") || error.message.includes("captcha")) {
+          toast({
+            title: "Captcha verification failed",
+            description: "Please complete the captcha verification again.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Sign up failed",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+        
         // Reset captcha for a fresh attempt
         resetCaptcha();
         setSubmitting(false);
@@ -161,7 +181,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </ol>
         </div>
         
-        <div className="py-4 flex justify-center">
+        {/* Captcha container with unique key to prevent duplicate initialization */}
+        <div className="py-4 flex justify-center" id={`captcha-container-${captchaKey}`}>
           <CaptchaComponent 
             captchaId={`provider-signup-captcha-${captchaKey}`}
             onVerify={handleCaptchaVerify}

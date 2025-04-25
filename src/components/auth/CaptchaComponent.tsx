@@ -38,6 +38,16 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     // Set mounted flag
     mountedRef.current = true;
     
+    // Clear any existing hCaptcha widget in this element if it exists
+    if (window.hcaptcha && captchaId && document.getElementById(captchaId)) {
+      try {
+        window.hcaptcha.reset(captchaId);
+        window.hcaptcha.remove(captchaId);
+      } catch (error) {
+        console.log("No previous captcha to clean up");
+      }
+    }
+    
     // Inner function to render captcha
     const renderCaptcha = () => {
       // Only proceed if component is still mounted and container exists
