@@ -33,10 +33,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(`captcha-${Date.now()}`);
   
-  // Generate a fresh captcha instance when component mounts or when we need to reset
+  // Generate a fresh captcha instance with a truly unique key
   const regenerateCaptcha = useCallback(() => {
+    // Generate a timestamp + random string to ensure uniqueness
     const uniqueKey = `captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    console.log("Generating new captcha with key:", uniqueKey);
+    console.log("Captcha completely reset with new key:", uniqueKey);
     setCaptchaKey(uniqueKey);
     setCaptchaToken(null);
   }, []);
@@ -101,7 +102,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       if (error) {
         console.error("Error during sign up:", error);
         
-        // Always regenerate captcha on error
+        // Generate a new captcha regardless of error type
         regenerateCaptcha();
         
         // Handle specific error cases
@@ -185,9 +186,10 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </ol>
         </div>
         
-        {/* Each captcha container gets a completely unique ID */}
+        {/* Each captcha gets a completely unique container */}
         <div className="py-4 flex justify-center">
-          <div key={captchaKey} id={`captcha-container-${captchaKey}`} className="captcha-wrapper">
+          {/* Ensure we have a permanent HTML element created for hCaptcha */}
+          <div id={`captcha-container-${captchaKey}`} className="captcha-wrapper">
             <CaptchaComponent 
               captchaId={`provider-signup-captcha-${captchaKey}`}
               onVerify={handleCaptchaVerify}
