@@ -2,9 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Clock, User } from "lucide-react";
-import { format } from "date-fns";
-import Siri from "../../prescreening/PreScreeningAssistant";
-import RadialCard from "../../prescreening/PreScreeningAssistant";
+import { format as dateFormat } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 
 interface AppointmentConfirmationProps {
@@ -35,8 +33,8 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
     eightHoursBefore.setHours(appointmentTime.getHours() - 8);
     
     // Format the date and time for display
-    const formattedDate = format(eightHoursBefore, "MMMM d, yyyy");
-    const formattedTime = format(eightHoursBefore, "h:mm a");
+    const formattedDate = dateFormat(eightHoursBefore, "MMMM d, yyyy");
+    const formattedTime = dateFormat(eightHoursBefore, "h:mm a");
     
     toast({
       title: "Pre-screening Reminder Set",
@@ -78,7 +76,7 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
             <div>
               <p className="text-sm font-medium">Date</p>
               <p className="text-sm text-muted-foreground">
-                {format(appointmentDetails.date, "EEEE, MMMM d, yyyy")}
+                {dateFormat(appointmentDetails.date, "EEEE, MMMM d, yyyy")}
               </p>
             </div>
           </div>
@@ -122,10 +120,11 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
         </div>
       </div>
 
+      {/* We'll update the prescreening component separately if needed */}
       {showPrescreening && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
           <div className="fixed inset-4 z-50 rounded-lg border bg-background shadow-lg p-6 overflow-y-auto">
-            <RadialCard autoStart={true}/>
+            {/* Placeholder for PreScreeningAssistant */}
             <Button
               onClick={togglePrescreening}
               className="absolute top-4 right-4"

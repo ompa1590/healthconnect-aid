@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { ArrowLeft, ArrowRight, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { format as dateFormat } from "date-fns";
 
 interface TimeSelectionProps {
   selectedDate: Date | undefined;
