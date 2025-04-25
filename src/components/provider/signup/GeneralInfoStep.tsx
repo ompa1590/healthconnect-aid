@@ -1,3 +1,4 @@
+
 import React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -23,9 +24,8 @@ import {
 import { cn } from "@/lib/utils";
 
 interface GeneralInfoStepProps {
-  providerData: ProviderFormData;
-  onUpdateData: (data: Partial<ProviderFormData>) => void;
-  onNext: () => void;
+  formData: ProviderFormData;
+  updateFormData: (data: Partial<ProviderFormData>) => void;
 }
 
 interface ProviderFormData {
@@ -35,7 +35,7 @@ interface ProviderFormData {
   phoneNumber: string;
   gender: string;
   dateOfBirth: Date | null;
-  experience?: string; // Using experience instead of yearsOfExperience to match the type
+  experience?: string;
   addressLine1: string;
   addressLine2?: string;
   landmark?: string;
@@ -50,7 +50,7 @@ interface ProviderFormData {
   biography: string;
 }
 
-const GeneralInfoStep: React.FC<GeneralInfoStepProps> = ({ providerData, onUpdateData, onNext }) => {
+const GeneralInfoStep: React.FC<GeneralInfoStepProps> = ({ formData, updateFormData }) => {
   const formSchema = z.object({
     firstName: z.string().min(2, { message: "First name is required" }),
     lastName: z.string().min(2, { message: "Last name is required" }),
@@ -58,7 +58,7 @@ const GeneralInfoStep: React.FC<GeneralInfoStepProps> = ({ providerData, onUpdat
     phoneNumber: z.string().min(10, { message: "Phone number is required" }),
     gender: z.string().min(1, { message: "Gender is required" }),
     dateOfBirth: z.date({ required_error: "Date of birth is required" }),
-    experience: z.string().optional(), // Use the correct field name here
+    experience: z.string().optional(),
     addressLine1: z.string().min(3, { message: "Address is required" }),
     addressLine2: z.string().optional(),
     landmark: z.string().optional(),
@@ -70,25 +70,24 @@ const GeneralInfoStep: React.FC<GeneralInfoStepProps> = ({ providerData, onUpdat
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstName: providerData.firstName || "",
-      lastName: providerData.lastName || "",
-      email: providerData.email || "",
-      phoneNumber: providerData.phoneNumber || "",
-      gender: providerData.gender || "",
-      dateOfBirth: providerData.dateOfBirth || null,
-      experience: providerData.experience || "", // Use the correct field name here
-      addressLine1: providerData.addressLine1 || "",
-      addressLine2: providerData.addressLine2 || "",
-      landmark: providerData.landmark || "",
-      city: providerData.city || "",
-      state: providerData.state || "",
-      zipCode: providerData.zipCode || "",
+      firstName: formData.firstName || "",
+      lastName: formData.lastName || "",
+      email: formData.email || "",
+      phoneNumber: formData.phoneNumber || "",
+      gender: formData.gender || "",
+      dateOfBirth: formData.dateOfBirth || null,
+      experience: formData.experience || "",
+      addressLine1: formData.addressLine1 || "",
+      addressLine2: formData.addressLine2 || "",
+      landmark: formData.landmark || "",
+      city: formData.city || "",
+      state: formData.state || "",
+      zipCode: formData.zipCode || "",
     },
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    onUpdateData({ ...values, experience: values.experience }); // Use the correct field name here
-    onNext();
+    updateFormData({ ...values });
   };
 
   return (
