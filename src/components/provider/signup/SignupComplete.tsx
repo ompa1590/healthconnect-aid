@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight } from "lucide-react";
@@ -31,29 +31,25 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
+  const [captchaKey, setCaptchaKey] = useState(`captcha-${Date.now()}`);
   
-  // Force a completely new captcha instance when component mounts
-  useEffect(() => {
-    // Generate a completely unique captcha initialization key
-    const uniqueKey = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  // Generate a fresh captcha instance when component mounts or when we need to reset
+  const regenerateCaptcha = useCallback(() => {
+    const uniqueKey = `captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    console.log("Generating new captcha with key:", uniqueKey);
     setCaptchaKey(uniqueKey);
     setCaptchaToken(null);
   }, []);
+  
+  // Initialize captcha when component mounts
+  useEffect(() => {
+    regenerateCaptcha();
+  }, [regenerateCaptcha]);
   
   // Handle captcha verification
   const handleCaptchaVerify = (token: string) => {
     console.log("Captcha verified, got new token");
     setCaptchaToken(token);
-  };
-  
-  // Complete reset of captcha (used after errors)
-  const resetCaptcha = () => {
-    // Generate a completely unique key to force a complete DOM re-render
-    const uniqueKey = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    setCaptchaKey(uniqueKey);
-    setCaptchaToken(null);
-    console.log("Captcha completely reset with new key:", uniqueKey);
   };
   
   const handleCreateAccount = async () => {
@@ -105,6 +101,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       if (error) {
         console.error("Error during sign up:", error);
         
+        // Always regenerate captcha on error
+        regenerateCaptcha();
+        
         // Handle specific error cases
         if (error.message.includes("rate limit") || error.message.includes("429")) {
           toast({
@@ -115,11 +114,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         } else if (error.message.includes("already-seen-response") || error.message.includes("captcha")) {
           toast({
             title: "Captcha verification failed",
-            description: "Please complete the captcha verification again.",
+            description: "Please complete the captcha verification again with a new challenge.",
             variant: "destructive"
           });
-          // Force a completely new captcha instance
-          resetCaptcha();
         } else {
           toast({
             title: "Sign up failed",
@@ -148,8 +145,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
+      
       // Reset captcha for a fresh attempt
-      resetCaptcha();
+      regenerateCaptcha();
       setSubmitting(false);
     }
   };
@@ -187,14 +185,22 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </ol>
         </div>
         
-        {/* Each captcha gets a completely unique container ID */}
-        <div className="py-4 flex justify-center" id={`captcha-container-${captchaKey}`}>
-          <CaptchaComponent 
-            captchaId={`provider-signup-captcha-${captchaKey}`}
-            onVerify={handleCaptchaVerify}
-            callbackName={`handleProviderSignupCaptcha${captchaKey}`}
-          />
+        {/* Each captcha container gets a completely unique ID */}
+        <div className="py-4 flex justify-center">
+          <div key={captchaKey} id={`captcha-container-${captchaKey}`} className="captcha-wrapper">
+            <CaptchaComponent 
+              captchaId={`provider-signup-captcha-${captchaKey}`}
+              onVerify={handleCaptchaVerify}
+              callbackName={`handleProviderSignupCaptcha_${captchaKey}`}
+            />
+          </div>
         </div>
+        
+        {captchaToken && (
+          <div className="text-sm text-green-500 flex items-center justify-center">
+            <CheckCircle className="h-4 w-4 mr-1" /> Verification complete
+          </div>
+        )}
         
         <div className="flex items-center space-x-2 mb-6">
           <Checkbox 
@@ -219,7 +225,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         <Button 
           onClick={handleCreateAccount} 
-          className="w-full mt-6"
+          className={`w-full mt-6 ${captchaToken && agreedToTerms ? 'bg-green-600 hover:bg-green-700' : ''}`}
           disabled={!captchaToken || !agreedToTerms || submitting}
         >
           {submitting ? "Creating Account..." : "Create Account"} 

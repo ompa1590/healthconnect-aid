@@ -21,7 +21,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
   useEffect(() => {
     // Define the callback function on window that hCaptcha will call
     window[callbackName] = (token: string) => {
-      console.log(`Captcha verified with token:`, token);
+      console.log(`Captcha verified, callback triggered with token`);
       if (mountedRef.current) {
         onVerify(token);
       }
@@ -38,35 +38,67 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     // Set mounted flag
     mountedRef.current = true;
     
-    // Clean up any existing widget first to prevent "Only one captcha is permitted per parent container" error
-    if (window.hcaptcha) {
-      try {
-        if (widgetIdRef.current) {
-          window.hcaptcha.reset(widgetIdRef.current);
-          window.hcaptcha.remove(widgetIdRef.current);
-          widgetIdRef.current = null;
-        }
-        
-        // Additional cleanup by element ID
-        if (document.getElementById(captchaId)) {
-          try {
-            window.hcaptcha.remove(captchaId);
-          } catch (error) {
-            console.log("No captcha to remove by ID");
+    // Function to clean up existing widgets
+    const cleanupExistingWidgets = () => {
+      if (window.hcaptcha) {
+        try {
+          // If we have a widget ID stored, remove that specific widget
+          if (widgetIdRef.current) {
+            try {
+              window.hcaptcha.reset(widgetIdRef.current);
+            } catch (e) {
+              console.log("Error resetting widget:", e);
+            }
+            
+            try {
+              window.hcaptcha.remove(widgetIdRef.current);
+            } catch (e) {
+              console.log("Error removing widget by ID:", e);
+            }
+            
+            widgetIdRef.current = null;
           }
+          
+          // Try to remove by element ID as well
+          if (document.getElementById(captchaId)) {
+            try {
+              window.hcaptcha.remove(captchaId);
+            } catch (e) {
+              console.log("Error removing widget by element ID:", e);
+            }
+          }
+          
+          // Final safety: try to remove all potential widgets from this container
+          const container = document.getElementById(captchaId);
+          if (container) {
+            // Clear any remaining content from the container
+            container.innerHTML = '';
+          }
+        } catch (error) {
+          console.log("General error during captcha cleanup:", error);
         }
-      } catch (error) {
-        console.log("Error during captcha cleanup:", error);
       }
-    }
+    };
     
     // Inner function to render captcha
     const renderCaptcha = () => {
+      // Clean up first to prevent multiple widgets
+      cleanupExistingWidgets();
+      
       // Only proceed if component is still mounted and container exists
-      if (!mountedRef.current || !captchaRef.current) return;
+      if (!mountedRef.current) return;
+      
+      // Get a fresh reference to the container
+      const container = document.getElementById(captchaId);
+      if (!container) {
+        console.log("Captcha container not found:", captchaId);
+        return;
+      }
       
       if (window.hcaptcha) {
         try {
+          console.log("Attempting to render captcha in container:", captchaId);
+          
           // Render a new captcha widget
           const widgetId = window.hcaptcha.render(captchaId, {
             sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
@@ -99,8 +131,8 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     // Load the hCaptcha script if it's not already loaded
     const loadCaptchaScript = () => {
       if (document.getElementById('hcaptcha-script')) {
-        // Script already exists, just try to render the captcha
-        renderCaptcha();
+        // Script already exists, wait a moment then try to render the captcha
+        setTimeout(renderCaptcha, 200);
         return;
       }
       
@@ -114,7 +146,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
         console.log("hCaptcha script loaded successfully");
         if (mountedRef.current) {
           // Delay the rendering slightly to ensure the API is fully initialized
-          setTimeout(renderCaptcha, 100);
+          setTimeout(renderCaptcha, 300);
         }
       };
       
@@ -134,16 +166,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     // Clean up on component unmount
     return () => {
       mountedRef.current = false;
-      
-      // If hCaptcha is initialized and we have a widget ID, reset it
-      if (window.hcaptcha && widgetIdRef.current) {
-        try {
-          window.hcaptcha.reset(widgetIdRef.current);
-          window.hcaptcha.remove(widgetIdRef.current);
-        } catch (error) {
-          console.error("Error resetting captcha during cleanup:", error);
-        }
-      }
+      cleanupExistingWidgets();
     };
   }, [captchaId, callbackName]); // Depend on captchaId and callbackName to re-render if they change
 
@@ -153,6 +176,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
         id={captchaId} 
         ref={captchaRef}
         className="h-[78px] min-w-[300px] flex items-center justify-center border border-border/20 rounded-md"
+        key={captchaId} // Add key to force React to recreate this DOM element
       >
         {isLoading && (
           <div className="text-sm text-muted-foreground animate-pulse">
