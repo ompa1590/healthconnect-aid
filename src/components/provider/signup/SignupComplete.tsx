@@ -32,6 +32,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showRateLimitDialog, setShowRateLimitDialog] = useState(false);
+  const [showCaptchaErrorDialog, setShowCaptchaErrorDialog] = useState(false);
   const [captchaInstanceId, setCaptchaInstanceId] = useState(() => `captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
   const captchaElementId = useRef(`captcha-element-${Date.now()}`).current;
   
@@ -105,11 +106,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           // Show rate limit dialog instead of toast for this specific error
           setShowRateLimitDialog(true);
         } else if (error.message.includes("already-seen-response") || error.message.includes("captcha")) {
-          toast({
-            title: "Captcha verification failed",
-            description: "Please complete the captcha verification again.",
-            variant: "destructive"
-          });
+          // Show captcha error dialog for reused token errors
+          setShowCaptchaErrorDialog(true);
         } else {
           toast({
             title: "Sign up failed",
@@ -152,6 +150,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
 
   const handleRateLimitDialogClose = () => {
     setShowRateLimitDialog(false);
+    setSubmitting(false);
+  };
+
+  const handleCaptchaErrorDialogClose = () => {
+    setShowCaptchaErrorDialog(false);
     setSubmitting(false);
   };
   
@@ -266,6 +269,33 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           <AlertDialogFooter>
             <AlertDialogAction onClick={handleRateLimitDialogClose}>
               OK, I'll Try Later
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Captcha Error Dialog */}
+      <AlertDialog open={showCaptchaErrorDialog} onOpenChange={setShowCaptchaErrorDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Captcha Verification Failed</AlertDialogTitle>
+            <AlertDialogDescription>
+              <p className="mb-4">
+                The captcha verification has expired or has already been used. This can happen if:
+              </p>
+              <ul className="list-disc pl-5 mb-4 space-y-1">
+                <li>You've waited too long after verifying the captcha</li>
+                <li>You've attempted to submit the form multiple times</li>
+                <li>Your browser has cached an old verification token</li>
+              </ul>
+              <p>
+                Please complete the captcha verification again and then try creating your account.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleCaptchaErrorDialogClose}>
+              Try Again
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
