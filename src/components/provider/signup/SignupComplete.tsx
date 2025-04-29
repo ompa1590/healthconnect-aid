@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
-import { CheckCircle, ArrowRight } from "lucide-react";
+import { CheckCircle, ArrowRight, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import CaptchaComponent from "@/components/auth/CaptchaComponent";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TermsDialog, PrivacyDialog } from "@/components/signup/LegalPopups";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,16 +31,24 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showRateLimitDialog, setShowRateLimitDialog] = useState(false);
   const [showCaptchaErrorDialog, setShowCaptchaErrorDialog] = useState(false);
-  const [captchaInstanceId, setCaptchaInstanceId] = useState(() => `captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
-  const captchaElementId = useRef(`captcha-element-${Date.now()}`).current;
+  
+  // Generate a unique instance ID for the captcha component
+  const [captchaInstanceId, setCaptchaInstanceId] = useState(() => 
+    `provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+  );
+  
+  // Create a unique ID for the captcha element container
+  const captchaElementId = useRef(`provider-captcha-element-${Date.now()}`).current;
   
   // Reset captcha with a completely new instance
   const resetCaptcha = useCallback(() => {
     setCaptchaToken(null);
-    setCaptchaInstanceId(`captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
+    // Generate a new instance ID to force remounting the captcha
+    setCaptchaInstanceId(`provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
   }, []);
   
   // Handle captcha verification
@@ -50,29 +59,22 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   
   const handleCreateAccount = async () => {
     if (!captchaToken) {
-      toast({
-        title: "Verification required",
-        description: "Please complete the captcha verification.",
-        variant: "destructive"
-      });
+      setError("Please complete the captcha verification.");
       return;
     }
     
     if (!agreedToTerms) {
-      toast({
-        title: "Terms agreement required",
-        description: "You must agree to the Terms & Conditions and Privacy Policy.",
-        variant: "destructive"
-      });
+      setError("You must agree to the Terms & Conditions and Privacy Policy.");
       return;
     }
     
     setSubmitting(true);
+    setError(null);
     
     try {
       console.log("Starting signup with captcha token");
       
-      // Attempt to sign up the provider
+      // Attempt to sign up the provider with minimal delay after captcha verification
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -109,6 +111,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           // Show captcha error dialog for reused token errors
           setShowCaptchaErrorDialog(true);
         } else {
+          setError(error.message || "There was an error creating your account. Please try again.");
           toast({
             title: "Sign up failed",
             description: error.message,
@@ -138,6 +141,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       });
       
       resetCaptcha();
+      setError(error.message || "An unexpected error occurred. Please try again.");
       setSubmitting(false);
     }
   };
@@ -173,6 +177,12 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             Thank you, Dr. {formData.lastName}, for registering with Vyra Health!
           </p>
         </div>
+        
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         
         <div className="bg-muted/30 p-4 rounded-md text-left">
           <p className="text-sm font-medium mb-2">Next Steps:</p>
@@ -228,7 +238,12 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           className={`w-full mt-6 ${captchaToken && agreedToTerms ? 'bg-green-600 hover:bg-green-700' : ''}`}
           disabled={!captchaToken || !agreedToTerms || submitting}
         >
-          {submitting ? "Creating Account..." : "Create Account"} 
+          {submitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating Account...
+            </>
+          ) : "Create Account"} 
           {!submitting && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </div>

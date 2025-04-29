@@ -36,8 +36,6 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
 
   // Load hCaptcha script if needed
   useEffect(() => {
-    let scriptElement: HTMLScriptElement | null = null;
-    
     const loadCaptchaScript = () => {
       if (document.getElementById('hcaptcha-script')) {
         return Promise.resolve();
@@ -54,13 +52,13 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
         script.onerror = reject;
         
         document.head.appendChild(script);
-        scriptElement = script;
       });
     };
     
-    return () => {
-      // We don't remove the script on unmount as other components might use it
-    };
+    loadCaptchaScript();
+    
+    // We don't remove the script on unmount as other components might use it
+    return () => {};
   }, []);
 
   // Handle captcha widget rendering and cleanup
@@ -109,10 +107,14 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       if (!window.hcaptcha) return;
       
       try {
-        // Make sure the container exists
-        const container = document.getElementById(captchaId);
-        if (!container) {
+        // Check if container exists in DOM before rendering
+        const containerElement = document.getElementById(captchaId);
+        if (!containerElement) {
           console.warn("Captcha container not found:", captchaId);
+          // Create the container if it doesn't exist
+          const newContainer = document.createElement('div');
+          newContainer.id = captchaId;
+          document.getElementById(captchaId.split('-')[0] + '-element')?.appendChild(newContainer);
           return;
         }
         
@@ -161,10 +163,14 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       }
     };
     
-    initCaptcha();
+    // Add a small delay to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      initCaptcha();
+    }, 50);
     
     // Clean up on unmount or re-render
     return () => {
+      clearTimeout(timeoutId);
       mountedRef.current = false;
       safelyRemoveWidget();
     };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,12 +36,20 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showRateLimitDialog, setShowRateLimitDialog] = useState(false);
   const [showCaptchaErrorDialog, setShowCaptchaErrorDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [captchaInstanceId, setCaptchaInstanceId] = useState(() => `patient-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
+  
+  // Generate a truly unique captcha instance ID that changes on component mount and reset
+  const [captchaInstanceId, setCaptchaInstanceId] = useState(() => 
+    `patient-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+  );
+  
+  // Unique element ID for the captcha container
   const captchaElementId = useRef(`patient-captcha-element-${Date.now()}`).current;
   
+  // Reset captcha function to generate a completely new instance
   const resetCaptcha = useCallback(() => {
     setCaptchaToken(null);
     setCaptchaVerified(false);
+    // Generate a completely new instance ID to force remounting the captcha
     setCaptchaInstanceId(`patient-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
   }, []);
   
@@ -144,6 +151,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       console.log("Starting signup with captcha token");
       
+      // Immediately attempt signup without delay after captcha verification
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -181,6 +189,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         throw new Error("Failed to create user account");
       }
       
+      // Handle profile and document uploads as before
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -289,6 +298,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </Alert>
       )}
       
+      {/* Display document information if available */}
       {formData.documents && formData.documents.length > 0 && (
         <div className="bg-muted/20 p-4 rounded-lg border border-border/30 my-4 text-left">
           <div className="flex items-center mb-2">
@@ -306,6 +316,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </div>
       )}
       
+      {/* Upload progress indicator */}
       {uploadProgress > 0 && uploadProgress < 100 && (
         <div className="w-full bg-muted/30 h-2 rounded-full mt-2">
           <div 
@@ -344,6 +355,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           Please complete the security check below to verify you're human.
         </p>
         
+        {/* Each captcha gets a completely unique ID and container */}
         <div className="flex justify-center mb-4" id={captchaElementId} key={`captcha-wrapper-${captchaInstanceId}`}>
           <CaptchaComponent 
             captchaId={`signup-captcha-${captchaInstanceId}`}
