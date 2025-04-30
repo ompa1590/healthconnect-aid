@@ -16,7 +16,6 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
   const captchaRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<number | null>(null);
   const mountedRef = useRef(true);
-  const [renderKey, setRenderKey] = useState(Date.now()); // Force re-render key
   
   // Define window function for hCaptcha callback
   useEffect(() => {
@@ -98,7 +97,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       widgetIdRef.current = null;
     };
     
-    // Render captcha widget
+    // Render captcha widget with minimal delay
     const renderCaptchaWidget = () => {
       // Clean up any existing widget first
       safelyRemoveWidget();
@@ -108,17 +107,12 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       
       try {
         // Check if container exists in DOM before rendering
-        const containerElement = document.getElementById(captchaId);
-        if (!containerElement) {
+        if (!document.getElementById(captchaId)) {
           console.warn("Captcha container not found:", captchaId);
-          // Create the container if it doesn't exist
-          const newContainer = document.createElement('div');
-          newContainer.id = captchaId;
-          document.getElementById(captchaId.split('-')[0] + '-element')?.appendChild(newContainer);
           return;
         }
         
-        // Render new widget
+        // Render new widget immediately
         const widgetId = window.hcaptcha.render(captchaId, {
           sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
           callback: callbackName,
@@ -138,22 +132,22 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       }
     };
     
-    // Execute rendering flow
+    // Execute rendering flow with minimal delay
     const initCaptcha = async () => {
       try {
         await ensureHCaptchaScript();
         
-        // Wait for hCaptcha to initialize
+        // Wait for hCaptcha to initialize - but not too long
         if (!window.hcaptcha) {
           const checkInterval = setInterval(() => {
             if (window.hcaptcha) {
               clearInterval(checkInterval);
               renderCaptchaWidget();
             }
-          }, 100);
+          }, 50); // Check more frequently
           
-          // Don't wait forever
-          setTimeout(() => clearInterval(checkInterval), 5000);
+          // Don't wait forever - maximum 2 seconds
+          setTimeout(() => clearInterval(checkInterval), 2000);
         } else {
           renderCaptchaWidget();
         }
@@ -163,23 +157,15 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       }
     };
     
-    // Add a small delay to ensure DOM is ready
-    const timeoutId = setTimeout(() => {
-      initCaptcha();
-    }, 50);
+    // Minimal delay to ensure DOM is ready
+    initCaptcha();
     
     // Clean up on unmount or re-render
     return () => {
-      clearTimeout(timeoutId);
       mountedRef.current = false;
       safelyRemoveWidget();
     };
-  }, [captchaId, callbackName, renderKey]);
-  
-  // Method to force re-render the captcha
-  const refreshCaptcha = () => {
-    setRenderKey(Date.now());
-  };
+  }, [captchaId, callbackName]);
 
   return (
     <div className="captcha-container">
@@ -187,7 +173,6 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
         id={captchaId} 
         ref={captchaRef}
         className="h-[78px] min-w-[300px] flex items-center justify-center border border-border/20 rounded-md"
-        key={`captcha-container-${renderKey}`}
       >
         {isLoading && (
           <div className="text-sm text-muted-foreground animate-pulse">

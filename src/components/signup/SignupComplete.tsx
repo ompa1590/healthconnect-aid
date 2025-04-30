@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -79,6 +80,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   };
 
   const uploadDocuments = async (userId: string) => {
+    // Optimized document upload function - only proceed if there are documents
     const files = formData.documentFiles || [];
     if (files.length === 0) return [];
     
@@ -151,8 +153,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       console.log("Starting signup with captcha token");
       
-      // Immediately attempt signup without delay after captcha verification
-      const { data, error } = await supabase.auth.signUp({
+      // Store signup data to minimize processing delay
+      const signupData = {
         email: formData.email,
         password: formData.password,
         options: {
@@ -161,7 +163,10 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           },
           captchaToken: captchaToken,
         },
-      });
+      };
+      
+      // Immediately attempt signup without delay after validation
+      const { data, error } = await supabase.auth.signUp(signupData);
       
       if (error) {
         console.error("Error during signup:", error);
@@ -189,7 +194,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         throw new Error("Failed to create user account");
       }
       
-      // Handle profile and document uploads as before
+      // Do profile updates after successful signup
       const { error: profileError } = await supabase
         .from('profiles')
         .update({

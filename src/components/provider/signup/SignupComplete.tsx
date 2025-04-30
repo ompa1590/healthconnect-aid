@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight, Loader2 } from "lucide-react";
@@ -52,10 +52,10 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   }, []);
   
   // Handle captcha verification
-  const handleCaptchaVerify = (token: string) => {
+  const handleCaptchaVerify = useCallback((token: string) => {
     console.log("Captcha verified, got new token");
     setCaptchaToken(token);
-  };
+  }, []);
   
   const handleCreateAccount = async () => {
     if (!captchaToken) {
@@ -74,8 +74,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     try {
       console.log("Starting signup with captcha token");
       
-      // Attempt to sign up the provider with minimal delay after captcha verification
-      const { data, error } = await supabase.auth.signUp({
+      // Store signup data to minimize processing time
+      const signupData = {
         email: formData.email,
         password: formData.password,
         options: {
@@ -94,7 +94,10 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           },
           captchaToken: captchaToken
         }
-      });
+      };
+      
+      // Immediate signup attempt after validation - minimize delay
+      const { data, error } = await supabase.auth.signUp(signupData);
       
       if (error) {
         console.error("Error during sign up:", error);
