@@ -34,7 +34,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showRateLimitDialog, setShowRateLimitDialog] = useState(false);
   const [showCaptchaErrorDialog, setShowCaptchaErrorDialog] = useState(false);
-  const [captchaKey, setCaptchaKey] = useState<number>(Date.now()); // Add key to force re-render of captcha
+  const [captchaKey, setCaptchaKey] = useState<number>(Date.now()); // Add key to force re-render of captch
   const captchaElementId = useRef(`provider-captcha-element-${Date.now()}`).current;
   const signupRequestRef = useRef<AbortController | null>(null);
   
@@ -45,7 +45,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   
   const [captchaInstanceId, setCaptchaInstanceId] = useState(() => getCaptchaInstanceId());
   
-  // Handle captcha verification - get new token and prepare for immediate use
   const handleCaptchaVerify = useCallback((token: string) => {
     console.log("Captcha verified, got new token, ready to submit");
     setCaptchaToken(token);
@@ -111,6 +110,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       if (error) {
         console.error("Error during sign up:", error);
+        console.error("Error details:", JSON.stringify(error));
         
         if (error.message.includes("rate limit") || error.message.includes("429") || 
             error.status === 429 || error.code === "over_email_send_rate_limit") {
@@ -119,6 +119,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           setShowCaptchaErrorDialog(true);
           // Reset captcha immediately on this specific error
           resetCaptcha();
+
         } else {
           setError(error.message || "There was an error creating your account. Please try again.");
           toast({
@@ -206,7 +207,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const handleCaptchaErrorDialogClose = () => {
     setShowCaptchaErrorDialog(false);
     setSubmitting(false);
-    // Captcha already reset when error detected
   };
   
   return (

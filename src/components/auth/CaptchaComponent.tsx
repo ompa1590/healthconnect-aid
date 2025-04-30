@@ -50,7 +50,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       scriptLoadingRef.current = false;
       console.log("hCaptcha script loaded successfully");
       if (mountedRef.current) {
-        renderCaptcha();
+        setTimeout(() => renderCaptcha(), 10); // Small delay to ensure DOM is ready
       }
     };
     
@@ -66,8 +66,14 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
   
   // Render captcha widget with minimal overhead
   const renderCaptcha = () => {
-    if (!mountedRef.current || !window.hcaptcha) {
-      console.warn("Cannot render captcha, either component unmounted or hcaptcha not loaded");
+    if (!mountedRef.current) {
+      console.warn("Cannot render captcha, component unmounted");
+      return;
+    }
+    
+    if (!window.hcaptcha) {
+      console.warn("Cannot render captcha, hcaptcha not loaded");
+      setTimeout(() => loadHCaptchaScript(), 500); // Retry loading
       return;
     }
     
@@ -152,7 +158,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
           clearInterval(checkInterval);
           renderCaptcha();
         }
-      }, 10); // Check frequently (10ms)
+      }, 50); // Check frequently
       
       // Don't wait too long
       setTimeout(() => {
