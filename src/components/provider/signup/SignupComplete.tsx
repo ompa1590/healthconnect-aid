@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight, Loader2 } from "lucide-react";
@@ -41,7 +41,37 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const captchaElementId = useRef(`provider-captcha-element-${Date.now()}`).current;
   const signupRequestRef = useRef<AbortController | null>(null);
   
-  // Handle captcha verification - optimized to reduce state updates
+  // Prepare signup data in advance - this reduces delay between captcha and submission
+  const preparedSignupData = useRef<any>(null);
+  
+  // Update the prepared signup data whenever the form data or captcha token changes
+  useEffect(() => {
+    if (captchaToken) {
+      preparedSignupData.current = {
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            role: 'provider',
+            specialization: formData.specializations ? formData.specializations.join(',') : '',
+            registrationNumber: formData.registrationNumber || '',
+            address: formData.address || '',
+            city: formData.city || '',
+            province: formData.province || '',
+            postalCode: formData.postalCode || '',
+            phoneNumber: formData.phoneNumber || '',
+            isNewUser: true
+          },
+          captchaToken: captchaToken
+        }
+      };
+      console.log("Signup data prepared and ready for submission");
+    }
+  }, [captchaToken, formData]);
+  
+  // Handle captcha verification - optimized to reduce state updates and prepare submission data
   const handleCaptchaVerify = useCallback((token: string) => {
     console.log("Captcha verified, got new token, ready to submit");
     setCaptchaToken(token);
@@ -68,31 +98,33 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setError(null);
     
     try {
-      // Prepare signup data in advance to minimize delay between captcha and submission
-      const signupData = {
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            role: 'provider',
-            specialization: formData.specializations ? formData.specializations.join(',') : '',
-            registrationNumber: formData.registrationNumber || '',
-            address: formData.address || '',
-            city: formData.city || '',
-            province: formData.province || '',
-            postalCode: formData.postalCode || '',
-            phoneNumber: formData.phoneNumber || '',
-            isNewUser: true
-          },
-          captchaToken: captchaToken
-        }
-      };
+      // Use the prepared signup data to minimize delay
+      if (!preparedSignupData.current) {
+        preparedSignupData.current = {
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              role: 'provider',
+              specialization: formData.specializations ? formData.specializations.join(',') : '',
+              registrationNumber: formData.registrationNumber || '',
+              address: formData.address || '',
+              city: formData.city || '',
+              province: formData.province || '',
+              postalCode: formData.postalCode || '',
+              phoneNumber: formData.phoneNumber || '',
+              isNewUser: true
+            },
+            captchaToken: captchaToken
+          }
+        };
+      }
       
-      // Execute signup immediately after data preparation
+      // Execute signup immediately with pre-prepared data
       console.log("Initiating signup request to Supabase...");
-      const { data, error } = await supabase.auth.signUp(signupData);
+      const { data, error } = await supabase.auth.signUp(preparedSignupData.current);
       
       if (error) {
         console.error("Error during sign up:", error);
@@ -112,6 +144,39 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         }
       } else {
         console.log("Provider signup successful:", data);
+        
+        // Update provider_profiles table with additional data
+        if (data.user) {
+          try {
+            const { error: profileError } = await supabase
+              .from('provider_profiles')
+              .insert({
+                id: data.user.id,
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                email: formData.email,
+                phone_number: formData.phoneNumber,
+                address_line1: formData.address,
+                city: formData.city,
+                state: formData.province,
+                zip_code: formData.postalCode,
+                provider_type: formData.providerType,
+                registration_number: formData.registrationNumber,
+                specializations: formData.specializations,
+                availability: formData.availability,
+                date_of_birth: formData.dateOfBirth ? new Date(formData.dateOfBirth).toISOString() : null,
+                biography: formData.biography,
+              });
+              
+            if (profileError) {
+              console.error("Error updating provider profile:", profileError);
+            } else {
+              console.log("Provider profile created successfully");
+            }
+          } catch (profileErr) {
+            console.error("Exception creating provider profile:", profileErr);
+          }
+        }
         
         // Show the success dialog
         setShowSuccessDialog(true);
@@ -150,7 +215,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const handleCaptchaErrorDialogClose = () => {
     setShowCaptchaErrorDialog(false);
     setSubmitting(false);
-    // Generate a new captcha instance to avoid using the same token
+    // Reset captcha token and instance to get a fresh one
     setCaptchaToken(null);
   };
   
@@ -188,11 +253,13 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </div>
         
         <div className="py-4 flex justify-center" id={captchaElementId}>
-          <CaptchaComponent 
-            captchaId={`provider-captcha-${captchaInstanceId}`}
-            onVerify={handleCaptchaVerify}
-            callbackName={`providerCaptchaCallback_${captchaInstanceId}`}
-          />
+          {!captchaToken && (
+            <CaptchaComponent 
+              captchaId={`provider-captcha-${captchaInstanceId}`}
+              onVerify={handleCaptchaVerify}
+              callbackName={`providerCaptchaCallback_${captchaInstanceId}`}
+            />
+          )}
         </div>
         
         {captchaToken && (

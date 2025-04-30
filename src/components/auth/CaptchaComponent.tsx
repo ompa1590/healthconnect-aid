@@ -20,7 +20,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
   
   // Define window function for hCaptcha callback
   useEffect(() => {
-    // Define the callback function on window that hCaptcha will call
+    // Define the callback function directly on window
     window[callbackName] = (token: string) => {
       console.log(`Captcha verified, callback triggered with token`);
       if (mountedRef.current) {
@@ -35,7 +35,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     };
   }, [onVerify, callbackName]);
 
-  // Optimized function to load hCaptcha script
+  // Optimized function to load hCaptcha script with priority
   const loadHCaptchaScript = () => {
     if (scriptLoadingRef.current) return; // Prevent multiple script loads
     
@@ -45,9 +45,11 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     script.src = 'https://hcaptcha.com/1/api.js?render=explicit';
     script.async = true;
     script.defer = true;
+    script.setAttribute('importance', 'high'); // Mark as high priority
     
     script.onload = () => {
       scriptLoadingRef.current = false;
+      console.log("hCaptcha script loaded successfully");
       if (mountedRef.current) {
         renderCaptcha();
       }
@@ -59,25 +61,29 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       setIsLoading(false);
     };
     
+    // Add to head with high priority
     document.head.appendChild(script);
   };
   
   // Render captcha widget with minimal overhead
   const renderCaptcha = () => {
-    if (!mountedRef.current || !window.hcaptcha) return;
-    
-    // Clean up existing widget if any
-    if (widgetIdRef.current !== null) {
-      try {
-        window.hcaptcha.reset(widgetIdRef.current);
-        window.hcaptcha.remove(widgetIdRef.current);
-      } catch (e) {
-        console.warn("Error cleaning up previous captcha:", e);
-      }
-      widgetIdRef.current = null;
+    if (!mountedRef.current || !window.hcaptcha) {
+      console.warn("Cannot render captcha, either component unmounted or hcaptcha not loaded");
+      return;
     }
     
     try {
+      // Clean up existing widget if any
+      if (widgetIdRef.current !== null) {
+        try {
+          window.hcaptcha.reset(widgetIdRef.current);
+          window.hcaptcha.remove(widgetIdRef.current);
+        } catch (e) {
+          console.warn("Error cleaning up previous captcha:", e);
+        }
+        widgetIdRef.current = null;
+      }
+      
       // Get the container element
       const container = document.getElementById(captchaId);
       if (!container) {
@@ -85,6 +91,8 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
         setIsLoading(false);
         return;
       }
+      
+      console.log(`Rendering captcha in container ${captchaId}`);
       
       // Render captcha widget immediately
       const widgetId = window.hcaptcha.render(captchaId, {
@@ -98,14 +106,16 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       
       widgetIdRef.current = widgetId;
       setIsLoading(false);
+      console.log(`Captcha widget rendered with ID: ${widgetId}`);
     } catch (e) {
       console.error("Error rendering captcha widget:", e);
       setIsLoading(false);
     }
   };
 
-  // Handle captcha widget rendering and cleanup - highly optimized version
+  // Handle captcha widget rendering and cleanup - optimized version
   useEffect(() => {
+    console.log(`CaptchaComponent mounted with ID: ${captchaId}`);
     mountedRef.current = true;
     setIsLoading(true);
     
@@ -113,19 +123,22 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     const hCaptchaScript = document.getElementById('hcaptcha-script');
     
     if (!hCaptchaScript) {
-      // Script doesn't exist, load it
+      // Script doesn't exist, load it with high priority
+      console.log("No hCaptcha script found, loading new one");
       loadHCaptchaScript();
     } else if (window.hcaptcha) {
       // Script exists and hCaptcha is loaded, render immediately
+      console.log("hCaptcha already loaded, rendering captcha immediately");
       renderCaptcha();
     } else {
       // Script exists but hCaptcha not loaded yet, wait for it
+      console.log("hCaptcha script exists but not initialized, waiting");
       const checkInterval = setInterval(() => {
         if (window.hcaptcha) {
           clearInterval(checkInterval);
           renderCaptcha();
         }
-      }, 10); // Check more frequently (10ms vs previous 50ms)
+      }, 10); // Check frequently (10ms)
       
       // Don't wait too long
       setTimeout(() => {
@@ -137,17 +150,19 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
           // Try reloading the script as fallback
           loadHCaptchaScript();
         }
-      }, 1500); // Shorter timeout (1.5s vs previous 2s)
+      }, 1200); // Shorter timeout (1.2s)
     }
     
     // Clean up on unmount
     return () => {
+      console.log(`CaptchaComponent unmounting: ${captchaId}`);
       mountedRef.current = false;
       
       if (widgetIdRef.current !== null && window.hcaptcha) {
         try {
           window.hcaptcha.reset(widgetIdRef.current);
           window.hcaptcha.remove(widgetIdRef.current);
+          console.log(`Cleaned up captcha widget: ${widgetIdRef.current}`);
         } catch (e) {
           console.warn("Error during captcha cleanup on unmount:", e);
         }
