@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
@@ -35,54 +34,28 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showRateLimitDialog, setShowRateLimitDialog] = useState(false);
   const [showCaptchaErrorDialog, setShowCaptchaErrorDialog] = useState(false);
-  const [captchaInstanceId, setCaptchaInstanceId] = useState(() => 
-    `provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-  );
+  const [captchaKey, setCaptchaKey] = useState<number>(Date.now()); // Add key to force re-render of captch
   const captchaElementId = useRef(`provider-captcha-element-${Date.now()}`).current;
   const signupRequestRef = useRef<AbortController | null>(null);
   
-  // Prepare signup data in advance - this reduces delay between captcha and submission
-  const preparedSignupData = useRef<any>(null);
-  
-  // Update the prepared signup data whenever the form data or captcha token changes
-  useEffect(() => {
-    if (captchaToken) {
-      preparedSignupData.current = {
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            role: 'provider',
-            specialization: formData.specializations ? formData.specializations.join(',') : '',
-            registrationNumber: formData.registrationNumber || '',
-            address: formData.address || '',
-            city: formData.city || '',
-            province: formData.province || '',
-            postalCode: formData.postalCode || '',
-            phoneNumber: formData.phoneNumber || '',
-            isNewUser: true
-          },
-          captchaToken: captchaToken
-        }
-      };
-      console.log("Signup data prepared and ready for submission");
-    }
-  }, [captchaToken, formData]);
-  
-  // Reset captcha function to generate a completely new instance
-  const resetCaptcha = useCallback(() => {
-    setCaptchaToken(null);
-    // Generate a completely new instance ID to force remounting the captcha
-    setCaptchaInstanceId(`provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
+  // Create a unique ID for each captcha instance
+  const getCaptchaInstanceId = useCallback(() => {
+    return `provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   }, []);
   
-  // Handle captcha verification - optimized to reduce state updates and prepare submission data
+  const [captchaInstanceId, setCaptchaInstanceId] = useState(() => getCaptchaInstanceId());
+  
   const handleCaptchaVerify = useCallback((token: string) => {
     console.log("Captcha verified, got new token, ready to submit");
     setCaptchaToken(token);
   }, []);
+  
+  // Reset captcha completely - generates new instance and forces re-render
+  const resetCaptcha = useCallback(() => {
+    setCaptchaToken(null);
+    setCaptchaInstanceId(getCaptchaInstanceId());
+    setCaptchaKey(Date.now());
+  }, [getCaptchaInstanceId]);
   
   const handleCreateAccount = async () => {
     if (!captchaToken) {
@@ -105,36 +78,35 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setError(null);
     
     try {
-      // Use the prepared signup data to minimize delay
-      if (!preparedSignupData.current) {
-        preparedSignupData.current = {
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              role: 'provider',
-              specialization: formData.specializations ? formData.specializations.join(',') : '',
-              registrationNumber: formData.registrationNumber || '',
-              address: formData.address || '',
-              city: formData.city || '',
-              province: formData.province || '',
-              postalCode: formData.postalCode || '',
-              phoneNumber: formData.phoneNumber || '',
-              isNewUser: true
-            },
-            captchaToken: captchaToken
-          }
-        };
-      }
+      // Create signup data using the current token
+      const signupData = {
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            role: 'provider',
+            specialization: formData.specializations ? formData.specializations.join(',') : '',
+            registrationNumber: formData.registrationNumber || '',
+            address: formData.address || '',
+            city: formData.city || '',
+            province: formData.province || '',
+            postalCode: formData.postalCode || '',
+            phoneNumber: formData.phoneNumber || '',
+            isNewUser: true
+          },
+          captchaToken: captchaToken // Use the fresh token directly
+        }
+      };
       
-      // Execute signup immediately with pre-prepared data
+      // Execute signup immediately
       console.log("Initiating signup request to Supabase...");
-      console.log("Using captcha token:", captchaToken.substring(0, 10) + "...");
+      const { data, error } = await supabase.auth.signUp(signupData);
       
-      // Add explicit headers to ensure proper authentication
-      const { data, error } = await supabase.auth.signUp(preparedSignupData.current);
+      // Important: Immediately invalidate the captcha token after use
+      // This prevents accidental reuse of the same token
+      setCaptchaToken(null);
       
       if (error) {
         console.error("Error during sign up:", error);
@@ -145,7 +117,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           setShowRateLimitDialog(true);
         } else if (error.message.includes("already-seen-response") || error.message.includes("captcha")) {
           setShowCaptchaErrorDialog(true);
-          resetCaptcha(); // Reset captcha on captcha-related errors
+          // Reset captcha immediately on this specific error
+          resetCaptcha();
+
         } else {
           setError(error.message || "There was an error creating your account. Please try again.");
           toast({
@@ -153,7 +127,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             description: error.message,
             variant: "destructive"
           });
-          resetCaptcha(); // Reset captcha on other errors too
+          // Also reset captcha on general errors
+          resetCaptcha();
         }
       } else {
         console.log("Provider signup successful:", data);
@@ -209,7 +184,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       });
       
       setError(error.message || "An unexpected error occurred. Please try again.");
-      resetCaptcha(); // Reset captcha on unexpected errors
+      // Reset captcha on unexpected errors too
+      resetCaptcha();
     } finally {
       setSubmitting(false);
       signupRequestRef.current = null;
@@ -224,13 +200,13 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const handleRateLimitDialogClose = () => {
     setShowRateLimitDialog(false);
     setSubmitting(false);
-    resetCaptcha(); // Reset captcha when rate limited
+    // Reset captcha when closing rate limit dialog
+    resetCaptcha();
   };
 
   const handleCaptchaErrorDialogClose = () => {
     setShowCaptchaErrorDialog(false);
     setSubmitting(false);
-    resetCaptcha(); // Reset captcha to get a fresh one
   };
   
   return (
@@ -269,6 +245,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         <div className="py-4 flex justify-center" id={captchaElementId}>
           {!captchaToken && (
             <CaptchaComponent 
+              key={captchaKey} // Important: Use the key to force re-render
               captchaId={`provider-captcha-${captchaInstanceId}`}
               onVerify={handleCaptchaVerify}
               callbackName={`providerCaptchaCallback_${captchaInstanceId}`}
