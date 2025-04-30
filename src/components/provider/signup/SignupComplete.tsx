@@ -39,18 +39,12 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     `provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
   );
   const captchaElementId = useRef(`provider-captcha-element-${Date.now()}`).current;
+  const signupRequestRef = useRef<AbortController | null>(null);
   
-  // Handle captcha verification
+  // Handle captcha verification - optimized to reduce state updates
   const handleCaptchaVerify = useCallback((token: string) => {
-    console.log("Captcha verified, got new token");
+    console.log("Captcha verified, got new token, ready to submit");
     setCaptchaToken(token);
-  }, []);
-  
-  // Reset captcha with a completely new instance (not used in this optimization but kept for reference)
-  const resetCaptcha = useCallback(() => {
-    setCaptchaToken(null);
-    // Note: We're not remounting the captcha here as it would cause delays
-    // Instead, we'll let the user retry with the existing captcha
   }, []);
   
   const handleCreateAccount = async () => {
@@ -64,11 +58,17 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       return;
     }
     
+    // Abort previous signup request if any
+    if (signupRequestRef.current) {
+      signupRequestRef.current.abort();
+    }
+    
+    signupRequestRef.current = new AbortController();
     setSubmitting(true);
     setError(null);
     
     try {
-      // Pre-prepare signup data to minimize processing time
+      // Prepare signup data in advance to minimize delay between captcha and submission
       const signupData = {
         email: formData.email,
         password: formData.password,
@@ -90,7 +90,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         }
       };
       
-      // Execute signup with minimal delay
+      // Execute signup immediately after data preparation
+      console.log("Initiating signup request to Supabase...");
       const { data, error } = await supabase.auth.signUp(signupData);
       
       if (error) {
@@ -109,8 +110,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             variant: "destructive"
           });
         }
-        
-        setSubmitting(false);
       } else {
         console.log("Provider signup successful:", data);
         
@@ -132,7 +131,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       });
       
       setError(error.message || "An unexpected error occurred. Please try again.");
+    } finally {
       setSubmitting(false);
+      signupRequestRef.current = null;
     }
   };
   
@@ -149,6 +150,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const handleCaptchaErrorDialogClose = () => {
     setShowCaptchaErrorDialog(false);
     setSubmitting(false);
+    // Generate a new captcha instance to avoid using the same token
+    setCaptchaToken(null);
   };
   
   return (
