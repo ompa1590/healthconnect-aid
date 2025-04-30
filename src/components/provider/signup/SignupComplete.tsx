@@ -35,26 +35,22 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showRateLimitDialog, setShowRateLimitDialog] = useState(false);
   const [showCaptchaErrorDialog, setShowCaptchaErrorDialog] = useState(false);
-  
-  // Generate a unique instance ID for the captcha component
-  const [captchaInstanceId, setCaptchaInstanceId] = useState(() => 
+  const [captchaInstanceId] = useState(() => 
     `provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
   );
-  
-  // Create a unique ID for the captcha element container
   const captchaElementId = useRef(`provider-captcha-element-${Date.now()}`).current;
-  
-  // Reset captcha with a completely new instance
-  const resetCaptcha = useCallback(() => {
-    setCaptchaToken(null);
-    // Generate a new instance ID to force remounting the captcha
-    setCaptchaInstanceId(`provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
-  }, []);
   
   // Handle captcha verification
   const handleCaptchaVerify = useCallback((token: string) => {
     console.log("Captcha verified, got new token");
     setCaptchaToken(token);
+  }, []);
+  
+  // Reset captcha with a completely new instance (not used in this optimization but kept for reference)
+  const resetCaptcha = useCallback(() => {
+    setCaptchaToken(null);
+    // Note: We're not remounting the captcha here as it would cause delays
+    // Instead, we'll let the user retry with the existing captcha
   }, []);
   
   const handleCreateAccount = async () => {
@@ -72,9 +68,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setError(null);
     
     try {
-      console.log("Starting signup with captcha token");
-      
-      // Store signup data to minimize processing time
+      // Pre-prepare signup data to minimize processing time
       const signupData = {
         email: formData.email,
         password: formData.password,
@@ -96,22 +90,16 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         }
       };
       
-      // Immediate signup attempt after validation - minimize delay
+      // Execute signup with minimal delay
       const { data, error } = await supabase.auth.signUp(signupData);
       
       if (error) {
         console.error("Error during sign up:", error);
         
-        // Always reset captcha on any error
-        resetCaptcha();
-        
-        // Handle specific error types
         if (error.message.includes("rate limit") || error.message.includes("429") || 
             error.status === 429 || error.code === "over_email_send_rate_limit") {
-          // Show rate limit dialog instead of toast for this specific error
           setShowRateLimitDialog(true);
         } else if (error.message.includes("already-seen-response") || error.message.includes("captcha")) {
-          // Show captcha error dialog for reused token errors
           setShowCaptchaErrorDialog(true);
         } else {
           setError(error.message || "There was an error creating your account. Please try again.");
@@ -143,7 +131,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         variant: "destructive"
       });
       
-      resetCaptcha();
       setError(error.message || "An unexpected error occurred. Please try again.");
       setSubmitting(false);
     }
@@ -151,7 +138,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   
   const handleSuccessDialogClose = () => {
     setShowSuccessDialog(false);
-    // Navigate to provider login page
     navigate('/provider-login');
   };
 
@@ -198,15 +184,12 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </ol>
         </div>
         
-        {/* Each captcha gets a completely unique container and ID */}
-        <div className="py-4 flex justify-center">
-          <div id={captchaElementId} key={`captcha-wrapper-${captchaInstanceId}`}>
-            <CaptchaComponent 
-              captchaId={`provider-captcha-${captchaInstanceId}`}
-              onVerify={handleCaptchaVerify}
-              callbackName={`providerCaptchaCallback_${captchaInstanceId}`}
-            />
-          </div>
+        <div className="py-4 flex justify-center" id={captchaElementId}>
+          <CaptchaComponent 
+            captchaId={`provider-captcha-${captchaInstanceId}`}
+            onVerify={handleCaptchaVerify}
+            callbackName={`providerCaptchaCallback_${captchaInstanceId}`}
+          />
         </div>
         
         {captchaToken && (
