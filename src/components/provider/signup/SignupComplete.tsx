@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
@@ -35,37 +34,28 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showRateLimitDialog, setShowRateLimitDialog] = useState(false);
   const [showCaptchaErrorDialog, setShowCaptchaErrorDialog] = useState(false);
-  
-  // Use timestamp to ensure truly unique keys each time
-  const captchaInstanceIdRef = useRef(`provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
-  const captchaCallbackNameRef = useRef(`providerCaptchaCallback_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
-  const [captchaRenderKey, setCaptchaRenderKey] = useState<number>(Date.now());
-  
-  // Track if the current token has been consumed
-  const tokenConsumedRef = useRef(false);
-  
-  // Abort controller for signup request
+  const [captchaKey, setCaptchaKey] = useState<number>(Date.now()); // Add key to force re-render of captch
+  const captchaElementId = useRef(`provider-captcha-element-${Date.now()}`).current;
   const signupRequestRef = useRef<AbortController | null>(null);
   
-  // Reset captcha completely by generating new IDs and keys
-  const resetCaptcha = useCallback(() => {
-    console.log("Resetting captcha completely with new IDs and keys");
-    setCaptchaToken(null);
-    tokenConsumedRef.current = false;
-    captchaInstanceIdRef.current = `provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    captchaCallbackNameRef.current = `providerCaptchaCallback_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    setCaptchaRenderKey(Date.now());
+  // Create a unique ID for each captcha instance
+  const getCaptchaInstanceId = useCallback(() => {
+    return `provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   }, []);
   
-  // Handle captcha verification
+  const [captchaInstanceId, setCaptchaInstanceId] = useState(() => getCaptchaInstanceId());
+  
   const handleCaptchaVerify = useCallback((token: string) => {
     console.log("Captcha verified, got new token, ready to submit");
-    // Only set token if not already consumed
-    if (!tokenConsumedRef.current) {
-      setCaptchaToken(token);
-      tokenConsumedRef.current = false;
-    }
+    setCaptchaToken(token);
   }, []);
+  
+  // Reset captcha completely - generates new instance and forces re-render
+  const resetCaptcha = useCallback(() => {
+    setCaptchaToken(null);
+    setCaptchaInstanceId(getCaptchaInstanceId());
+    setCaptchaKey(Date.now());
+  }, [getCaptchaInstanceId]);
   
   const handleCreateAccount = async () => {
     if (!captchaToken) {
@@ -77,17 +67,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       setError("You must agree to the Terms & Conditions and Privacy Policy.");
       return;
     }
-    
-    // Ensure we don't reuse a token
-    if (tokenConsumedRef.current) {
-      setError("Captcha token has already been used. Please verify again.");
-      resetCaptcha();
-      return;
-    }
-    
-    // Mark token as consumed immediately
-    const currentToken = captchaToken;
-    tokenConsumedRef.current = true;
     
     // Abort previous signup request if any
     if (signupRequestRef.current) {
@@ -117,7 +96,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             phoneNumber: formData.phoneNumber || '',
             isNewUser: true
           },
-          captchaToken: currentToken // Use captured token, not the state
+          captchaToken: captchaToken // Use the fresh token directly
         }
       };
       
@@ -125,7 +104,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       console.log("Initiating signup request to Supabase...");
       const { data, error } = await supabase.auth.signUp(signupData);
       
-      // Immediately invalidate token in UI
+      // Important: Immediately invalidate the captcha token after use
+      // This prevents accidental reuse of the same token
       setCaptchaToken(null);
       
       if (error) {
@@ -137,8 +117,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           setShowRateLimitDialog(true);
         } else if (error.message.includes("already-seen-response") || error.message.includes("captcha")) {
           setShowCaptchaErrorDialog(true);
-          // Reset captcha immediately
+          // Reset captcha immediately on this specific error
           resetCaptcha();
+
         } else {
           setError(error.message || "There was an error creating your account. Please try again.");
           toast({
@@ -146,7 +127,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             description: error.message,
             variant: "destructive"
           });
-          // Reset captcha on general errors
+          // Also reset captcha on general errors
           resetCaptcha();
         }
       } else {
@@ -203,6 +184,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       });
       
       setError(error.message || "An unexpected error occurred. Please try again.");
+      // Reset captcha on unexpected errors too
       resetCaptcha();
     } finally {
       setSubmitting(false);
@@ -214,13 +196,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setShowSuccessDialog(false);
     navigate('/provider-login');
   };
-  
+
   const handleRateLimitDialogClose = () => {
     setShowRateLimitDialog(false);
     setSubmitting(false);
+    // Reset captcha when closing rate limit dialog
     resetCaptcha();
   };
-  
+
   const handleCaptchaErrorDialogClose = () => {
     setShowCaptchaErrorDialog(false);
     setSubmitting(false);
@@ -259,20 +242,22 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </ol>
         </div>
         
-        <div className="py-4 flex justify-center">
-          {!captchaToken ? (
+        <div className="py-4 flex justify-center" id={captchaElementId}>
+          {!captchaToken && (
             <CaptchaComponent 
-              key={captchaRenderKey} // Use dynamic key to force complete re-rendering
-              captchaId={captchaInstanceIdRef.current}
+              key={captchaKey} // Important: Use the key to force re-render
+              captchaId={`provider-captcha-${captchaInstanceId}`}
               onVerify={handleCaptchaVerify}
-              callbackName={captchaCallbackNameRef.current}
+              callbackName={`providerCaptchaCallback_${captchaInstanceId}`}
             />
-          ) : (
-            <div className="text-sm text-green-500 flex items-center justify-center">
-              <CheckCircle className="h-4 w-4 mr-1" /> Verification complete
-            </div>
           )}
         </div>
+        
+        {captchaToken && (
+          <div className="text-sm text-green-500 flex items-center justify-center">
+            <CheckCircle className="h-4 w-4 mr-1" /> Verification complete
+          </div>
+        )}
         
         <div className="flex items-center space-x-2 mb-6">
           <Checkbox 
@@ -326,7 +311,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
       {/* Rate Limit Dialog */}
       <AlertDialog open={showRateLimitDialog} onOpenChange={setShowRateLimitDialog}>
         <AlertDialogContent>
@@ -350,7 +335,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
       {/* Captcha Error Dialog */}
       <AlertDialog open={showCaptchaErrorDialog} onOpenChange={setShowCaptchaErrorDialog}>
         <AlertDialogContent>
