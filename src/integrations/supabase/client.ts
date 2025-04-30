@@ -18,30 +18,13 @@ export const supabase = createClient<Database>(
       autoRefreshToken: true,
       detectSessionInUrl: true,
       persistSession: true,
-      storage: {
-        getItem: (key) => {
-          try {
-            return localStorage.getItem(key);
-          } catch (error) {
-            console.error('Error accessing localStorage:', error);
-            return null;
-          }
-        },
-        setItem: (key, value) => {
-          try {
-            localStorage.setItem(key, value);
-          } catch (error) {
-            console.error('Error setting localStorage:', error);
-          }
-        },
-        removeItem: (key) => {
-          try {
-            localStorage.removeItem(key);
-          } catch (error) {
-            console.error('Error removing from localStorage:', error);
-          }
-        }
-      }
+      storage: localStorage
+    },
+    global: {
+      headers: {
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
+        'Content-Type': 'application/json'
+      },
     }
   }
 );

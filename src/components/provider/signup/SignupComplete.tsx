@@ -35,7 +35,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showRateLimitDialog, setShowRateLimitDialog] = useState(false);
   const [showCaptchaErrorDialog, setShowCaptchaErrorDialog] = useState(false);
-  const [captchaInstanceId] = useState(() => 
+  const [captchaInstanceId, setCaptchaInstanceId] = useState(() => 
     `provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
   );
   const captchaElementId = useRef(`provider-captcha-element-${Date.now()}`).current;
@@ -70,6 +70,13 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       console.log("Signup data prepared and ready for submission");
     }
   }, [captchaToken, formData]);
+  
+  // Reset captcha function to generate a completely new instance
+  const resetCaptcha = useCallback(() => {
+    setCaptchaToken(null);
+    // Generate a completely new instance ID to force remounting the captcha
+    setCaptchaInstanceId(`provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
+  }, []);
   
   // Handle captcha verification - optimized to reduce state updates and prepare submission data
   const handleCaptchaVerify = useCallback((token: string) => {
@@ -124,16 +131,21 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       // Execute signup immediately with pre-prepared data
       console.log("Initiating signup request to Supabase...");
+      console.log("Using captcha token:", captchaToken.substring(0, 10) + "...");
+      
+      // Add explicit headers to ensure proper authentication
       const { data, error } = await supabase.auth.signUp(preparedSignupData.current);
       
       if (error) {
         console.error("Error during sign up:", error);
+        console.error("Error details:", JSON.stringify(error));
         
         if (error.message.includes("rate limit") || error.message.includes("429") || 
             error.status === 429 || error.code === "over_email_send_rate_limit") {
           setShowRateLimitDialog(true);
         } else if (error.message.includes("already-seen-response") || error.message.includes("captcha")) {
           setShowCaptchaErrorDialog(true);
+          resetCaptcha(); // Reset captcha on captcha-related errors
         } else {
           setError(error.message || "There was an error creating your account. Please try again.");
           toast({
@@ -141,6 +153,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             description: error.message,
             variant: "destructive"
           });
+          resetCaptcha(); // Reset captcha on other errors too
         }
       } else {
         console.log("Provider signup successful:", data);
@@ -196,6 +209,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       });
       
       setError(error.message || "An unexpected error occurred. Please try again.");
+      resetCaptcha(); // Reset captcha on unexpected errors
     } finally {
       setSubmitting(false);
       signupRequestRef.current = null;
@@ -210,13 +224,13 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const handleRateLimitDialogClose = () => {
     setShowRateLimitDialog(false);
     setSubmitting(false);
+    resetCaptcha(); // Reset captcha when rate limited
   };
 
   const handleCaptchaErrorDialogClose = () => {
     setShowCaptchaErrorDialog(false);
     setSubmitting(false);
-    // Reset captcha token and instance to get a fresh one
-    setCaptchaToken(null);
+    resetCaptcha(); // Reset captcha to get a fresh one
   };
   
   return (
