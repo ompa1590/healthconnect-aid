@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 
 interface CaptchaComponentProps {
@@ -84,23 +83,37 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
         widgetIdRef.current = null;
       }
       
-      // Get the container element
+      // Get the container element - Make sure we use the ID specifically
       const container = document.getElementById(captchaId);
       if (!container) {
-        console.warn("Captcha container not found:", captchaId);
+        console.warn(`Captcha container not found with ID: ${captchaId}`);
         setIsLoading(false);
         return;
       }
       
       console.log(`Rendering captcha in container ${captchaId}`);
       
-      // Render captcha widget immediately
+      // Render captcha widget immediately with a fresh instance
       const widgetId = window.hcaptcha.render(captchaId, {
         sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
         callback: callbackName,
         'error-callback': () => {
           console.error("hCaptcha widget encountered an error");
           if (mountedRef.current) setIsLoading(false);
+        },
+        'expired-callback': () => {
+          // Handle token expiration
+          console.log("Captcha token expired");
+          if (mountedRef.current) {
+            // Reset the widget to force a new token
+            if (widgetIdRef.current !== null) {
+              try {
+                window.hcaptcha.reset(widgetIdRef.current);
+              } catch (e) {
+                console.warn("Error resetting expired captcha:", e);
+              }
+            }
+          }
         }
       });
       
@@ -129,7 +142,8 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     } else if (window.hcaptcha) {
       // Script exists and hCaptcha is loaded, render immediately
       console.log("hCaptcha already loaded, rendering captcha immediately");
-      renderCaptcha();
+      // Small timeout to ensure DOM is ready
+      setTimeout(() => renderCaptcha(), 10);
     } else {
       // Script exists but hCaptcha not loaded yet, wait for it
       console.log("hCaptcha script exists but not initialized, waiting");
@@ -150,7 +164,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
           // Try reloading the script as fallback
           loadHCaptchaScript();
         }
-      }, 1200); // Shorter timeout (1.2s)
+      }, 2000); // Longer timeout (2s) to give more chance for script to load
     }
     
     // Clean up on unmount
