@@ -19,9 +19,11 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
   
   // Define window function for hCaptcha callback
   useEffect(() => {
+    console.log(`Registering captcha callback with name: ${callbackName}`);
+    
     // Define the callback function on window that hCaptcha will call
     window[callbackName] = (token: string) => {
-      console.log(`Captcha verified with token:`, token);
+      console.log(`Captcha verified with callback: ${callbackName}, token received`);
       if (mountedRef.current) {
         onVerify(token);
       }
@@ -29,6 +31,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     
     // Clean up when component unmounts
     return () => {
+      console.log(`Removing captcha callback: ${callbackName}`);
       delete window[callbackName];
     };
   }, [onVerify, callbackName]);
@@ -41,7 +44,15 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     // Inner function to render captcha
     const renderCaptcha = () => {
       // Only proceed if component is still mounted and container exists
-      if (!mountedRef.current || !captchaRef.current) return;
+      if (!mountedRef.current) {
+        console.log(`Component unmounted before captcha could render`);
+        return;
+      }
+      
+      if (!captchaRef.current) {
+        console.log(`Captcha container not found: ${captchaId}`);
+        return;
+      }
       
       if (window.hcaptcha) {
         try {
@@ -53,6 +64,8 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
               console.log("Error resetting captcha:", error);
             }
           }
+          
+          console.log(`Rendering hCaptcha with ID: ${captchaId}, callback: ${callbackName}`);
           
           // Render a new captcha widget
           const widgetId = window.hcaptcha.render(captchaId, {
@@ -79,6 +92,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
         }
       } else {
         // If hCaptcha isn't loaded yet, try again after a delay
+        console.log("hCaptcha not loaded yet, retrying in 500ms");
         setTimeout(renderCaptcha, 500);
       }
     };
@@ -87,10 +101,12 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     const loadCaptchaScript = () => {
       if (document.getElementById('hcaptcha-script')) {
         // Script already exists, just try to render the captcha
+        console.log("hCaptcha script already exists, rendering captcha");
         renderCaptcha();
         return;
       }
       
+      console.log("Loading hCaptcha script");
       const script = document.createElement('script');
       script.id = 'hcaptcha-script';
       script.src = 'https://hcaptcha.com/1/api.js?render=explicit';

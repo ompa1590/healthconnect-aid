@@ -31,20 +31,25 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
+  
+  // Generate a unique captcha ID and callback name for this instance
+  const [captchaKey, setCaptchaKey] = useState(() => Date.now().toString());
+  const captchaId = `provider-signup-captcha-${captchaKey}`;
+  const callbackName = `handleProviderSignupCaptcha${captchaKey}`;
   
   // Refresh the captcha when the component mounts or when we need a fresh token
   useEffect(() => {
-    setCaptchaKey(Date.now().toString());
-  }, []);
+    console.log(`Provider signup using captcha ID: ${captchaId}, callback: ${callbackName}`);
+  }, [captchaId, callbackName]);
   
   const handleCaptchaVerify = (token: string) => {
-    console.log("Captcha verified, setting token:", token);
+    console.log("Captcha verified in provider signup, setting token:", token);
     setCaptchaToken(token);
   };
   
   const resetCaptcha = () => {
     // Generate a new captcha key to force a complete re-render
+    console.log("Resetting captcha in provider signup");
     setCaptchaKey(Date.now().toString());
     setCaptchaToken(null);
   };
@@ -71,6 +76,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setSubmitting(true);
     
     try {
+      console.log("Attempting to sign up provider with captcha token");
+      
       // Attempt to sign up the provider
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -163,9 +170,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         <div className="py-4 flex justify-center">
           <CaptchaComponent 
-            captchaId={`provider-signup-captcha-${captchaKey}`}
+            captchaId={captchaId}
             onVerify={handleCaptchaVerify}
-            callbackName={`handleProviderSignupCaptcha${captchaKey}`}
+            callbackName={callbackName}
           />
         </div>
         
