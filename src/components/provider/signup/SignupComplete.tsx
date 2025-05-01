@@ -1,15 +1,14 @@
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
-import { CheckCircle, ArrowRight, Loader2 } from "lucide-react";
+import { CheckCircle, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import CaptchaComponent from "@/components/auth/CaptchaComponent";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TermsDialog, PrivacyDialog } from "@/components/signup/LegalPopups";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,76 +30,49 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [showRateLimitDialog, setShowRateLimitDialog] = useState(false);
-  const [showCaptchaErrorDialog, setShowCaptchaErrorDialog] = useState(false);
+  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   
-  // Use timestamp to ensure truly unique keys each time
-  const captchaInstanceIdRef = useRef(`provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
-  const captchaCallbackNameRef = useRef(`providerCaptchaCallback_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
-  const [captchaRenderKey, setCaptchaRenderKey] = useState<number>(Date.now());
+  // Refresh the captcha when the component mounts or when we need a fresh token
+  useEffect(() => {
+    setCaptchaKey(Date.now().toString());
+  }, []);
   
-  // Track if the current token has been consumed
-  const tokenConsumedRef = useRef(false);
+  const handleCaptchaVerify = (token: string) => {
+    console.log("Captcha verified, setting token:", token);
+    setCaptchaToken(token);
+  };
   
-  // Abort controller for signup request
-  const signupRequestRef = useRef<AbortController | null>(null);
-  
-  // Reset captcha completely by generating new IDs and keys
-  const resetCaptcha = useCallback(() => {
-    console.log("Resetting captcha completely with new IDs and keys");
+  const resetCaptcha = () => {
+    // Generate a new captcha key to force a complete re-render
+    setCaptchaKey(Date.now().toString());
     setCaptchaToken(null);
-    tokenConsumedRef.current = false;
-    captchaInstanceIdRef.current = `provider-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    captchaCallbackNameRef.current = `providerCaptchaCallback_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    setCaptchaRenderKey(Date.now());
-  }, []);
-  
-  // Handle captcha verification
-  const handleCaptchaVerify = useCallback((token: string) => {
-    console.log("Captcha verified, got new token, ready to submit");
-    // Only set token if not already consumed
-    if (!tokenConsumedRef.current) {
-      setCaptchaToken(token);
-      tokenConsumedRef.current = false;
-    }
-  }, []);
+  };
   
   const handleCreateAccount = async () => {
     if (!captchaToken) {
-      setError("Please complete the captcha verification.");
+      toast({
+        title: "Verification required",
+        description: "Please complete the captcha verification.",
+        variant: "destructive"
+      });
       return;
     }
     
     if (!agreedToTerms) {
-      setError("You must agree to the Terms & Conditions and Privacy Policy.");
+      toast({
+        title: "Terms agreement required",
+        description: "You must agree to the Terms & Conditions and Privacy Policy.",
+        variant: "destructive"
+      });
       return;
     }
     
-    // Ensure we don't reuse a token
-    if (tokenConsumedRef.current) {
-      setError("Captcha token has already been used. Please verify again.");
-      resetCaptcha();
-      return;
-    }
-    
-    // Mark token as consumed immediately
-    const currentToken = captchaToken;
-    tokenConsumedRef.current = true;
-    
-    // Abort previous signup request if any
-    if (signupRequestRef.current) {
-      signupRequestRef.current.abort();
-    }
-    
-    signupRequestRef.current = new AbortController();
     setSubmitting(true);
-    setError(null);
     
     try {
-      // Create signup data using the current token
-      const signupData = {
+      // Attempt to sign up the provider
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -115,80 +87,29 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             province: formData.province || '',
             postalCode: formData.postalCode || '',
             phoneNumber: formData.phoneNumber || '',
-            isNewUser: true
+            isNewUser: true // Flag to identify new users for welcome modal
           },
-          captchaToken: currentToken // Use captured token, not the state
+          captchaToken: captchaToken  // Pass the captcha token to Supabase
         }
-      };
-      
-      // Execute signup immediately
-      console.log("Initiating signup request to Supabase...");
-      const { data, error } = await supabase.auth.signUp(signupData);
-      
-      // Immediately invalidate token in UI
-      setCaptchaToken(null);
+      });
       
       if (error) {
         console.error("Error during sign up:", error);
-        console.error("Error details:", JSON.stringify(error));
-        
-        if (error.message.includes("rate limit") || error.message.includes("429") || 
-            error.status === 429 || error.code === "over_email_send_rate_limit") {
-          setShowRateLimitDialog(true);
-        } else if (error.message.includes("already-seen-response") || error.message.includes("captcha")) {
-          setShowCaptchaErrorDialog(true);
-          // Reset captcha immediately
-          resetCaptcha();
-        } else {
-          setError(error.message || "There was an error creating your account. Please try again.");
-          toast({
-            title: "Sign up failed",
-            description: error.message,
-            variant: "destructive"
-          });
-          // Reset captcha on general errors
-          resetCaptcha();
-        }
+        toast({
+          title: "Sign up failed",
+          description: error.message,
+          variant: "destructive"
+        });
+        // Reset captcha for a fresh attempt
+        resetCaptcha();
+        setSubmitting(false);
       } else {
         console.log("Provider signup successful:", data);
         
-        // Update provider_profiles table with additional data
-        if (data.user) {
-          try {
-            const { error: profileError } = await supabase
-              .from('provider_profiles')
-              .insert({
-                id: data.user.id,
-                first_name: formData.firstName,
-                last_name: formData.lastName,
-                email: formData.email,
-                phone_number: formData.phoneNumber,
-                address_line1: formData.address,
-                city: formData.city,
-                state: formData.province,
-                zip_code: formData.postalCode,
-                provider_type: formData.providerType,
-                registration_number: formData.registrationNumber,
-                specializations: formData.specializations,
-                availability: formData.availability,
-                date_of_birth: formData.dateOfBirth ? new Date(formData.dateOfBirth).toISOString() : null,
-                biography: formData.biography,
-              });
-              
-            if (profileError) {
-              console.error("Error updating provider profile:", profileError);
-            } else {
-              console.log("Provider profile created successfully");
-            }
-          } catch (profileErr) {
-            console.error("Exception creating provider profile:", profileErr);
-          }
-        }
-        
-        // Show the success dialog
+        // Success - show the success dialog
         setShowSuccessDialog(true);
         
-        // Sign out the user in case they were automatically signed in
+        // Sign out the user first (in case they were automatically signed in)
         await supabase.auth.signOut();
         
         // Call the onComplete callback
@@ -201,29 +122,16 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
-      
-      setError(error.message || "An unexpected error occurred. Please try again.");
+      // Reset captcha for a fresh attempt
       resetCaptcha();
-    } finally {
       setSubmitting(false);
-      signupRequestRef.current = null;
     }
   };
   
   const handleSuccessDialogClose = () => {
     setShowSuccessDialog(false);
+    // Navigate to provider login page
     navigate('/provider-login');
-  };
-  
-  const handleRateLimitDialogClose = () => {
-    setShowRateLimitDialog(false);
-    setSubmitting(false);
-    resetCaptcha();
-  };
-  
-  const handleCaptchaErrorDialogClose = () => {
-    setShowCaptchaErrorDialog(false);
-    setSubmitting(false);
   };
   
   return (
@@ -242,12 +150,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </p>
         </div>
         
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
         <div className="bg-muted/30 p-4 rounded-md text-left">
           <p className="text-sm font-medium mb-2">Next Steps:</p>
           <ol className="list-decimal list-inside text-sm space-y-2">
@@ -260,18 +162,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </div>
         
         <div className="py-4 flex justify-center">
-          {!captchaToken ? (
-            <CaptchaComponent 
-              key={captchaRenderKey} // Use dynamic key to force complete re-rendering
-              captchaId={captchaInstanceIdRef.current}
-              onVerify={handleCaptchaVerify}
-              callbackName={captchaCallbackNameRef.current}
-            />
-          ) : (
-            <div className="text-sm text-green-500 flex items-center justify-center">
-              <CheckCircle className="h-4 w-4 mr-1" /> Verification complete
-            </div>
-          )}
+          <CaptchaComponent 
+            captchaId={`provider-signup-captcha-${captchaKey}`}
+            onVerify={handleCaptchaVerify}
+            callbackName={`handleProviderSignupCaptcha${captchaKey}`}
+          />
         </div>
         
         <div className="flex items-center space-x-2 mb-6">
@@ -297,20 +192,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         <Button 
           onClick={handleCreateAccount} 
-          className={`w-full mt-6 ${captchaToken && agreedToTerms ? 'bg-green-600 hover:bg-green-700' : ''}`}
+          className="w-full mt-6"
           disabled={!captchaToken || !agreedToTerms || submitting}
         >
-          {submitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating Account...
-            </>
-          ) : "Create Account"} 
+          {submitting ? "Creating Account..." : "Create Account"} 
           {!submitting && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </div>
       
-      {/* Success Dialog */}
       <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -322,57 +211,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           <AlertDialogFooter>
             <AlertDialogAction onClick={handleSuccessDialogClose}>
               Continue to Login
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      {/* Rate Limit Dialog */}
-      <AlertDialog open={showRateLimitDialog} onOpenChange={setShowRateLimitDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Email Rate Limit Reached</AlertDialogTitle>
-            <AlertDialogDescription>
-              <p className="mb-4">
-                We've detected that too many registration attempts have been made in a short period. 
-                This is a security measure by our email provider to prevent abuse.
-              </p>
-              <p>
-                Please try again after a few minutes or use a different email address. If you continue 
-                to experience issues, please contact our support team.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={handleRateLimitDialogClose}>
-              OK, I'll Try Later
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      {/* Captcha Error Dialog */}
-      <AlertDialog open={showCaptchaErrorDialog} onOpenChange={setShowCaptchaErrorDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Captcha Verification Failed</AlertDialogTitle>
-            <AlertDialogDescription>
-              <p className="mb-4">
-                The captcha verification has expired or has already been used. This can happen if:
-              </p>
-              <ul className="list-disc pl-5 mb-4 space-y-1">
-                <li>You've waited too long after verifying the captcha</li>
-                <li>You've attempted to submit the form multiple times</li>
-                <li>Your browser has cached an old verification token</li>
-              </ul>
-              <p>
-                Please complete the captcha verification again and then try creating your account.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={handleCaptchaErrorDialogClose}>
-              Try Again
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
