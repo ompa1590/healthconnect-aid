@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight } from "lucide-react";
@@ -31,26 +31,22 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [showCaptchaErrorDialog, setShowCaptchaErrorDialog] = useState(false);
+  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   
-  // Generate a unique ID for this component instance that never changes
-  const instanceId = useRef(`provider-signup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`).current;
-  
-  // Use the instanceId to create unique captcha ID and callback name
-  const captchaId = `captcha-${instanceId}`;
-  const callbackName = `callback_${instanceId}`;
-  
-  // Log captcha info on mount
+  // Refresh the captcha when the component mounts or when we need a fresh token
   useEffect(() => {
-    console.log(`Provider signup captcha setup - ID: ${captchaId}, callback: ${callbackName}`);
-    return () => {
-      console.log(`Provider signup unmounting - cleaning up: ${captchaId}`);
-    };
-  }, [captchaId, callbackName]);
+    setCaptchaKey(Date.now().toString());
+  }, []);
   
   const handleCaptchaVerify = (token: string) => {
-    console.log(`Captcha verified in provider signup, token received (length: ${token.length})`);
+    console.log("Captcha verified, setting token:", token);
     setCaptchaToken(token);
+  };
+  
+  const resetCaptcha = () => {
+    // Generate a new captcha key to force a complete re-render
+    setCaptchaKey(Date.now().toString());
+    setCaptchaToken(null);
   };
   
   const handleCreateAccount = async () => {
@@ -75,13 +71,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setSubmitting(true);
     
     try {
-      console.log("Attempting to sign up provider with fresh captcha token");
-      // Store token in a local variable to prevent race conditions
-      const token = captchaToken;
-      
-      // Clear token immediately to prevent reuse
-      setCaptchaToken(null);
-      
       // Attempt to sign up the provider
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -98,31 +87,26 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             province: formData.province || '',
             postalCode: formData.postalCode || '',
             phoneNumber: formData.phoneNumber || '',
-            isNewUser: true
+            isNewUser: true // Flag to identify new users for welcome modal
           },
-          captchaToken: token  // Use local token variable
+          captchaToken: captchaToken  // Pass the captcha token to Supabase
         }
       });
       
       if (error) {
         console.error("Error during sign up:", error);
-        
-        // Handle captcha-specific errors
-        if (error.message.includes('captcha') || error.message.includes('already-seen-response')) {
-          setShowCaptchaErrorDialog(true);
-        } else {
-          toast({
-            title: "Sign up failed",
-            description: error.message,
-            variant: "destructive"
-          });
-        }
-        
+        toast({
+          title: "Sign up failed",
+          description: error.message,
+          variant: "destructive"
+        });
+        // Reset captcha for a fresh attempt
+        resetCaptcha();
         setSubmitting(false);
       } else {
         console.log("Provider signup successful:", data);
         
-        // Show success dialog
+        // Success - show the success dialog
         setShowSuccessDialog(true);
         
         // Sign out the user first (in case they were automatically signed in)
@@ -138,6 +122,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
+      // Reset captcha for a fresh attempt
+      resetCaptcha();
       setSubmitting(false);
     }
   };
@@ -146,11 +132,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setShowSuccessDialog(false);
     // Navigate to provider login page
     navigate('/provider-login');
-  };
-  
-  const handleCaptchaErrorDialogClose = () => {
-    setShowCaptchaErrorDialog(false);
-    setSubmitting(false);
   };
   
   return (
@@ -180,12 +161,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </ol>
         </div>
         
-        {/* Mount CaptchaComponent with the unique ID and callback */}
         <div className="py-4 flex justify-center">
           <CaptchaComponent 
-            captchaId={captchaId}
+            captchaId={`provider-signup-captcha-${captchaKey}`}
             onVerify={handleCaptchaVerify}
-            callbackName={callbackName}
+            callbackName={`handleProviderSignupCaptcha${captchaKey}`}
           />
         </div>
         
@@ -231,28 +211,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           <AlertDialogFooter>
             <AlertDialogAction onClick={handleSuccessDialogClose}>
               Continue to Login
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      {/* Captcha Error Dialog */}
-      <AlertDialog open={showCaptchaErrorDialog} onOpenChange={setShowCaptchaErrorDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Captcha Verification Failed</AlertDialogTitle>
-            <AlertDialogDescription>
-              <p className="mb-4">
-                The captcha verification has expired or has already been used. Please complete the captcha again and try creating your account.
-              </p>
-              <p>
-                This usually happens if you've taken too long after verifying the captcha or if there was a network issue during submission.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={handleCaptchaErrorDialogClose}>
-              Try Again
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

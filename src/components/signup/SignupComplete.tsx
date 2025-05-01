@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle, Upload, Loader2 } from "lucide-react";
@@ -10,15 +9,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import CaptchaComponent from "@/components/auth/CaptchaComponent";
 import { TermsDialog, PrivacyDialog, HIPAAComplianceDialog } from "./LegalPopups";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface SignupCompleteProps {
   formData: SignupFormData;
@@ -33,27 +23,10 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [uploadProgress, setUploadProgress] = useState(0);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [showRateLimitDialog, setShowRateLimitDialog] = useState(false);
-  const [showCaptchaErrorDialog, setShowCaptchaErrorDialog] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   
-  // Generate a truly unique captcha instance ID that changes on component mount and reset
-  const [captchaInstanceId, setCaptchaInstanceId] = useState(() => 
-    `patient-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-  );
-  
-  // Unique element ID for the captcha container
-  const captchaElementId = useRef(`patient-captcha-element-${Date.now()}`).current;
-  
-  // Reset captcha function to generate a completely new instance
-  const resetCaptcha = useCallback(() => {
-    setCaptchaToken(null);
-    setCaptchaVerified(false);
-    // Generate a completely new instance ID to force remounting the captcha
-    setCaptchaInstanceId(`patient-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
-  }, []);
-  
+  // Validate that all required fields are present
   const validateRequiredFields = () => {
     if (!formData.name || !formData.name.trim()) {
       return "Full name is required";
@@ -73,14 +46,21 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     return null;
   };
   
+  // Force re-render of captcha on component mount to ensure it's visible
+  useEffect(() => {
+    // Reset and regenerate captcha with unique key
+    setCaptchaKey(Date.now().toString());
+    setCaptchaVerified(false);
+    setCaptchaToken(null);
+  }, []);
+  
   const handleCaptchaVerify = (token: string) => {
-    console.log("Captcha verified with token");
+    console.log("Captcha verified with token:", token);
     setCaptchaToken(token);
     setCaptchaVerified(true);
   };
 
   const uploadDocuments = async (userId: string) => {
-    // Optimized document upload function - only proceed if there are documents
     const files = formData.documentFiles || [];
     if (files.length === 0) return [];
     
@@ -128,6 +108,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       setLoading(true);
       setError(null);
       
+      // Validate all required fields
       const validationError = validateRequiredFields();
       if (validationError) {
         setError(validationError);
@@ -151,10 +132,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         return;
       }
       
-      console.log("Starting signup with captcha token");
+      console.log("Starting signup with captcha token:", captchaToken);
       
-      // Store signup data to minimize processing delay
-      const signupData = {
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -163,38 +143,16 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           },
           captchaToken: captchaToken,
         },
-      };
+      });
       
-      // Immediately attempt signup without delay after validation
-      const { data, error } = await supabase.auth.signUp(signupData);
+      if (error) throw error;
       
-      if (error) {
-        console.error("Error during signup:", error);
-        
-        // Always reset captcha on any error
-        resetCaptcha();
-        
-        // Handle specific error types
-        if (error.message.includes("rate limit") || error.message.includes("429") || 
-            error.status === 429 || error.code === "over_email_send_rate_limit") {
-          // Show rate limit dialog instead of toast for this specific error
-          setShowRateLimitDialog(true);
-        } else if (error.message.includes("already-seen-response") || error.message.includes("captcha")) {
-          // Show captcha error dialog for reused token errors
-          setShowCaptchaErrorDialog(true);
-        } else {
-          setError(error.message || "There was an error creating your account. Please try again.");
-        }
-        
-        setLoading(false);
-        return;
-      }
+      console.log("Signup successful:", data);
       
       if (!data.user) {
         throw new Error("Failed to create user account");
       }
       
-      // Do profile updates after successful signup
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -243,18 +201,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         }
       }
       
-      // Show success dialog instead of redirecting immediately
-      setShowSuccessDialog(true);
-
-      // Sign out the user first (in case they were automatically signed in)
-      await supabase.auth.signOut();
+      toast({
+        title: "Account created successfully",
+        description: "Welcome to Vyra Health! You are now logged in.",
+      });
       
-      // Call the onComplete callback
-      onComplete();
-      
+      navigate('/dashboard');
     } catch (error) {
       console.error("Error during signup:", error);
-      resetCaptcha();
       setError(error.message || "There was an error creating your account. Please try again.");
       toast({
         title: "Signup failed",
@@ -265,21 +219,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       setLoading(false);
       setUploadProgress(0);
     }
-  };
-
-  const handleSuccessDialogClose = () => {
-    setShowSuccessDialog(false);
-    navigate('/login');
-  };
-
-  const handleRateLimitDialogClose = () => {
-    setShowRateLimitDialog(false);
-    setLoading(false);
-  };
-
-  const handleCaptchaErrorDialogClose = () => {
-    setShowCaptchaErrorDialog(false);
-    setLoading(false);
   };
 
   return (
@@ -303,7 +242,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </Alert>
       )}
       
-      {/* Display document information if available */}
       {formData.documents && formData.documents.length > 0 && (
         <div className="bg-muted/20 p-4 rounded-lg border border-border/30 my-4 text-left">
           <div className="flex items-center mb-2">
@@ -321,7 +259,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </div>
       )}
       
-      {/* Upload progress indicator */}
       {uploadProgress > 0 && uploadProgress < 100 && (
         <div className="w-full bg-muted/30 h-2 rounded-full mt-2">
           <div 
@@ -360,12 +297,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           Please complete the security check below to verify you're human.
         </p>
         
-        {/* Each captcha gets a completely unique ID and container */}
-        <div className="flex justify-center mb-4" id={captchaElementId} key={`captcha-wrapper-${captchaInstanceId}`}>
+        <div className="flex justify-center mb-4" id="captcha-container">
           <CaptchaComponent 
-            captchaId={`signup-captcha-${captchaInstanceId}`}
+            captchaId={`signup-captcha-${captchaKey}`}
             onVerify={handleCaptchaVerify}
-            callbackName={`signupCaptchaCallback_${captchaInstanceId}`}
+            callbackName="signupCaptchaCallback"
           />
         </div>
         
@@ -420,74 +356,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </Link>
         </Button>
       </div>
-
-      {/* Success Dialog */}
-      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Registration Complete</AlertDialogTitle>
-            <AlertDialogDescription>
-              Your account has been successfully created! You will now be redirected to the login page where you can sign in with your credentials.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={handleSuccessDialogClose}>
-              Continue to Login
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Rate Limit Dialog */}
-      <AlertDialog open={showRateLimitDialog} onOpenChange={setShowRateLimitDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Email Rate Limit Reached</AlertDialogTitle>
-            <AlertDialogDescription>
-              <p className="mb-4">
-                We've detected that too many registration attempts have been made in a short period. 
-                This is a security measure by our email provider to prevent abuse.
-              </p>
-              <p>
-                Please try again after a few minutes or use a different email address. If you continue 
-                to experience issues, please contact our support team.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={handleRateLimitDialogClose}>
-              OK, I'll Try Later
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Captcha Error Dialog */}
-      <AlertDialog open={showCaptchaErrorDialog} onOpenChange={setShowCaptchaErrorDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Captcha Verification Failed</AlertDialogTitle>
-            <AlertDialogDescription>
-              <p className="mb-4">
-                The captcha verification has expired or has already been used. This can happen if:
-              </p>
-              <ul className="list-disc pl-5 mb-4 space-y-1">
-                <li>You've waited too long after verifying the captcha</li>
-                <li>You've attempted to submit the form multiple times</li>
-                <li>Your browser has cached an old verification token</li>
-              </ul>
-              <p>
-                Please complete the captcha verification again and then try creating your account.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={handleCaptchaErrorDialogClose}>
-              Try Again
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
