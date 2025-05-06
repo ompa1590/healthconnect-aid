@@ -38,37 +38,22 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     // Set mounted flag
     mountedRef.current = true;
     
-    // Clean up any existing hCaptcha widgets with this ID
-    const cleanup = () => {
-      if (window.hcaptcha && widgetIdRef.current) {
-        try {
-          window.hcaptcha.reset(widgetIdRef.current);
-          window.hcaptcha.remove(widgetIdRef.current);
-          widgetIdRef.current = null;
-        } catch (error) {
-          console.log("Error cleaning up captcha:", error);
-        }
-      }
-    };
-
-    // Make sure any existing widget is cleaned up before mounting a new one
-    cleanup();
-    
     // Inner function to render captcha
     const renderCaptcha = () => {
       // Only proceed if component is still mounted and container exists
-      if (!mountedRef.current) return;
-      
-      // Verify that the container element exists in the DOM
-      const container = document.getElementById(captchaId);
-      if (!container) {
-        console.warn("Captcha container not found:", captchaId);
-        setTimeout(renderCaptcha, 100); // Try again after a short delay
-        return;
-      }
+      if (!mountedRef.current || !captchaRef.current) return;
       
       if (window.hcaptcha) {
         try {
+          // Reset any existing widget
+          if (widgetIdRef.current) {
+            try {
+              window.hcaptcha.reset(widgetIdRef.current);
+            } catch (error) {
+              console.log("Error resetting captcha:", error);
+            }
+          }
+          
           // Render a new captcha widget
           const widgetId = window.hcaptcha.render(captchaId, {
             sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
@@ -137,8 +122,14 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     return () => {
       mountedRef.current = false;
       
-      // Remove the widget from hCaptcha if it exists
-      cleanup();
+      // If hCaptcha is initialized and we have a widget ID, reset it
+      if (window.hcaptcha && widgetIdRef.current) {
+        try {
+          window.hcaptcha.reset(widgetIdRef.current);
+        } catch (error) {
+          console.error("Error resetting captcha during cleanup:", error);
+        }
+      }
     };
   }, [captchaId, callbackName]); // Depend on captchaId and callbackName to re-render if they change
 
