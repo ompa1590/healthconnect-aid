@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, FileText, Calendar, Phone, Pill, Stethoscope, AlertCircle, Shield, Users, Clock, Calendar as CalendarIcon, BarChart } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { 
   Sheet, 

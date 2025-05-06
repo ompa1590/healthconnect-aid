@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Clock, User } from "lucide-react";
 import { format } from "date-fns";
+import Siri from "../../prescreening/PreScreeningAssistant";
+import RadialCard from "../../prescreening/PreScreeningAssistant";
 import { useToast } from "@/components/ui/use-toast";
 
 interface AppointmentConfirmationProps {
@@ -101,20 +103,29 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
         
         <div className="space-y-3">
           <Button 
-            onClick={onDone} 
+            onClick={togglePrescreening} 
             size="lg" 
             className="px-8"
           >
-            Return to Dashboard
+            {showPrescreening ? 'Close Prescreening' : 'Start Your Prescreening'}
           </Button>
+          <div className="flex gap-2 justify-center">
+            <Button
+              onClick={handlePrescreenLater}
+              variant="outline"
+              size="lg"
+              className="px-8 mt-2"
+            >
+              Prescreen Later
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* We'll update the prescreening component separately if needed */}
       {showPrescreening && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
           <div className="fixed inset-4 z-50 rounded-lg border bg-background shadow-lg p-6 overflow-y-auto">
-            {/* Placeholder for PreScreeningAssistant */}
+            <RadialCard autoStart={true}/>
             <Button
               onClick={togglePrescreening}
               className="absolute top-4 right-4"

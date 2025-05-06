@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import BookAppointment from "./BookAppointment";
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { CalendarDays, ArrowLeft, Clock, User, Stethoscope, CalendarCheck, Sparkles } from "lucide-react";
 import { GlassCard } from "../ui/GlassCard";
 
@@ -141,10 +141,6 @@ const AppointmentScheduler = () => {
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogTitle>Book Your Appointment</DialogTitle>
-            <DialogDescription>
-              Fill in the details below to schedule your appointment with one of our healthcare providers.
-            </DialogDescription>
             <BookAppointment />
           </DialogContent>
         </Dialog>

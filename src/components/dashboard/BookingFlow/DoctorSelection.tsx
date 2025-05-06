@@ -1,168 +1,138 @@
 
 import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Stethoscope, ArrowRight } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useProviders } from "@/hooks/useProviders";
+import { ArrowLeft, ArrowRight, CheckCircle2, Star } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+interface Doctor {
+  id: string;
+  name: string;
+  specialty: string;
+  rating: number;
+  experience: string;
+  image?: string;
+}
 
 interface DoctorSelectionProps {
   selectedDoctor: string | null;
   onSelectDoctor: (doctorId: string) => void;
-  selectedSpecialty: string | null;
-  onSelectSpecialty: (specialty: string) => void;
   onBack: () => void;
   onNext: () => void;
 }
 
-const DoctorSelection = ({ 
-  selectedDoctor, 
+const DoctorSelection = ({
+  selectedDoctor,
   onSelectDoctor,
-  selectedSpecialty,
-  onSelectSpecialty,
-  onBack, 
-  onNext 
+  onBack,
+  onNext
 }: DoctorSelectionProps) => {
-  const { providers, loading } = useProviders();
+  // Mock doctors data - in a real app, this would come from an API
+  const doctors: Doctor[] = [
+    {
+      id: "dr-1",
+      name: "Dr. Sarah Johnson",
+      specialty: "General Practitioner",
+      rating: 4.8,
+      experience: "12 years",
+      image: "https://randomuser.me/api/portraits/women/44.jpg"
+    },
+    {
+      id: "dr-2",
+      name: "Dr. Mark Williams",
+      specialty: "Dermatologist",
+      rating: 4.9,
+      experience: "15 years",
+      image: "https://randomuser.me/api/portraits/men/32.jpg"
+    },
+    {
+      id: "dr-3",
+      name: "Dr. Amelia Chen",
+      specialty: "Endocrinologist",
+      rating: 4.7,
+      experience: "10 years",
+      image: "https://randomuser.me/api/portraits/women/66.jpg"
+    },
+    {
+      id: "dr-4",
+      name: "Dr. James Wilson",
+      specialty: "Psychologist",
+      rating: 4.9,
+      experience: "8 years",
+      image: "https://randomuser.me/api/portraits/men/94.jpg"
+    },
+    {
+      id: "dr-5",
+      name: "Dr. Lisa Patel",
+      specialty: "Nutritionist",
+      rating: 4.6,
+      experience: "7 years",
+      image: "https://randomuser.me/api/portraits/women/55.jpg"
+    }
+  ];
   
-  // Get unique specialties
-  const specialties = React.useMemo(() => {
-    const allSpecialties = providers.flatMap(p => p.specializations || []);
-    return [...new Set(allSpecialties)].filter(Boolean).sort();
-  }, [providers]);
-  
-  // Get filtered doctors based on selected specialty
-  const filteredDoctors = React.useMemo(() => {
-    if (!selectedSpecialty) return providers;
-    return providers.filter(p => 
-      p.specializations?.includes(selectedSpecialty)
-    );
-  }, [providers, selectedSpecialty]);
-  
-  // Get selected doctor details
-  const selectedDoctorDetails = React.useMemo(() => {
-    return providers.find(p => p.id === selectedDoctor);
-  }, [providers, selectedDoctor]);
-
   return (
-    <div className="py-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <label className="text-sm font-medium">Select Specialty</label>
-            {loading ? (
-              <div className="h-10 bg-muted/30 animate-pulse rounded"></div>
-            ) : (
-              <Select value={selectedSpecialty || ""} onValueChange={onSelectSpecialty}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choose a specialty" />
-                </SelectTrigger>
-                <SelectContent>
-                  {specialties.map((specialty) => (
-                    <SelectItem key={specialty} value={specialty}>
-                      {specialty}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-sm font-medium">Select Doctor</label>
-            {loading ? (
-              <div className="h-10 bg-muted/30 animate-pulse rounded"></div>
-            ) : (
-              <Select 
-                value={selectedDoctor || ""} 
-                onValueChange={onSelectDoctor}
-                disabled={!selectedSpecialty || filteredDoctors.length === 0}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue 
-                    placeholder={selectedSpecialty 
-                      ? filteredDoctors.length > 0 
-                        ? "Select a doctor" 
-                        : "No doctors available for this specialty" 
-                      : "Select a specialty first"
-                    } 
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredDoctors.map((doctor) => (
-                    <SelectItem key={doctor.id} value={doctor.id}>
-                      {doctor.full_name || `${doctor.first_name} ${doctor.last_name}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-muted/20 p-5 rounded-lg border border-muted/30">
-          <h3 className="font-medium text-lg mb-4 flex items-center">
-            <Stethoscope className="mr-2 h-5 w-5 text-primary/80" />
-            Doctor Profile
-          </h3>
-
-          {selectedDoctor && selectedDoctorDetails ? (
-            <div className="space-y-4">
-              <div className="h-24 w-24 bg-primary/10 rounded-full mx-auto flex items-center justify-center">
-                <span className="text-2xl font-bold text-primary/80">
-                  {selectedDoctorDetails.first_name?.[0]}{selectedDoctorDetails.last_name?.[0]}
-                </span>
-              </div>
-              
-              <h4 className="font-medium text-lg text-center">
-                {selectedDoctorDetails.full_name || `${selectedDoctorDetails.first_name} ${selectedDoctorDetails.last_name}`}
-              </h4>
-              
-              <div className="text-sm space-y-2">
-                {selectedDoctorDetails.specializations?.map((specialty, index) => (
-                  <div key={index} className="bg-primary/5 px-3 py-1.5 rounded-full inline-block mr-2 mb-2">
-                    {specialty}
-                  </div>
-                ))}
-                
-                {selectedDoctorDetails.biography && (
-                  <p className="mt-4 text-muted-foreground">{selectedDoctorDetails.biography}</p>
-                )}
-                
-                {selectedDoctorDetails.provider_type && (
-                  <p className="flex items-center gap-2">
-                    <span className="font-medium">Provider Type:</span> 
-                    <span>{selectedDoctorDetails.provider_type}</span>
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="h-48 flex items-center justify-center">
-              <p className="text-muted-foreground text-center">
-                Select a doctor to view their profile
-              </p>
-            </div>
-          )}
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-medium mb-2">Select a Specialist</h2>
+        <p className="text-muted-foreground">Choose a healthcare provider for your appointment</p>
       </div>
-
-      <div className="flex justify-between mt-8">
-        <Button variant="outline" onClick={onBack}>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2">
+        {doctors.map(doctor => (
+          <Card 
+            key={doctor.id} 
+            className={`cursor-pointer hover:shadow-md transition-all overflow-hidden ${
+              selectedDoctor === doctor.id 
+                ? "border-primary" 
+                : "border-muted/50"
+            }`}
+            onClick={() => onSelectDoctor(doctor.id)}
+          >
+            <CardContent className="p-4 flex items-start gap-4">
+              {selectedDoctor === doctor.id && (
+                <div className="absolute top-2 right-2">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                </div>
+              )}
+              
+              <Avatar className="h-14 w-14 border-2 border-muted">
+                <AvatarImage src={doctor.image} alt={doctor.name} />
+                <AvatarFallback>{doctor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+              </Avatar>
+              
+              <div>
+                <h3 className="font-medium mb-1">{doctor.name}</h3>
+                <p className="text-sm text-muted-foreground">{doctor.specialty}</p>
+                <div className="flex items-center gap-1 mt-1">
+                  <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                  <span className="text-sm">{doctor.rating}</span>
+                  <span className="text-sm text-muted-foreground">({(Math.floor(doctor.rating * 100)).toString()}+ reviews)</span>
+                </div>
+                <div className="text-xs mt-2">{doctor.experience} experience</div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      <div className="flex justify-between">
+        <Button 
+          variant="outline" 
+          onClick={onBack}
+          className="flex items-center"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
+        
         <Button 
           onClick={onNext}
-          disabled={!selectedDoctor} 
-          className="group"
+          disabled={!selectedDoctor}
+          className="flex items-center"
         >
-          Continue
-          <ArrowRight className="ml-2 h-4 w-4 opacity-70 group-hover:translate-x-1 transition-transform" />
+          Choose Time
+          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
     </div>
