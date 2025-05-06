@@ -39,6 +39,14 @@ const TreatmentDetailsDialog = ({
 
   const Icon = treatment.icon;
   
+  // Function to handle scheduling button click
+  const handleSchedule = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Instead of navigating, we'll just close the dialog for now
+    // In a real app, you might want to open a scheduling form or navigate to a specific page
+    onOpenChange(false);
+  };
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -49,8 +57,8 @@ const TreatmentDetailsDialog = ({
         
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className={`rounded-full bg-${treatment.color}/10 w-12 h-12 flex items-center justify-center`}>
-              <Icon className={`h-6 w-6 text-${treatment.color}`} />
+            <div className={`rounded-full p-3 bg-${treatment.color}-100 dark:bg-${treatment.color}-900/20 w-12 h-12 flex items-center justify-center`}>
+              <Icon className={`h-6 w-6 text-${treatment.color}-500 dark:text-${treatment.color}-400`} />
             </div>
             <DialogTitle className="text-2xl">{treatment.title}</DialogTitle>
           </div>
@@ -71,7 +79,7 @@ const TreatmentDetailsDialog = ({
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {treatment.features.map((feature, index) => (
                   <li key={index} className="flex items-start gap-2">
-                    <div className={`h-2 w-2 rounded-full bg-${treatment.color} mt-2`} />
+                    <div className="h-2 w-2 rounded-full bg-primary mt-2" />
                     <span className="text-sm">{feature}</span>
                   </li>
                 ))}
@@ -98,8 +106,8 @@ const TreatmentDetailsDialog = ({
           )}
           
           <div className="pt-4 flex justify-end">
-            <Button asChild>
-              <a href={treatment.path}>Schedule a Consultation</a>
+            <Button onClick={handleSchedule}>
+              Schedule a Consultation
             </Button>
           </div>
         </div>

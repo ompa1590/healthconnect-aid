@@ -2,7 +2,6 @@
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 import { popularTreatments } from "@/data/serviceCategories";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -13,7 +12,8 @@ const PopularTreatments = () => {
   const [selectedTreatment, setSelectedTreatment] = useState<any | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const handleLearnMore = (treatment: any) => {
+  const handleLearnMore = (treatment: any, e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent default navigation
     setSelectedTreatment(treatment);
     setDialogOpen(true);
   };
@@ -79,7 +79,7 @@ const PopularTreatments = () => {
                     <Button 
                       variant="default" 
                       className="rounded-full mt-6 w-full justify-between"
-                      onClick={() => handleLearnMore(treatment)}
+                      onClick={(e) => handleLearnMore(treatment, e)}
                     >
                       <span>Learn more</span>
                       <ArrowRight className="h-4 w-4" />
