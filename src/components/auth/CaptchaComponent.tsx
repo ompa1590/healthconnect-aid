@@ -7,6 +7,11 @@ interface CaptchaComponentProps {
   callbackName: string;
 }
 
+// Define the ref type interface
+export interface CaptchaRefType {
+  resetCaptcha: () => boolean;
+}
+
 const CaptchaComponent: React.FC<CaptchaComponentProps> = ({ 
   captchaId, 
   onVerify, 
@@ -182,14 +187,6 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     };
   }, [captchaId, callbackName]); // Depend on captchaId and callbackName to re-render if they change
 
-  // Make resetCaptcha available to parent components
-  React.useImperativeHandle(
-    React.forwardRef(() => captchaRef),
-    () => ({
-      resetCaptcha
-    })
-  );
-
   return (
     <div className="captcha-container">
       <div 
@@ -220,21 +217,35 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
 };
 
 // Create a forwardRef version to expose resetCaptcha method
-export type CaptchaRefType = {
-  resetCaptcha: () => boolean;
-};
-
 export const CaptchaComponentWithRef = React.forwardRef<CaptchaRefType, CaptchaComponentProps>(
   (props, ref) => {
-    const captchaRef = useRef<CaptchaRefType>(null);
+    const captchaInnerRef = useRef<HTMLDivElement>(null);
+    const widgetIdRef = useRef<string | null>(null);
     
-    React.useImperativeHandle(ref, () => ({
-      resetCaptcha: () => {
-        return captchaRef.current?.resetCaptcha() || false;
+    // Function to reset captcha that can be called by parent components
+    const resetCaptcha = () => {
+      console.log("Forwarded captcha reset requested");
+      if (window.hcaptcha && widgetIdRef.current) {
+        try {
+          console.log(`Resetting captcha widget from forwarded ref: ${widgetIdRef.current}`);
+          window.hcaptcha.reset(widgetIdRef.current);
+          return true;
+        } catch (err) {
+          console.error("Error resetting captcha from forwarded ref:", err);
+          return false;
+        }
+      } else {
+        console.warn("Cannot reset captcha from forwarded ref - widget not initialized");
+        return false;
       }
+    };
+    
+    // Expose the resetCaptcha method to parent components
+    React.useImperativeHandle(ref, () => ({
+      resetCaptcha
     }));
     
-    return <CaptchaComponent {...props} ref={captchaRef} />;
+    return <CaptchaComponent {...props} />;
   }
 );
 
