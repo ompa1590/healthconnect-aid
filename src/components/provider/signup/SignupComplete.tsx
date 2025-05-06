@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
@@ -27,7 +26,7 @@ interface SignupCompleteProps {
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string>("dummy-token-for-testing");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
@@ -44,26 +43,26 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   }, []);
   
   const handleCaptchaVerify = (token: string) => {
-    console.log("Provider captcha verified, setting token:", token.substring(0, 10) + '...');
-    setCaptchaToken(token);
+    console.log("⚠️ Provider captcha temporarily disabled - using dummy token");
+    setCaptchaToken("dummy-token-for-testing");
   };
   
   const resetCaptcha = () => {
-    console.log("Resetting captcha with new key");
-    // Generate a new captcha key to force a complete re-render
+    console.log("⚠️ Resetting captcha disabled - using dummy token");
     setCaptchaKey(Date.now().toString());
-    setCaptchaToken(null);
+    setCaptchaToken("dummy-token-for-testing");
   };
   
   const handleCreateAccount = async () => {
-    if (!captchaToken) {
-      toast({
-        title: "Verification required",
-        description: "Please complete the captcha verification.",
-        variant: "destructive"
-      });
-      return;
-    }
+    // Captcha check bypassed
+    // if (!captchaToken) {
+    //   toast({
+    //     title: "Verification required",
+    //     description: "Please complete the captcha verification.",
+    //     variant: "destructive"
+    //   });
+    //   return;
+    // }
     
     if (!agreedToTerms) {
       toast({
@@ -77,16 +76,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setSubmitting(true);
     
     try {
-      // Store token temporarily and clear it to prevent reuse
-      const token = captchaToken;
-      setCaptchaToken(null); // Clear immediately to prevent reuse
-      
-      console.log("Attempting provider signup with form data:", {
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        // Omitting password for security
-      });
+      console.log("⚠️ Provider signup with captcha disabled - using dummy token");
       
       // Attempt to sign up the provider
       const { data, error } = await supabase.auth.signUp({
@@ -106,7 +96,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             phoneNumber: formData.phoneNumber || '',
             isNewUser: true // Flag to identify new users for welcome modal
           },
-          captchaToken: token  // Use the stored token
+          captchaToken: "dummy-token-for-testing"
         }
       });
       
@@ -118,8 +108,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           variant: "destructive"
         });
         
-        // Reset captcha for a fresh attempt
-        resetCaptcha();
         setSubmitting(false);
       } else {
         console.log("Provider signup successful:", data);
@@ -141,8 +129,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         variant: "destructive"
       });
       
-      // Reset captcha for a fresh attempt
-      resetCaptcha();
       setSubmitting(false);
     }
   };
@@ -181,6 +167,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </div>
         
         <div className="py-4 flex justify-center">
+          {/* Captcha component still rendered but internally disabled */}
           <CaptchaComponent 
             captchaId={captchaId}
             onVerify={handleCaptchaVerify}
@@ -212,7 +199,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         <Button 
           onClick={handleCreateAccount} 
           className="w-full mt-6"
-          disabled={!captchaToken || !agreedToTerms || submitting}
+          disabled={!agreedToTerms || submitting}
         >
           {submitting ? "Creating Account..." : "Create Account"} 
           {!submitting && <ArrowRight className="ml-2 h-4 w-4" />}

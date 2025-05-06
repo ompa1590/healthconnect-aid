@@ -10,8 +10,8 @@ export const useAuthLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string>("dummy-token-for-testing"); // Default dummy token
+  const [captchaVerified, setCaptchaVerified] = useState(true); // Always verified
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -45,22 +45,22 @@ export const useAuthLogin = () => {
     setIsLoading(true);
     setErrorMessage(null);
     
-    if (!captchaVerified || !captchaToken) {
-      setErrorMessage("Please complete the captcha verification before signing in.");
-      setIsLoading(false);
-      return;
-    }
+    // Captcha check bypassed
+    // if (!captchaVerified || !captchaToken) {
+    //   setErrorMessage("Please complete the captcha verification before signing in.");
+    //   setIsLoading(false);
+    //   return;
+    // }
     
     try {
-      // Store and clear token to prevent reuse
-      const token = captchaToken;
-      setCaptchaToken(null);
+      console.log("⚠️ Login with captcha disabled - using dummy token");
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
         options: {
-          captchaToken: token,
+          // Using dummy token since captcha is disabled
+          captchaToken: "dummy-token-for-testing", 
         }
       });
       
@@ -78,7 +78,7 @@ export const useAuthLogin = () => {
       setErrorMessage(error.message || "Failed to sign in. Please check your credentials.");
       
       // Reset captcha state for a fresh attempt
-      setCaptchaVerified(false);
+      setCaptchaVerified(true); // Keep as true since we're bypassing captcha
     } finally {
       setIsLoading(false);
     }
