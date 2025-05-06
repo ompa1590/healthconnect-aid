@@ -219,7 +219,6 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
 // Create a forwardRef version to expose resetCaptcha method
 export const CaptchaComponentWithRef = React.forwardRef<CaptchaRefType, CaptchaComponentProps>(
   (props, ref) => {
-    const captchaInnerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
     
     // Function to reset captcha that can be called by parent components
