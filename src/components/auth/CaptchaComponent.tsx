@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface CaptchaComponentProps {
   captchaId: string;
@@ -7,15 +7,11 @@ interface CaptchaComponentProps {
   callbackName: string;
 }
 
-type CaptchaRefType = {
-  reset: () => void;
-};
-
-const CaptchaComponent = forwardRef<CaptchaRefType, CaptchaComponentProps>(({ 
+const CaptchaComponent: React.FC<CaptchaComponentProps> = ({ 
   captchaId, 
   onVerify, 
   callbackName 
-}, ref) => {
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const captchaRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
@@ -25,7 +21,7 @@ const CaptchaComponent = forwardRef<CaptchaRefType, CaptchaComponentProps>(({
   useEffect(() => {
     // Define the callback function on window that hCaptcha will call
     window[callbackName] = (token: string) => {
-      console.log(`Captcha verified with token:`, token.substring(0, 20) + '...');
+      console.log(`Captcha verified with token:`, token);
       if (mountedRef.current) {
         onVerify(token);
       }
@@ -37,54 +33,27 @@ const CaptchaComponent = forwardRef<CaptchaRefType, CaptchaComponentProps>(({
     };
   }, [onVerify, callbackName]);
 
-  // Reset the captcha when needed
-  const resetCaptcha = () => {
-    if (window.hcaptcha && widgetIdRef.current) {
-      try {
-        console.log("Resetting captcha...");
-        window.hcaptcha.reset(widgetIdRef.current);
-      } catch (error) {
-        console.error("Error resetting captcha:", error);
-      }
-    }
-  };
-
   // Load and handle hCaptcha script and widget
   useEffect(() => {
     // Set mounted flag
     mountedRef.current = true;
     
-    // Clean up any existing hCaptcha widgets with this ID
-    const cleanup = () => {
-      if (window.hcaptcha && widgetIdRef.current) {
-        try {
-          window.hcaptcha.reset(widgetIdRef.current);
-          window.hcaptcha.remove(widgetIdRef.current);
-          widgetIdRef.current = null;
-        } catch (error) {
-          console.log("Error cleaning up captcha:", error);
-        }
-      }
-    };
-
-    // Make sure any existing widget is cleaned up before mounting a new one
-    cleanup();
-    
     // Inner function to render captcha
     const renderCaptcha = () => {
       // Only proceed if component is still mounted and container exists
-      if (!mountedRef.current) return;
-      
-      // Verify that the container element exists in the DOM
-      const container = document.getElementById(captchaId);
-      if (!container) {
-        console.warn("Captcha container not found:", captchaId);
-        setTimeout(renderCaptcha, 100); // Try again after a short delay
-        return;
-      }
+      if (!mountedRef.current || !captchaRef.current) return;
       
       if (window.hcaptcha) {
         try {
+          // Reset any existing widget
+          if (widgetIdRef.current) {
+            try {
+              window.hcaptcha.reset(widgetIdRef.current);
+            } catch (error) {
+              console.log("Error resetting captcha:", error);
+            }
+          }
+          
           // Render a new captcha widget
           const widgetId = window.hcaptcha.render(captchaId, {
             sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
@@ -153,15 +122,16 @@ const CaptchaComponent = forwardRef<CaptchaRefType, CaptchaComponentProps>(({
     return () => {
       mountedRef.current = false;
       
-      // Remove the widget from hCaptcha if it exists
-      cleanup();
+      // If hCaptcha is initialized and we have a widget ID, reset it
+      if (window.hcaptcha && widgetIdRef.current) {
+        try {
+          window.hcaptcha.reset(widgetIdRef.current);
+        } catch (error) {
+          console.error("Error resetting captcha during cleanup:", error);
+        }
+      }
     };
   }, [captchaId, callbackName]); // Depend on captchaId and callbackName to re-render if they change
-
-  // Expose the reset method to parent components
-  useImperativeHandle(ref, () => ({
-    reset: resetCaptcha
-  }), [resetCaptcha]);
 
   return (
     <div className="captcha-container">
@@ -178,7 +148,7 @@ const CaptchaComponent = forwardRef<CaptchaRefType, CaptchaComponentProps>(({
       </div>
     </div>
   );
-});
+};
 
 export default CaptchaComponent;
 
