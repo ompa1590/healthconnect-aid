@@ -31,16 +31,19 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   const [captchaError, setCaptchaError] = useState<string | null>(null);
   const captchaRef = useRef<CaptchaRefType>(null);
   const formSubmitAttempts = useRef(0);
   
-  // Refresh the captcha when the component mounts or when we need a fresh token
+  // Use a stable ID for the captcha
+  const captchaId = useRef(`provider-signup-captcha-${Math.random().toString(36).substring(2, 15)}`).current;
+  const callbackName = useRef(`handleProviderSignupCaptcha${Math.random().toString(36).substring(2, 15)}`).current;
+  
+  // Refresh the captcha when the component mounts
   useEffect(() => {
-    console.log("Provider signup: Initial captcha setup with key:", captchaKey);
+    console.log("Provider signup: Initial captcha setup with ID:", captchaId);
     setCaptchaError(null);
-  }, [captchaKey]);
+  }, [captchaId]);
   
   const handleCaptchaVerify = (token: string) => {
     console.log("Provider signup: CAPTCHA verified, token received");
@@ -49,11 +52,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   };
   
   const resetCaptcha = () => {
-    console.log("Provider signup: Resetting captcha completely");
-    // Generate a new captcha key to force a complete re-render
-    setCaptchaKey(Date.now().toString());
+    console.log("Provider signup: Resetting captcha");
     setCaptchaToken(null);
     setCaptchaError(null);
+    
+    // Use the ref to reset the captcha
+    if (captchaRef.current) {
+      captchaRef.current.resetCaptcha();
+    }
   };
   
   const handleCreateAccount = async () => {
@@ -80,6 +86,10 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     formSubmitAttempts.current += 1;
     console.log(`Provider signup: Attempt #${formSubmitAttempts.current} with token: ${captchaToken.substring(0, 15)}...`);
     
+    // Store token in a local variable and clear the state immediately to prevent reuse
+    const token = captchaToken;
+    setCaptchaToken(null);
+    
     try {
       // Attempt to sign up the provider
       const { data, error } = await supabase.auth.signUp({
@@ -99,7 +109,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             phoneNumber: formData.phoneNumber || '',
             isNewUser: true // Flag to identify new users for welcome modal
           },
-          captchaToken: captchaToken
+          captchaToken: token
         }
       });
       
@@ -197,9 +207,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         <div className="py-4 flex justify-center">
           <CaptchaComponent 
-            captchaId={`provider-signup-captcha-${captchaKey}`}
+            captchaId={captchaId}
             onVerify={handleCaptchaVerify}
-            callbackName={`handleProviderSignupCaptcha${captchaKey}`}
+            callbackName={callbackName}
           />
         </div>
         

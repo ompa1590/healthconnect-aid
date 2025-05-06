@@ -20,7 +20,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const captchaRef = useRef<HTMLDivElement>(null);
-  const widgetIdRef = useRef<string | null>(null);
+  const widgetIdRef = useRef<number | null>(null);
   const mountedRef = useRef(true);
   
   // Define window function for hCaptcha callback
@@ -45,7 +45,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
   // Function to reset captcha that can be called externally via ref
   const resetCaptcha = () => {
     console.log("Manual captcha reset requested");
-    if (window.hcaptcha && widgetIdRef.current) {
+    if (window.hcaptcha && widgetIdRef.current !== null) {
       try {
         console.log(`Resetting captcha widget: ${widgetIdRef.current}`);
         window.hcaptcha.reset(widgetIdRef.current);
@@ -78,18 +78,30 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       
       if (window.hcaptcha) {
         try {
-          console.log(`Attempting to render captcha in element: ${captchaId}`);
+          console.log(`Attempting to render captcha in element with ID: ${captchaId}`);
           
-          // Reset any existing widget
-          if (widgetIdRef.current) {
+          // Safely clean up any existing widget
+          if (widgetIdRef.current !== null) {
             try {
               console.log(`Cleaning up existing widget: ${widgetIdRef.current}`);
               window.hcaptcha.reset(widgetIdRef.current);
               window.hcaptcha.remove(widgetIdRef.current);
-              widgetIdRef.current = null;
             } catch (error) {
+              // Just log the error but continue with creating a new widget
               console.error("Error cleaning up existing captcha:", error);
+            } finally {
+              // Always clear the widget ID reference
+              widgetIdRef.current = null;
             }
+          }
+          
+          // Check if the element exists in the DOM
+          const captchaElement = document.getElementById(captchaId);
+          if (!captchaElement) {
+            console.error(`Captcha container element with ID '${captchaId}' not found in DOM`);
+            setError("Captcha container not found");
+            setIsLoading(false);
+            return;
           }
           
           // Render a new captcha widget
@@ -175,7 +187,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       mountedRef.current = false;
       
       // If hCaptcha is initialized and we have a widget ID, reset it
-      if (window.hcaptcha && widgetIdRef.current) {
+      if (window.hcaptcha && widgetIdRef.current !== null) {
         try {
           console.log(`Removing widget ${widgetIdRef.current} during cleanup`);
           window.hcaptcha.reset(widgetIdRef.current);
@@ -219,12 +231,15 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
 // Create a forwardRef version to expose resetCaptcha method
 export const CaptchaComponentWithRef = React.forwardRef<CaptchaRefType, CaptchaComponentProps>(
   (props, ref) => {
-    const widgetIdRef = useRef<string | null>(null);
+    // Create a local ref for the captcha element
+    const captchaRef = useRef<HTMLDivElement>(null);
+    // Use a stable ref for the widget ID
+    const widgetIdRef = useRef<number | null>(null);
     
     // Function to reset captcha that can be called by parent components
     const resetCaptcha = () => {
       console.log("Forwarded captcha reset requested");
-      if (window.hcaptcha && widgetIdRef.current) {
+      if (window.hcaptcha && widgetIdRef.current !== null) {
         try {
           console.log(`Resetting captcha widget from forwarded ref: ${widgetIdRef.current}`);
           window.hcaptcha.reset(widgetIdRef.current);
@@ -253,7 +268,12 @@ export default CaptchaComponent;
 // Extend Window interface to include custom captcha callbacks
 declare global {
   interface Window {
-    hcaptcha?: any;
+    hcaptcha?: {
+      render: (containerId: string, options: any) => number;
+      reset: (widgetId: number) => void;
+      remove: (widgetId: number) => void;
+      execute: (widgetId?: number) => void;
+    };
     [key: string]: any;
   }
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,9 +23,13 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [uploadProgress, setUploadProgress] = useState(0);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaVerified, setCaptchaVerified] = useState(false);
-  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [captchaError, setCaptchaError] = useState<string | null>(null);
+  
+  // Use a stable ID for the captcha
+  const captchaId = useRef(`signup-captcha-${Math.random().toString(36).substring(2, 15)}`).current;
+  const callbackName = useRef(`signupCaptchaCallback${Math.random().toString(36).substring(2, 15)}`).current;
+  
   const captchaRef = useRef<CaptchaRefType>(null);
   const formSubmitAttempts = useRef(0);
   
@@ -50,13 +53,13 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     return null;
   };
   
-  // Force re-render of captcha on component mount to ensure it's visible
+  // Clear captcha state when component mounts
   useEffect(() => {
-    console.log("Patient signup: Initial captcha setup with key:", captchaKey);
+    console.log("Patient signup: Setting up captcha with ID:", captchaId);
     setCaptchaError(null);
     setCaptchaVerified(false);
     setCaptchaToken(null);
-  }, [captchaKey]);
+  }, [captchaId]);
   
   const handleCaptchaVerify = (token: string) => {
     console.log("Patient signup: CAPTCHA verified, token received");
@@ -66,12 +69,15 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   };
   
   const resetCaptcha = () => {
-    console.log("Patient signup: Resetting captcha completely");
-    // Generate a new captcha key to force a complete re-render
-    setCaptchaKey(Date.now().toString());
+    console.log("Patient signup: Resetting captcha");
     setCaptchaVerified(false);
     setCaptchaToken(null);
     setCaptchaError(null);
+    
+    // Use the ref to reset the captcha
+    if (captchaRef.current) {
+      captchaRef.current.resetCaptcha();
+    }
   };
 
   const uploadDocuments = async (userId: string) => {
@@ -150,7 +156,12 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         return;
       }
       
-      console.log(`Patient signup: Starting signup with captcha token: ${captchaToken.substring(0, 15)}...`);
+      const token = captchaToken;
+      console.log(`Patient signup: Starting signup with captcha token: ${token.substring(0, 15)}...`);
+      
+      // Clear captcha token immediately to prevent reuse
+      setCaptchaToken(null);
+      setCaptchaVerified(false);
       
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -160,7 +171,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             name: formData.name,
             role: 'patient',
           },
-          captchaToken: captchaToken,
+          captchaToken: token,
         },
       });
       
@@ -186,8 +197,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           });
           
           setCaptchaError(errorMessage);
-          setCaptchaVerified(false);
-          // Reset captcha for a fresh attempt
           resetCaptcha();
           setLoading(false);
           return;
@@ -351,9 +360,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         <div className="flex justify-center mb-4" id="captcha-container">
           <CaptchaComponent 
-            captchaId={`signup-captcha-${captchaKey}`}
+            captchaId={captchaId}
             onVerify={handleCaptchaVerify}
-            callbackName={`signupCaptchaCallback${captchaKey}`}
+            callbackName={callbackName}
           />
         </div>
         
