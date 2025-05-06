@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import CaptchaComponent from "@/components/auth/CaptchaComponent";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TermsDialog, PrivacyDialog } from "@/components/signup/LegalPopups";
 import {
@@ -26,44 +25,11 @@ interface SignupCompleteProps {
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [captchaToken, setCaptchaToken] = useState<string>("dummy-token-for-testing");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
-  
-  // Generate unique IDs for each render cycle to avoid token reuse
-  const captchaId = `provider-signup-captcha-${captchaKey}`;
-  const callbackName = `handleProviderSignupCaptcha_${captchaKey}`;
-  
-  // Refresh the captcha when the component mounts or when we need a fresh token
-  useEffect(() => {
-    // Ensure captcha key is always unique on mount
-    setCaptchaKey(Date.now().toString());
-  }, []);
-  
-  const handleCaptchaVerify = (token: string) => {
-    console.log("⚠️ Provider captcha temporarily disabled - using dummy token");
-    setCaptchaToken("dummy-token-for-testing");
-  };
-  
-  const resetCaptcha = () => {
-    console.log("⚠️ Resetting captcha disabled - using dummy token");
-    setCaptchaKey(Date.now().toString());
-    setCaptchaToken("dummy-token-for-testing");
-  };
   
   const handleCreateAccount = async () => {
-    // Captcha check bypassed
-    // if (!captchaToken) {
-    //   toast({
-    //     title: "Verification required",
-    //     description: "Please complete the captcha verification.",
-    //     variant: "destructive"
-    //   });
-    //   return;
-    // }
-    
     if (!agreedToTerms) {
       toast({
         title: "Terms agreement required",
@@ -76,9 +42,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setSubmitting(true);
     
     try {
-      console.log("⚠️ Provider signup with captcha disabled - using dummy token");
+      console.log("⚠️ Provider signup with captcha fully disabled");
       
-      // Attempt to sign up the provider
+      // Remove captchaToken option completely
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -95,8 +61,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             postalCode: formData.postalCode || '',
             phoneNumber: formData.phoneNumber || '',
             isNewUser: true // Flag to identify new users for welcome modal
-          },
-          captchaToken: "dummy-token-for-testing"
+          }
         }
       });
       
@@ -167,12 +132,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </div>
         
         <div className="py-4 flex justify-center">
-          {/* Captcha component still rendered but internally disabled */}
-          <CaptchaComponent 
-            captchaId={captchaId}
-            onVerify={handleCaptchaVerify}
-            callbackName={callbackName}
-          />
+          <div className="h-[78px] min-w-[300px] flex items-center justify-center border border-border/20 rounded-md bg-muted/10">
+            <div className="text-sm text-amber-500 font-medium">
+              Captcha verification temporarily disabled for testing
+            </div>
+          </div>
         </div>
         
         <div className="flex items-center space-x-2 mb-6">

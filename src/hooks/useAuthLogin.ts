@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,8 +9,6 @@ export const useAuthLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [captchaToken, setCaptchaToken] = useState<string>("dummy-token-for-testing"); // Default dummy token
-  const [captchaVerified, setCaptchaVerified] = useState(true); // Always verified
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -45,23 +42,13 @@ export const useAuthLogin = () => {
     setIsLoading(true);
     setErrorMessage(null);
     
-    // Captcha check bypassed
-    // if (!captchaVerified || !captchaToken) {
-    //   setErrorMessage("Please complete the captcha verification before signing in.");
-    //   setIsLoading(false);
-    //   return;
-    // }
-    
     try {
-      console.log("⚠️ Login with captcha disabled - using dummy token");
+      console.log("⚠️ Login with captcha disabled - no captcha token needed");
       
+      // Remove captcha token from login request
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password,
-        options: {
-          // Using dummy token since captcha is disabled
-          captchaToken: "dummy-token-for-testing", 
-        }
+        password
       });
       
       if (error) throw error;
@@ -76,9 +63,6 @@ export const useAuthLogin = () => {
     } catch (error) {
       console.error("Login error:", error);
       setErrorMessage(error.message || "Failed to sign in. Please check your credentials.");
-      
-      // Reset captcha state for a fresh attempt
-      setCaptchaVerified(true); // Keep as true since we're bypassing captcha
     } finally {
       setIsLoading(false);
     }
@@ -154,10 +138,6 @@ export const useAuthLogin = () => {
     isGoogleLoading,
     errorMessage,
     setErrorMessage,
-    captchaToken,
-    setCaptchaToken,
-    captchaVerified,
-    setCaptchaVerified,
     handleLogin,
     handleGoogleLogin,
     handleSignOut

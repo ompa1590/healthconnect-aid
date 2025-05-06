@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle, Upload, Loader2 } from "lucide-react";
@@ -7,7 +7,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import CaptchaComponent from "@/components/auth/CaptchaComponent";
 import { TermsDialog, PrivacyDialog, HIPAAComplianceDialog } from "./LegalPopups";
 
 interface SignupCompleteProps {
@@ -21,14 +20,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [captchaToken, setCaptchaToken] = useState<string>("dummy-token-for-testing");
-  const [captchaVerified, setCaptchaVerified] = useState(true); // Set to true by default
-  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   const [termsAccepted, setTermsAccepted] = useState(false);
-  
-  // Generate unique IDs for each captcha instance
-  const uniqueCaptchaId = `patient-signup-captcha-${captchaKey}`;
-  const uniqueCallbackName = `patientSignupCaptcha_${captchaKey}`;
   
   // Validate that all required fields are present
   const validateRequiredFields = () => {
@@ -50,27 +42,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     return null;
   };
   
-  // Force re-render of captcha on component mount to ensure it's visible
-  useEffect(() => {
-    // Reset and regenerate captcha with unique key
-    setCaptchaKey(Date.now().toString());
-    setCaptchaVerified(false);
-    setCaptchaToken(null);
-  }, []);
-  
-  const handleCaptchaVerify = (token: string) => {
-    console.log("⚠️ Patient captcha temporarily disabled - using dummy token");
-    setCaptchaToken("dummy-token-for-testing");
-    setCaptchaVerified(true);
-  };
-  
-  const resetCaptcha = () => {
-    console.log("⚠️ Resetting captcha disabled - using dummy token");
-    setCaptchaKey(Date.now().toString());
-    setCaptchaToken("dummy-token-for-testing");
-    setCaptchaVerified(true);
-  };
-
   const uploadDocuments = async (userId: string) => {
     const files = formData.documentFiles || [];
     if (files.length === 0) return [];
@@ -133,18 +104,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         return;
       }
       
-      // Captcha check bypassed
-      // if (!captchaVerified || !captchaToken) {
-      //   toast({
-      //     title: "Captcha Required",
-      //     description: "Please complete the captcha verification before creating your account.",
-      //     variant: "destructive",
-      //   });
-      //   setLoading(false);
-      //   return;
-      // }
-      
-      console.log("⚠️ Patient signup with captcha disabled - using dummy token");
+      console.log("⚠️ Patient signup with captcha completely disabled");
       
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -152,9 +112,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         options: {
           data: {
             name: formData.name,
-          },
-          captchaToken: "dummy-token-for-testing", // Using dummy token
-        },
+          }
+        }
       });
       
       if (error) throw error;
@@ -306,17 +265,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       <div className="border-t border-border/30 pt-6">
         <h4 className="font-medium mb-4">Security Verification</h4>
         <p className="text-sm text-muted-foreground mb-4">
-          Please complete the security check below to verify you're human.
+          Security verification has been temporarily disabled for testing.
         </p>
-        
-        <div className="flex justify-center mb-4" id="captcha-container">
-          {/* Captcha component still rendered but internally disabled */}
-          <CaptchaComponent 
-            captchaId={uniqueCaptchaId}
-            onVerify={handleCaptchaVerify}
-            callbackName={uniqueCallbackName}
-          />
-        </div>
         
         <p className="text-amber-500 text-sm font-medium flex items-center justify-center mb-4">
           <CheckCircle className="h-4 w-4 mr-1" /> Captcha verification temporarily disabled
@@ -351,15 +301,15 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
         <Button 
           onClick={handleSignup} 
-          disabled={loading || !captchaVerified || !termsAccepted}
-          className={captchaVerified && termsAccepted ? "bg-green-500 hover:bg-green-600" : ""}
+          disabled={loading || !termsAccepted}
+          className={termsAccepted ? "bg-green-500 hover:bg-green-600" : ""}
         >
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Creating Account...
             </>
-          ) : captchaVerified && termsAccepted ? "Create Account ✓" : "Create Account"}
+          ) : termsAccepted ? "Create Account ✓" : "Create Account"}
         </Button>
         <Button variant="outline" asChild>
           <Link to="/login">

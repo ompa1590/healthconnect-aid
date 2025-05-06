@@ -1,3 +1,4 @@
+
 import React from "react";
 
 interface CaptchaComponentProps {
@@ -6,7 +7,7 @@ interface CaptchaComponentProps {
   callbackName: string;
 }
 
-// Temporarily disabled Captcha component
+// Fully disabled Captcha component
 const CaptchaComponent: React.FC<CaptchaComponentProps> = ({ 
   captchaId, 
   onVerify,
@@ -16,7 +17,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
   React.useEffect(() => {
     // Send a dummy token to bypass captcha verification
     onVerify("dummy-captcha-token-for-testing");
-    console.log("⚠️ Captcha temporarily disabled - sending dummy token");
+    console.log("⚠️ Captcha fully disabled - sending dummy token");
   }, [onVerify]);
 
   // Return an empty placeholder instead of the actual captcha
