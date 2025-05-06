@@ -21,7 +21,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
   useEffect(() => {
     // Define the callback function on window that hCaptcha will call
     window[callbackName] = (token: string) => {
-      console.log(`Captcha verified with token:`, token);
+      console.log(`Captcha verified with token:`, token.substring(0, 20) + '...');
       if (mountedRef.current) {
         onVerify(token);
       }
@@ -32,6 +32,18 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       delete window[callbackName];
     };
   }, [onVerify, callbackName]);
+
+  // Reset the captcha when needed
+  const resetCaptcha = () => {
+    if (window.hcaptcha && widgetIdRef.current) {
+      try {
+        console.log("Resetting captcha...");
+        window.hcaptcha.reset(widgetIdRef.current);
+      } catch (error) {
+        console.error("Error resetting captcha:", error);
+      }
+    }
+  };
 
   // Load and handle hCaptcha script and widget
   useEffect(() => {
@@ -141,6 +153,15 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       cleanup();
     };
   }, [captchaId, callbackName]); // Depend on captchaId and callbackName to re-render if they change
+
+  // Expose the reset method to parent components
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      reset: resetCaptcha
+    }),
+    [resetCaptcha]
+  );
 
   return (
     <div className="captcha-container">

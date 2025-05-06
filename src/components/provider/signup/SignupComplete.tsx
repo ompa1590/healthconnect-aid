@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight } from "lucide-react";
@@ -32,6 +32,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
+  const captchaRef = useRef<{ reset: () => void } | null>(null);
   
   // Refresh the captcha when the component mounts or when we need a fresh token
   useEffect(() => {
@@ -39,7 +40,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   }, []);
   
   const handleCaptchaVerify = (token: string) => {
-    console.log("Captcha verified, setting token:", token);
+    console.log("Captcha verified, setting token:", token.substring(0, 20) + '...');
     setCaptchaToken(token);
   };
   
@@ -100,8 +101,12 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           description: error.message,
           variant: "destructive"
         });
-        // Reset captcha for a fresh attempt
-        resetCaptcha();
+        
+        // Reset captcha if there's a captcha-related error
+        if (error.message.includes('captcha')) {
+          resetCaptcha();
+        }
+        
         setSubmitting(false);
       } else {
         console.log("Provider signup successful:", data);
@@ -122,6 +127,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
+      
       // Reset captcha for a fresh attempt
       resetCaptcha();
       setSubmitting(false);
@@ -166,6 +172,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             captchaId={`provider-signup-captcha-${captchaKey}`}
             onVerify={handleCaptchaVerify}
             callbackName={`handleProviderSignupCaptcha${captchaKey}`}
+            ref={captchaRef}
           />
         </div>
         
