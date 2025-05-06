@@ -32,7 +32,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
-  const captchaRef = useRef<{ reset: () => void } | null>(null);
+  const captchaRef = useRef<{ reset: () => void }>(null);
   
   // Refresh the captcha when the component mounts or when we need a fresh token
   useEffect(() => {

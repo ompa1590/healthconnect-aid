@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 
 interface CaptchaComponentProps {
   captchaId: string;
@@ -7,11 +7,15 @@ interface CaptchaComponentProps {
   callbackName: string;
 }
 
-const CaptchaComponent: React.FC<CaptchaComponentProps> = ({ 
+type CaptchaRefType = {
+  reset: () => void;
+};
+
+const CaptchaComponent = forwardRef<CaptchaRefType, CaptchaComponentProps>(({ 
   captchaId, 
   onVerify, 
   callbackName 
-}) => {
+}, ref) => {
   const [isLoading, setIsLoading] = useState(true);
   const captchaRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
@@ -155,13 +159,9 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
   }, [captchaId, callbackName]); // Depend on captchaId and callbackName to re-render if they change
 
   // Expose the reset method to parent components
-  React.useImperativeHandle(
-    ref,
-    () => ({
-      reset: resetCaptcha
-    }),
-    [resetCaptcha]
-  );
+  useImperativeHandle(ref, () => ({
+    reset: resetCaptcha
+  }), [resetCaptcha]);
 
   return (
     <div className="captcha-container">
@@ -178,7 +178,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default CaptchaComponent;
 

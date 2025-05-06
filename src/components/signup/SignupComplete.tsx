@@ -26,7 +26,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const captchaRef = useRef<{ reset: () => void } | null>(null);
+  const captchaRef = useRef<{ reset: () => void }>(null);
   
   // Validate that all required fields are present
   const validateRequiredFields = () => {
