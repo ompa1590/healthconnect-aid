@@ -9,7 +9,7 @@ import {
   DialogTitle 
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { FileText, CheckCircle, ScrollText, AlertTriangle, ArrowRight } from "lucide-react";
+import { FileText, CheckCircle, ScrollText, AlertTriangle } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 
@@ -66,27 +66,17 @@ const SummaryDialog: React.FC<SummaryDialogProps> = ({
                   <AccordionItem value={`section-${index}`} key={index} className="border-b border-border/40">
                     <AccordionTrigger className="text-left hover:no-underline py-3">
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="bg-primary/5 text-primary font-medium">
+                        <Badge variant="outline" className="bg-primary/5 text-primary">
                           {title.replace(':', '')}
                         </Badge>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-2 pb-4">
-                      <div className="space-y-4">
+                      <div className="space-y-2 text-sm text-muted-foreground">
                         {content.map((line, i) => (
-                          <div key={i} className="flex items-start gap-2 group transition-colors rounded-lg p-2 hover:bg-muted/30">
-                            <ArrowRight className="h-4 w-4 text-primary/70 mt-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="space-y-1">
-                              <p className="leading-relaxed text-foreground/90 font-medical">
-                                {line}
-                              </p>
-                              {line.includes(':') && (
-                                <div className="pl-4 text-sm text-muted-foreground">
-                                  {line.split(':')[1].trim()}
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                          <p key={i} className="leading-relaxed">
+                            {line}
+                          </p>
                         ))}
                       </div>
                     </AccordionContent>
