@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle, Upload, Loader2 } from "lucide-react";
@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import CaptchaComponent from "@/components/auth/CaptchaComponent";
 import { TermsDialog, PrivacyDialog, HIPAAComplianceDialog } from "./LegalPopups";
 
 interface SignupCompleteProps {
@@ -20,6 +21,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   const [termsAccepted, setTermsAccepted] = useState(false);
   
   // Validate that all required fields are present
@@ -42,6 +46,20 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     return null;
   };
   
+  // Force re-render of captcha on component mount to ensure it's visible
+  useEffect(() => {
+    // Reset and regenerate captcha with unique key
+    setCaptchaKey(Date.now().toString());
+    setCaptchaVerified(false);
+    setCaptchaToken(null);
+  }, []);
+  
+  const handleCaptchaVerify = (token: string) => {
+    console.log("Captcha verified with token:", token);
+    setCaptchaToken(token);
+    setCaptchaVerified(true);
+  };
+
   const uploadDocuments = async (userId: string) => {
     const files = formData.documentFiles || [];
     if (files.length === 0) return [];
@@ -104,7 +122,17 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         return;
       }
       
-      console.log("⚠️ Patient signup with captcha completely disabled");
+      if (!captchaVerified || !captchaToken) {
+        toast({
+          title: "Captcha Required",
+          description: "Please complete the captcha verification before creating your account.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
+      console.log("Starting signup with captcha token:", captchaToken);
       
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -112,13 +140,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         options: {
           data: {
             name: formData.name,
-          }
-        }
+          },
+          captchaToken: captchaToken,
+        },
       });
       
       if (error) throw error;
       
-      console.log("Patient signup successful:", data);
+      console.log("Signup successful:", data);
       
       if (!data.user) {
         throw new Error("Failed to create user account");
@@ -179,7 +208,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       navigate('/dashboard');
     } catch (error) {
-      console.error("Error during patient signup:", error);
+      console.error("Error during signup:", error);
       setError(error.message || "There was an error creating your account. Please try again.");
       toast({
         title: "Signup failed",
@@ -265,12 +294,22 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       <div className="border-t border-border/30 pt-6">
         <h4 className="font-medium mb-4">Security Verification</h4>
         <p className="text-sm text-muted-foreground mb-4">
-          Security verification has been temporarily disabled for testing.
+          Please complete the security check below to verify you're human.
         </p>
         
-        <p className="text-amber-500 text-sm font-medium flex items-center justify-center mb-4">
-          <CheckCircle className="h-4 w-4 mr-1" /> Captcha verification temporarily disabled
-        </p>
+        <div className="flex justify-center mb-4" id="captcha-container">
+          <CaptchaComponent 
+            captchaId={`signup-captcha-${captchaKey}`}
+            onVerify={handleCaptchaVerify}
+            callbackName="signupCaptchaCallback"
+          />
+        </div>
+        
+        {captchaVerified && (
+          <p className="text-green-500 text-sm font-medium flex items-center justify-center mb-4">
+            <CheckCircle className="h-4 w-4 mr-1" /> Verification complete
+          </p>
+        )}
       </div>
       
       <div className="flex items-center space-x-2 justify-center">
@@ -301,15 +340,15 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
         <Button 
           onClick={handleSignup} 
-          disabled={loading || !termsAccepted}
-          className={termsAccepted ? "bg-green-500 hover:bg-green-600" : ""}
+          disabled={loading || !captchaVerified || !termsAccepted}
+          className={captchaVerified && termsAccepted ? "bg-green-500 hover:bg-green-600" : ""}
         >
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Creating Account...
             </>
-          ) : termsAccepted ? "Create Account ✓" : "Create Account"}
+          ) : captchaVerified && termsAccepted ? "Create Account ✓" : "Create Account"}
         </Button>
         <Button variant="outline" asChild>
           <Link to="/login">

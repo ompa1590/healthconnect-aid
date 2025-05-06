@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,8 @@ export const useAuthLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -42,13 +45,19 @@ export const useAuthLogin = () => {
     setIsLoading(true);
     setErrorMessage(null);
     
+    if (!captchaVerified || !captchaToken) {
+      setErrorMessage("Please complete the captcha verification before signing in.");
+      setIsLoading(false);
+      return;
+    }
+    
     try {
-      console.log("⚠️ Login with captcha disabled - no captcha token needed");
-      
-      // Remove captcha token from login request
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
+        options: {
+          captchaToken: captchaToken,
+        }
       });
       
       if (error) throw error;
@@ -138,6 +147,10 @@ export const useAuthLogin = () => {
     isGoogleLoading,
     errorMessage,
     setErrorMessage,
+    captchaToken,
+    setCaptchaToken,
+    captchaVerified,
+    setCaptchaVerified,
     handleLogin,
     handleGoogleLogin,
     handleSignOut
