@@ -33,17 +33,23 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   
+  // Generate unique IDs for each render cycle to avoid token reuse
+  const captchaId = `provider-signup-captcha-${captchaKey}`;
+  const callbackName = `handleProviderSignupCaptcha_${captchaKey}`;
+  
   // Refresh the captcha when the component mounts or when we need a fresh token
   useEffect(() => {
+    // Ensure captcha key is always unique on mount
     setCaptchaKey(Date.now().toString());
   }, []);
   
   const handleCaptchaVerify = (token: string) => {
-    console.log("Captcha verified, setting token:", token);
+    console.log("Provider captcha verified, setting token:", token.substring(0, 10) + '...');
     setCaptchaToken(token);
   };
   
   const resetCaptcha = () => {
+    console.log("Resetting captcha with new key");
     // Generate a new captcha key to force a complete re-render
     setCaptchaKey(Date.now().toString());
     setCaptchaToken(null);
@@ -71,6 +77,17 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setSubmitting(true);
     
     try {
+      // Store token temporarily and clear it to prevent reuse
+      const token = captchaToken;
+      setCaptchaToken(null); // Clear immediately to prevent reuse
+      
+      console.log("Attempting provider signup with form data:", {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        // Omitting password for security
+      });
+      
       // Attempt to sign up the provider
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -89,17 +106,18 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             phoneNumber: formData.phoneNumber || '',
             isNewUser: true // Flag to identify new users for welcome modal
           },
-          captchaToken: captchaToken  // Pass the captcha token to Supabase
+          captchaToken: token  // Use the stored token
         }
       });
       
       if (error) {
-        console.error("Error during sign up:", error);
+        console.error("Error during provider sign up:", error);
         toast({
           title: "Sign up failed",
           description: error.message,
           variant: "destructive"
         });
+        
         // Reset captcha for a fresh attempt
         resetCaptcha();
         setSubmitting(false);
@@ -116,12 +134,13 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         onComplete();
       }
     } catch (error) {
-      console.error("Unexpected error during sign up:", error);
+      console.error("Unexpected error during provider sign up:", error);
       toast({
         title: "Sign up failed",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
+      
       // Reset captcha for a fresh attempt
       resetCaptcha();
       setSubmitting(false);
@@ -163,9 +182,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         <div className="py-4 flex justify-center">
           <CaptchaComponent 
-            captchaId={`provider-signup-captcha-${captchaKey}`}
+            captchaId={captchaId}
             onVerify={handleCaptchaVerify}
-            callbackName={`handleProviderSignupCaptcha${captchaKey}`}
+            callbackName={callbackName}
           />
         </div>
         

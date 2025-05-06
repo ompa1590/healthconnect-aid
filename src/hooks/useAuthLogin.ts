@@ -52,11 +52,15 @@ export const useAuthLogin = () => {
     }
     
     try {
+      // Store and clear token to prevent reuse
+      const token = captchaToken;
+      setCaptchaToken(null);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
         options: {
-          captchaToken: captchaToken,
+          captchaToken: token,
         }
       });
       
@@ -72,6 +76,9 @@ export const useAuthLogin = () => {
     } catch (error) {
       console.error("Login error:", error);
       setErrorMessage(error.message || "Failed to sign in. Please check your credentials.");
+      
+      // Reset captcha state for a fresh attempt
+      setCaptchaVerified(false);
     } finally {
       setIsLoading(false);
     }

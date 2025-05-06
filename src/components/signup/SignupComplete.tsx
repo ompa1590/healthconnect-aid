@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,6 +26,10 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   const [termsAccepted, setTermsAccepted] = useState(false);
+  
+  // Generate unique IDs for each captcha instance
+  const uniqueCaptchaId = `patient-signup-captcha-${captchaKey}`;
+  const uniqueCallbackName = `patientSignupCaptcha_${captchaKey}`;
   
   // Validate that all required fields are present
   const validateRequiredFields = () => {
@@ -55,9 +60,16 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   }, []);
   
   const handleCaptchaVerify = (token: string) => {
-    console.log("Captcha verified with token:", token);
+    console.log("Patient captcha verified with token:", token.substring(0, 10) + '...');
     setCaptchaToken(token);
     setCaptchaVerified(true);
+  };
+  
+  const resetCaptcha = () => {
+    console.log("Resetting patient captcha");
+    setCaptchaKey(Date.now().toString());
+    setCaptchaToken(null);
+    setCaptchaVerified(false);
   };
 
   const uploadDocuments = async (userId: string) => {
@@ -132,7 +144,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         return;
       }
       
-      console.log("Starting signup with captcha token:", captchaToken);
+      // Store token temporarily and clear it to prevent reuse
+      const token = captchaToken;
+      setCaptchaToken(null); // Clear immediately to prevent reuse
+      
+      console.log("Starting patient signup with captcha token");
       
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -141,13 +157,13 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           data: {
             name: formData.name,
           },
-          captchaToken: captchaToken,
+          captchaToken: token, // Use the stored token that was cleared
         },
       });
       
       if (error) throw error;
       
-      console.log("Signup successful:", data);
+      console.log("Patient signup successful:", data);
       
       if (!data.user) {
         throw new Error("Failed to create user account");
@@ -208,13 +224,16 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       navigate('/dashboard');
     } catch (error) {
-      console.error("Error during signup:", error);
+      console.error("Error during patient signup:", error);
       setError(error.message || "There was an error creating your account. Please try again.");
       toast({
         title: "Signup failed",
         description: error.message || "There was an error creating your account. Please try again.",
         variant: "destructive",
       });
+      
+      // Reset captcha for a fresh attempt
+      resetCaptcha();
     } finally {
       setLoading(false);
       setUploadProgress(0);
@@ -299,9 +318,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         <div className="flex justify-center mb-4" id="captcha-container">
           <CaptchaComponent 
-            captchaId={`signup-captcha-${captchaKey}`}
+            captchaId={uniqueCaptchaId}
             onVerify={handleCaptchaVerify}
-            callbackName="signupCaptchaCallback"
+            callbackName={uniqueCallbackName}
           />
         </div>
         
