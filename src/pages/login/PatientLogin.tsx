@@ -77,11 +77,6 @@ const PatientLogin = () => {
         
         <div className="max-w-lg p-8 z-10">
           <div className="rounded-2xl overflow-hidden shadow-2xl mb-8 transform transition-all hover:scale-105 duration-300">
-            <img 
-              src="https://images.unsplash.com/photo-1651008376326-f606cfcb08e9?q=80&w=1974&auto=format&fit=crop" 
-              alt="Patient care" 
-              className="w-full h-auto object-cover"
-            />
           </div>
           
           <GlassCard className="mb-8">
