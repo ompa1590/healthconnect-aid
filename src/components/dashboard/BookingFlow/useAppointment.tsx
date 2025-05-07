@@ -43,7 +43,8 @@ export const useAppointment = () => {
         throw new Error('User is not authenticated');
       }
       
-      // Insert into appointments table
+      // Insert into appointments table - we don't need to query auth.users directly
+      // which was causing the permission error
       const { data, error } = await supabase
         .from('appointments')
         .insert({
