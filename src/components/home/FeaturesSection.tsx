@@ -3,8 +3,13 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { ArrowRight, Bot, MessageCircle, Stethoscope, CalendarClock, PanelRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useState } from "react";
+import FeatureDetailsDialog from "./FeatureDetailsDialog";
 
 const FeaturesSection = () => {
+  const [selectedFeature, setSelectedFeature] = useState<any | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  
   const features = [
     {
       icon: Stethoscope,
@@ -13,6 +18,9 @@ const FeaturesSection = () => {
         "Connect with healthcare professionals instantly for medical advice, prescriptions, and follow-ups.",
       delay: "0.1s",
       color: "primary",
+      details: "Our virtual consultation platform allows you to connect with healthcare professionals from the comfort of your home. Get medical advice, prescriptions, and follow-ups without the need to travel to a clinic.",
+      benefits: ["No travel required", "Same-day appointments", "Access to specialists", "Secure and private"],
+      features: ["HD video consultations", "Secure messaging", "Digital prescriptions", "Medical record access"]
     },
     {
       icon: CalendarClock,
@@ -21,6 +29,9 @@ const FeaturesSection = () => {
         "Personalized programs for conditions like diabetes, hypertension, and weight management.",
       delay: "0.2s",
       color: "secondary",
+      details: "Our chronic care management programs are designed to help you manage long-term health conditions effectively. We provide personalized care plans, regular check-ins, and continuous support.",
+      benefits: ["Personalized care plans", "Regular monitoring", "Medication management", "Lifestyle support"],
+      features: ["Condition-specific programs", "Remote monitoring tools", "Regular virtual check-ins", "Educational resources"]
     },
     {
       icon: PanelRight,
@@ -29,6 +40,9 @@ const FeaturesSection = () => {
         "Access to dermatologists, endocrinologists, mental health professionals, and more.",
       delay: "0.3s",
       color: "primary",
+      details: "Our network includes a wide range of specialists who can provide expert care for specific health concerns. Get access to dermatologists, endocrinologists, mental health professionals, and more without long wait times.",
+      benefits: ["Reduced wait times", "Expert opinions", "Comprehensive care", "Convenient scheduling"],
+      features: ["Dermatology consultations", "Endocrinology services", "Mental health support", "Cardiology assessments"]
     },
     {
       icon: Bot,
@@ -37,6 +51,9 @@ const FeaturesSection = () => {
         "Advanced technology to assess symptoms and guide you to appropriate care options.",
       delay: "0.4s",
       color: "secondary",
+      details: "Our AI-powered symptom checker uses advanced algorithms to help you understand your symptoms and determine the most appropriate next steps. It's available 24/7 to provide initial guidance before connecting with a healthcare provider.",
+      benefits: ["24/7 availability", "Quick initial assessment", "Guided care recommendations", "Continuous learning"],
+      features: ["Comprehensive symptom analysis", "Evidence-based recommendations", "Integration with medical records", "Follow-up care suggestions"]
     },
     {
       icon: MessageCircle,
@@ -45,6 +62,9 @@ const FeaturesSection = () => {
         "HIPAA-compliant communication with your healthcare team for ongoing support.",
       delay: "0.5s",
       color: "primary",
+      details: "Our secure messaging platform ensures that all communications with your healthcare team are protected and private. Send messages, ask questions, and receive ongoing support between appointments.",
+      benefits: ["HIPAA compliance", "Continuous care", "Quick responses", "Reduced communication barriers"],
+      features: ["End-to-end encryption", "File sharing", "Notification alerts", "Message history"]
     },
     {
       icon: ShieldCheck,
@@ -53,8 +73,17 @@ const FeaturesSection = () => {
         "Consult specialist physicians within the network for additional medical perspectives.",
       delay: "0.6s",
       color: "secondary",
+      details: "Our second opinion service gives you access to specialist physicians who can provide additional perspectives on your diagnosis or treatment plan. This can help you make more informed decisions about your healthcare.",
+      benefits: ["Expert validation", "Alternative perspectives", "Treatment comparisons", "Peace of mind"],
+      features: ["Medical record review", "Specialist consultations", "Comprehensive reports", "Treatment recommendations"]
     },
   ];
+
+  const handleLearnMore = (feature: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    setSelectedFeature(feature);
+    setDialogOpen(true);
+  };
 
   return (
     <section id="features" className="py-20 relative overflow-hidden">
@@ -91,17 +120,21 @@ const FeaturesSection = () => {
               <Button
                 variant="ghost"
                 className="mt-6 p-0 h-auto text-primary hover:text-primary/80 hover:bg-transparent justify-start group"
-                asChild
+                onClick={(e) => handleLearnMore(feature, e)}
               >
-                <Link to="#">
-                  Learn more 
-                  <ArrowRight className="ml-2 h-4 w-4 transform transition-transform duration-300 group-hover:translate-x-1" />
-                </Link>
+                Learn more 
+                <ArrowRight className="ml-2 h-4 w-4 transform transition-transform duration-300 group-hover:translate-x-1" />
               </Button>
             </GlassCard>
           ))}
         </div>
       </div>
+      
+      <FeatureDetailsDialog 
+        feature={selectedFeature}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </section>
   );
 };
