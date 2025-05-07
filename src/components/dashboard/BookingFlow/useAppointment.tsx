@@ -22,14 +22,20 @@ export const useAppointment = () => {
     try {
       setIsSubmitting(true);
       
-      // Format the appointment date and time
+      // Format the appointment date - ensure it's a string in YYYY-MM-DD format
       const appointmentDate = new Date(appointmentData.date);
-      const [hours, minutes] = appointmentData.time.split(':');
-      appointmentDate.setHours(parseInt(hours), parseInt(minutes));
+      const formattedDate = appointmentDate.toISOString().split('T')[0];
+      
+      // Clean up time format - ensure it's in HH:MM format for database
+      let timeValue = appointmentData.time;
+      if (timeValue.includes(' ')) {
+        // If time includes AM/PM, extract just the time part
+        timeValue = timeValue.split(' ')[0];
+      }
       
       console.log('Saving appointment with data:', appointmentData);
-      console.log('Formatted date for DB:', appointmentDate.toISOString().split('T')[0]);
-      console.log('Time for DB:', appointmentData.time);
+      console.log('Formatted date for DB:', formattedDate);
+      console.log('Time for DB:', timeValue);
       
       // Insert into appointments table
       const { data, error } = await supabase
@@ -40,8 +46,8 @@ export const useAppointment = () => {
           patient_name: appointmentData.patientName,
           patient_email: appointmentData.patientEmail,
           service_type: appointmentData.service,
-          appointment_date: appointmentDate.toISOString().split('T')[0],
-          appointment_time: appointmentData.time,
+          appointment_date: formattedDate,
+          appointment_time: timeValue,
           reason: appointmentData.reasonForVisit,
           status: 'upcoming'
         })

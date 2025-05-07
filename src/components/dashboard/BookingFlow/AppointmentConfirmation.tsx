@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CalendarCheck, Clock, User } from "lucide-react";
+import { CalendarCheck, Clock, User, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import RadialCard from "../../prescreening/PreScreeningAssistant";
 import { useToast } from "@/components/ui/use-toast";
@@ -18,6 +18,7 @@ interface AppointmentConfirmationProps {
 
 const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConfirmationProps) => {
   const [showPrescreening, setShowPrescreening] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
   const { toast } = useToast();
 
   const togglePrescreening = () => {
@@ -40,16 +41,34 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
     });
   };
 
+  const handleConfirmAppointment = () => {
+    console.log("Confirming appointment with details:", appointmentDetails);
+    onDone(); // This will trigger the saveAppointment function in the parent component
+    setIsConfirmed(true);
+    toast({
+      title: "Appointment Confirmed",
+      description: "Your appointment has been successfully booked and saved.",
+    });
+  };
+
   return (
     <div className="space-y-6 text-center">
       <div className="flex flex-col items-center mb-4">
         <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-          <CalendarCheck className="h-10 w-10 text-primary" />
+          {isConfirmed ? (
+            <CheckCircle className="h-10 w-10 text-green-500" />
+          ) : (
+            <CalendarCheck className="h-10 w-10 text-primary" />
+          )}
         </div>
         
-        <h2 className="text-2xl font-medium">Appointment Confirmed!</h2>
+        <h2 className="text-2xl font-medium">
+          {isConfirmed ? "Appointment Confirmed!" : "Review Appointment Details"}
+        </h2>
         <p className="text-muted-foreground mt-1">
-          Your appointment has been successfully scheduled.
+          {isConfirmed 
+            ? "Your appointment has been successfully scheduled." 
+            : "Please review and confirm your appointment details below."}
         </p>
       </div>
       
@@ -92,16 +111,28 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
       </div>
       
       <div className="text-center max-w-md mx-auto">
-        <p className="text-sm text-muted-foreground mb-4">
-          We've sent a confirmation email with these details. 
-          You can manage your appointments in the Dashboard.
-        </p>
+        {!isConfirmed ? (
+          <Button 
+            onClick={handleConfirmAppointment} 
+            size="lg" 
+            className="px-8 mb-4 bg-green-600 hover:bg-green-700"
+          >
+            <CheckCircle className="mr-2 h-4 w-4" />
+            Confirm Appointment
+          </Button>
+        ) : (
+          <p className="text-sm text-muted-foreground mb-4">
+            We've sent a confirmation email with these details. 
+            You can manage your appointments in the Dashboard.
+          </p>
+        )}
         
         <div className="space-y-3">
           <Button 
             onClick={togglePrescreening} 
             size="lg" 
             className="px-8"
+            disabled={!isConfirmed}
           >
             {showPrescreening ? 'Close Prescreening' : 'Start Your Prescreening'}
           </Button>
@@ -111,6 +142,7 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
               variant="outline"
               size="lg"
               className="px-8 mt-2"
+              disabled={!isConfirmed}
             >
               Prescreen Later
             </Button>

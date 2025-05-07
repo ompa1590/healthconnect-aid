@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -27,7 +28,7 @@ interface Appointment {
   id: string;
   patient: string;
   patientId: string;
-  age?: string; // Change to string to match the string | number usage
+  age?: string; // Using string consistently for age
   reason: string;
   date: Date;
   time: string;
@@ -112,7 +113,7 @@ const ProviderAppointments = () => {
               id: "1",
               patient: "Emily Johnson",
               patientId: "PTN-CE550N",
-              age: 34,
+              age: "34",  // Changed to string
               reason: "Annual checkup",
               date: new Date(2024, 2, 22),
               time: "09:00 - 09:30 AM",
@@ -122,7 +123,7 @@ const ProviderAppointments = () => {
               id: "2",
               patient: "Michael Rodriguez",
               patientId: "PTN-MR421K",
-              age: 52,
+              age: "52",  // Changed to string
               reason: "Diabetes management",
               date: new Date(2024, 2, 22),
               time: "10:30 - 11:00 AM",
@@ -132,7 +133,7 @@ const ProviderAppointments = () => {
               id: "3",
               patient: "Sarah Parker",
               patientId: "PTN-SP785Q",
-              age: 28,
+              age: "28",  // Changed to string
               reason: "Psychiatry consultation",
               date: new Date(2024, 2, 21),
               time: "02:00 - 02:30 PM",
@@ -142,7 +143,7 @@ const ProviderAppointments = () => {
               id: "4",
               patient: "Emma Williams",
               patientId: "PTN-EW334P",
-              age: 42,
+              age: "42",  // Changed to string
               reason: "Family Planning counseling",
               date: new Date(2024, 2, 23),
               time: "11:15 - 11:45 AM",
@@ -152,7 +153,7 @@ const ProviderAppointments = () => {
               id: "5",
               patient: "James Anderson",
               patientId: "PTN-JA652T",
-              age: 38,
+              age: "38",  // Changed to string
               reason: "Follow-up consultation",
               date: new Date(2024, 2, 23),
               time: "03:30 - 04:00 PM",
@@ -168,7 +169,7 @@ const ProviderAppointments = () => {
             id: "1",
             patient: "Emily Johnson",
             patientId: "PTN-CE550N",
-            age: 34,
+            age: "34",  // Changed to string
             reason: "Annual checkup",
             date: new Date(2024, 2, 22),
             time: "09:00 - 09:30 AM",
@@ -178,7 +179,7 @@ const ProviderAppointments = () => {
             id: "2",
             patient: "Michael Rodriguez",
             patientId: "PTN-MR421K",
-            age: 52,
+            age: "52",  // Changed to string
             reason: "Diabetes management",
             date: new Date(2024, 2, 22),
             time: "10:30 - 11:00 AM",
@@ -188,7 +189,7 @@ const ProviderAppointments = () => {
             id: "3",
             patient: "Sarah Parker",
             patientId: "PTN-SP785Q",
-            age: 28,
+            age: "28",  // Changed to string
             reason: "Psychiatry consultation",
             date: new Date(2024, 2, 21),
             time: "02:00 - 02:30 PM",
@@ -198,7 +199,7 @@ const ProviderAppointments = () => {
             id: "4",
             patient: "Emma Williams",
             patientId: "PTN-EW334P",
-            age: 42,
+            age: "42",  // Changed to string
             reason: "Family Planning counseling",
             date: new Date(2024, 2, 23),
             time: "11:15 - 11:45 AM",
@@ -208,7 +209,7 @@ const ProviderAppointments = () => {
             id: "5",
             patient: "James Anderson",
             patientId: "PTN-JA652T",
-            age: 38,
+            age: "38",  // Changed to string
             reason: "Follow-up consultation",
             date: new Date(2024, 2, 23),
             time: "03:30 - 04:00 PM",

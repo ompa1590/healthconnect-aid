@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ServiceSelection from "./ServiceSelection";
@@ -37,7 +38,7 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
   const goToPreviousStep = () => setCurrentStep(prev => prev - 1);
   
   // Final submission function
-  const { saveAppointment } = useAppointment();
+  const { saveAppointment, isSubmitting } = useAppointment();
   const { toast } = useToast();
   const [userId, setUserId] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<{name?: string, email?: string} | null>(null);
@@ -93,6 +94,8 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
     // Format the time properly
     const timeValue = selectedTime.split(' ')[0]; // Extract just the time part without AM/PM
     
+    console.log("Submitting appointment with doctor name:", selectedDoctorName);
+    
     const success = await saveAppointment({
       service: selectedService,
       doctorId: selectedDoctor || '',
@@ -105,7 +108,11 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
     });
     
     if (success) {
-      onClose();
+      toast({
+        title: "Appointment Saved",
+        description: "Your appointment has been saved to our system.",
+      });
+      // Don't close the dialog yet - let the user see the confirmation page
     }
   };
   
@@ -156,7 +163,7 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
           <AppointmentConfirmation 
             appointmentDetails={{
               service: getServiceName(),
-              doctor: selectedDoctorName, // Pass the doctor name instead of looking it up
+              doctor: selectedDoctorName, // Pass the doctor name
               date: selectedDate!,
               time: selectedTime!,
             }}
