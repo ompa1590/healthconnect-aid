@@ -22,7 +22,7 @@ interface Doctor {
 
 interface DoctorSelectionProps {
   selectedDoctor: string | null;
-  onSelectDoctor: (doctorId: string) => void;
+  onSelectDoctor: (doctorId: string, doctorName: string) => void; // Updated to also return doctor name
   onBack: () => void;
   onNext: () => void;
 }
@@ -55,7 +55,7 @@ const DoctorSelection = ({
         // Transform the data to match our Doctor interface
         const formattedDoctors = data.map(doctor => ({
           id: doctor.id,
-          name: `${doctor.first_name} ${doctor.last_name}`,
+          name: `${doctor.first_name || ''} ${doctor.last_name || ''}`.trim(),
           specialty: doctor.specializations?.[0] || doctor.provider_type || "General Practitioner",
           // For now we'll use fixed ratings and experience until we have actual data
           rating: 4.5 + (Math.random() * 0.5), // Random rating between 4.5-5.0
@@ -129,7 +129,7 @@ const DoctorSelection = ({
                   ? "border-primary" 
                   : "border-muted/50"
               }`}
-              onClick={() => onSelectDoctor(doctor.id)}
+              onClick={() => onSelectDoctor(doctor.id, doctor.name)}
             >
               <CardContent className="p-4 flex items-start gap-4">
                 {selectedDoctor === doctor.id && (

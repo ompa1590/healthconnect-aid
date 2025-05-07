@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Clock, User } from "lucide-react";
 import { format } from "date-fns";
-import Siri from "../../prescreening/PreScreeningAssistant";
 import RadialCard from "../../prescreening/PreScreeningAssistant";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -31,12 +30,9 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
     const [hours, minutes] = appointmentDetails.time.split(':');
     appointmentTime.setHours(parseInt(hours), parseInt(minutes));
     
-    const eightHoursBefore = new Date(appointmentTime);
-    eightHoursBefore.setHours(appointmentTime.getHours() - 8);
-    
     // Format the date and time for display
-    const formattedDate = format(eightHoursBefore, "MMMM d, yyyy");
-    const formattedTime = format(eightHoursBefore, "h:mm a");
+    const formattedDate = format(appointmentTime, "MMMM d, yyyy");
+    const formattedTime = format(appointmentTime, "h:mm a");
     
     toast({
       title: "Pre-screening Reminder Set",

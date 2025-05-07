@@ -30,19 +30,17 @@ export const useAppointment = () => {
       // Insert into appointments table
       const { data, error } = await supabase
         .from('appointments')
-        .insert([
-          {
-            provider_id: appointmentData.doctorId,
-            patient_id: appointmentData.patientId,
-            patient_name: appointmentData.patientName,
-            patient_email: appointmentData.patientEmail,
-            service_type: appointmentData.service,
-            appointment_date: appointmentData.date.toISOString().split('T')[0],
-            appointment_time: appointmentData.time,
-            reason: appointmentData.reasonForVisit,
-            status: 'upcoming'
-          }
-        ])
+        .insert({
+          provider_id: appointmentData.doctorId,
+          patient_id: appointmentData.patientId,
+          patient_name: appointmentData.patientName,
+          patient_email: appointmentData.patientEmail,
+          service_type: appointmentData.service,
+          appointment_date: appointmentData.date.toISOString().split('T')[0],
+          appointment_time: appointmentData.time,
+          reason: appointmentData.reasonForVisit,
+          status: 'upcoming'
+        })
         .select();
       
       if (error) {

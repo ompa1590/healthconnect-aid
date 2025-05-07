@@ -24,7 +24,7 @@ import AvailabilityDialog from "./AvailabilityDialog";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Appointment {
-  id: number | string;
+  id: string | number;
   patient: string;
   patientId: string;
   age?: number;
@@ -33,6 +33,19 @@ interface Appointment {
   time: string;
   status: string;
   patientEmail?: string;
+}
+
+interface AppointmentRecord {
+  id: string;
+  provider_id: string;
+  patient_id: string | null;
+  patient_name: string;
+  patient_email: string;
+  service_type: string;
+  appointment_date: string;
+  appointment_time: string;
+  reason: string | null;
+  status: string;
 }
 
 interface AvailabilitySlot {
@@ -46,10 +59,10 @@ const ProviderAppointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  const [cancelAppointment, setCancelAppointment] = useState<number | string | null>(null);
-  const [visitReasonAppointment, setVisitReasonAppointment] = useState<number | string | null>(null);
-  const [notesAppointment, setNotesAppointment] = useState<number | string | null>(null);
-  const [billingAppointment, setBillingAppointment] = useState<number | string | null>(null);
+  const [cancelAppointment, setCancelAppointment] = useState<string | number | null>(null);
+  const [visitReasonAppointment, setVisitReasonAppointment] = useState<string | number | null>(null);
+  const [notesAppointment, setNotesAppointment] = useState<string | number | null>(null);
+  const [billingAppointment, setBillingAppointment] = useState<string | number | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
   const [providerAvailability, setProviderAvailability] = useState<AvailabilitySlot[]>([
@@ -75,7 +88,7 @@ const ProviderAppointments = () => {
         
         // Fetch appointments from the appointments table
         const { data, error } = await supabase
-          .from('appointments')
+          .from<AppointmentRecord>('appointments')
           .select('*')
           .eq('provider_id', user.id)
           .order('appointment_date', { ascending: true });

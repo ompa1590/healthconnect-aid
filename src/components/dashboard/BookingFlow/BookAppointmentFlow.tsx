@@ -21,23 +21,13 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   
-  // Get service and doctor names for the confirmation step
+  // Additional state to store the doctor's name
+  const [selectedDoctorName, setSelectedDoctorName] = useState<string>("");
+  
+  // Get service name for the confirmation step
   const getServiceName = () => {
     // In a real application, you would use the selected service ID to look up the name
-    return "Dermatology Consultation";
-  };
-  
-  const getDoctorName = () => {
-    // In a real application, you would use the selected doctor ID to look up the name
-    const doctors = {
-      "dr-1": "Dr. Sarah Johnson",
-      "dr-2": "Dr. Mark Williams",
-      "dr-3": "Dr. Amelia Chen",
-      "dr-4": "Dr. James Wilson",
-      "dr-5": "Dr. Lisa Patel",
-    };
-    
-    return selectedDoctor ? doctors[selectedDoctor as keyof typeof doctors] : "";
+    return selectedService || "Medical Consultation";
   };
   
   // Navigation functions
@@ -47,7 +37,6 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
   // Final submission function
   const handleDone = () => {
     onClose();
-    // In a real application, you would save the appointment to the database
   };
   
   // Progress steps configuration
@@ -73,7 +62,10 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
         return (
           <DoctorSelection 
             selectedDoctor={selectedDoctor}
-            onSelectDoctor={setSelectedDoctor}
+            onSelectDoctor={(doctorId, doctorName) => {
+              setSelectedDoctor(doctorId);
+              setSelectedDoctorName(doctorName);
+            }}
             onBack={goToPreviousStep}
             onNext={goToNextStep}
           />
@@ -94,7 +86,7 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
           <AppointmentConfirmation 
             appointmentDetails={{
               service: getServiceName(),
-              doctor: getDoctorName(),
+              doctor: selectedDoctorName, // Pass the doctor name instead of looking it up
               date: selectedDate!,
               time: selectedTime!,
             }}
