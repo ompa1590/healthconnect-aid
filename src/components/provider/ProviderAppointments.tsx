@@ -420,4 +420,4 @@ const ProviderAppointments = () => {
   const [isNotesTooDetailed26, setIsNotesTooDetailed26] = useState(false);
   const [isNotesTooSuperficial26, setIsNotesTooSuperficial26] = useState(false);
   const [isNotesTooComplex26, setIsNotesTooComplex26] = useState(false);
-  const [isNotes
+  const [

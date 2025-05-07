@@ -33,9 +33,11 @@ export const useAppointment = () => {
         timeValue = timeValue.split(' ')[0];
       }
       
-      console.log('Saving appointment with data:', appointmentData);
-      console.log('Formatted date for DB:', formattedDate);
-      console.log('Time for DB:', timeValue);
+      console.log('Saving appointment with data:', {
+        ...appointmentData,
+        date: formattedDate,
+        time: timeValue
+      });
       
       // Check if user is authenticated first
       const { data: authData } = await supabase.auth.getSession();
@@ -43,8 +45,9 @@ export const useAppointment = () => {
         throw new Error('User is not authenticated');
       }
       
-      // Insert into appointments table - we don't need to query auth.users directly
-      // which was causing the permission error
+      // Insert into appointments table
+      // We're directly using the patientId and patientEmail from the appointmentData
+      // avoiding any queries to auth.users which was causing permission errors
       const { data, error } = await supabase
         .from('appointments')
         .insert({

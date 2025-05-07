@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarDays, CheckCircle, Clock, Stethoscope, MessageSquare } from "lucide-react";
+import { CalendarDays, CheckCircle, Clock, Stethoscope, MessageSquare, Search } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -23,6 +23,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAppointment } from "./BookingFlow/useAppointment";
+import AppointmentConfirmation from "./BookingFlow/AppointmentConfirmation"; // Import the AppointmentConfirmation component
 
 const BookAppointment = () => {
   const [appointmentType, setAppointmentType] = useState("");
@@ -38,6 +39,7 @@ const BookAppointment = () => {
     {type: 'ai', content: 'Hello! I\'ll be conducting your pre-diagnostic assessment to help your doctor prepare for your appointment. Let\'s start with what symptoms you\'re experiencing?'}
   ]);
   const [aiInput, setAiInput] = useState('');
+  const [bookingComplete, setBookingComplete] = useState(false);
   const { toast } = useToast();
 
   // Mock data
@@ -109,23 +111,22 @@ const BookAppointment = () => {
         .eq('id', user.id)
         .single();
       
-      // Extract the time value without AM/PM
-      const timeValue = selectedTime.split(' ')[0];
-      
       console.log('About to save appointment with:', {
         service: appointmentType,
         doctorId: selectedDoctor,
         date: selectedDate,
-        time: timeValue,
+        time: selectedTime,
+        patientId: user.id,
         patientName: profileData?.name || 'Patient',
         patientEmail: profileData?.email || user.email || '',
+        reasonForVisit: reasonForVisit
       });
         
       const success = await saveAppointment({
         service: appointmentType,
         doctorId: selectedDoctor,
         date: selectedDate!,
-        time: timeValue,
+        time: selectedTime,
         patientId: user.id,
         patientName: profileData?.name || 'Patient',
         patientEmail: profileData?.email || user.email || '',
@@ -133,6 +134,7 @@ const BookAppointment = () => {
       });
       
       if (success) {
+        setBookingComplete(true);
         toast({
           title: "Appointment Booked",
           description: `Your appointment with ${selectedDoctor} on ${selectedDate?.toLocaleDateString()} at ${selectedTime} has been confirmed.`,
@@ -189,6 +191,32 @@ const BookAppointment = () => {
       title: "Pre-assessment Complete",
       description: "Your pre-diagnostic assessment has been saved and will be shared with your doctor before your appointment.",
     });
+  };
+
+  // Step 3 content with AppointmentConfirmation component
+  const renderStep3Content = () => {
+    if (isSubmitting) {
+      return (
+        <div className="text-center py-8">
+          <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-lg font-medium">Booking your appointment...</p>
+        </div>
+      );
+    }
+
+    const appointmentDetails = {
+      service: appointmentType,
+      doctor: selectedDoctor,
+      date: selectedDate!,
+      time: selectedTime
+    };
+
+    return (
+      <AppointmentConfirmation
+        appointmentDetails={appointmentDetails}
+        onDone={handleBookAppointment}
+      />
+    );
   };
 
   return (
@@ -419,87 +447,8 @@ const BookAppointment = () => {
         </div>
       )}
       
-      {/* Step 3: Pre-diagnostic assessment */}
-      {currentStep === 3 && (
-        <div className="space-y-6">
-          <div className="bg-muted/20 p-6 rounded-lg border border-border/30 text-center">
-            <div className="mb-4">
-              <MessageSquare className="h-12 w-12 mx-auto text-primary" />
-              <h3 className="text-xl font-medium mt-4">Pre-Appointment Assessment</h3>
-              <p className="text-muted-foreground mt-2">
-                Our AI assistant will ask you a few questions to gather relevant information before your appointment.
-                This will help your doctor prepare and make the most of your consultation time.
-              </p>
-            </div>
-            
-            {aiAssessmentComplete ? (
-              <div className="mt-6">
-                <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                </div>
-                <h4 className="font-medium mt-4">Pre-Assessment Complete</h4>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Your assessment has been saved and will be shared with your doctor before your appointment.
-                </p>
-              </div>
-            ) : (
-              <Button 
-                className="mt-4" 
-                onClick={handleAIAssessment}
-              >
-                Begin Pre-Assessment
-              </Button>
-            )}
-          </div>
-          
-          <div className="bg-muted/20 p-6 rounded-lg border border-border/30">
-            <h3 className="font-medium mb-4">What to Expect During Your Virtual Consultation</h3>
-            <div className="space-y-4">
-              <div className="flex">
-                <div className="h-6 w-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs mr-3 mt-0.5">1</div>
-                <div>
-                  <h4 className="font-medium">Join Your Appointment</h4>
-                  <p className="text-sm text-muted-foreground">
-                    You'll receive an email with a secure link to join your virtual consultation.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex">
-                <div className="h-6 w-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs mr-3 mt-0.5">2</div>
-                <div>
-                  <h4 className="font-medium">Discuss with Your Doctor</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Your doctor will already have your pre-assessment information and can discuss your concerns in detail.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex">
-                <div className="h-6 w-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs mr-3 mt-0.5">3</div>
-                <div>
-                  <h4 className="font-medium">Receive Treatment Plan</h4>
-                  <p className="text-sm text-muted-foreground">
-                    After your consultation, you'll receive a treatment plan and any necessary prescriptions.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={goToPreviousStep}>
-              Back
-            </Button>
-            <Button 
-              onClick={handleBookAppointment}
-              disabled={!aiAssessmentComplete}
-            >
-              Confirm Appointment
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Step 3: Pre-diagnostic assessment and final confirmation */}
+      {currentStep === 3 && renderStep3Content()}
       
       {/* AI Assessment Dialog */}
       <Dialog open={openAIDialog} onOpenChange={setOpenAIDialog}>

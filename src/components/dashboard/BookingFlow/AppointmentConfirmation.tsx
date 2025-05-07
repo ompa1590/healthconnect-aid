@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Clock, User, CheckCircle } from "lucide-react";
@@ -42,8 +43,9 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
 
   const handleConfirmAppointment = () => {
     console.log("Confirming appointment with details:", appointmentDetails);
-    onDone(); // This will trigger the saveAppointment function in the parent component
     setIsConfirmed(true);
+    // Call onDone to trigger saveAppointment in the parent component
+    onDone();
     toast({
       title: "Appointment Confirmed",
       description: "Your appointment has been successfully booked and saved.",

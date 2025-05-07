@@ -18,22 +18,32 @@ CREATE TABLE IF NOT EXISTS public.appointments (
 -- Enable row level security
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 
--- Create policies
+-- Clear existing policies (if any)
+DROP POLICY IF EXISTS "Providers can view their appointments" ON public.appointments;
+DROP POLICY IF EXISTS "Patients can view their appointments" ON public.appointments;
+DROP POLICY IF EXISTS "Patients can create appointments" ON public.appointments;
+DROP POLICY IF EXISTS "Providers can update their appointments" ON public.appointments;
+
+-- Create updated policies
+-- Allow providers to view appointments where they are the provider
 CREATE POLICY "Providers can view their appointments" 
   ON public.appointments 
   FOR SELECT 
   USING (auth.uid() = provider_id);
 
+-- Allow patients to view their own appointments (using patient_id directly)
 CREATE POLICY "Patients can view their appointments" 
   ON public.appointments 
   FOR SELECT 
   USING (auth.uid() = patient_id OR patient_email = (SELECT email FROM auth.users WHERE id = auth.uid()));
 
+-- Allow authenticated users to create appointments
 CREATE POLICY "Patients can create appointments" 
   ON public.appointments 
   FOR INSERT 
-  WITH CHECK (true);
+  WITH CHECK (auth.uid() IS NOT NULL);
 
+-- Allow providers to update their appointments
 CREATE POLICY "Providers can update their appointments" 
   ON public.appointments 
   FOR UPDATE 
