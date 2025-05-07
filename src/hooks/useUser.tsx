@@ -13,6 +13,7 @@ export interface UserWithProfile extends User {
 export const useUser = () => {
   const [user, setUser] = useState<UserWithProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<{ name?: string, email?: string } | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -28,6 +29,9 @@ export const useUser = () => {
             .eq('id', user.id)
             .single();
             
+          // Set profile data
+          setUserProfile(profile);
+          
           // Combine auth user with profile data
           const userWithProfile = {
             ...user,
@@ -37,6 +41,7 @@ export const useUser = () => {
           setUser(userWithProfile);
         } else {
           setUser(null);
+          setUserProfile(null);
         }
       } catch (error) {
         console.error('Error fetching user:', error);
@@ -57,6 +62,8 @@ export const useUser = () => {
             .eq('id', session.user.id)
             .single();
             
+          setUserProfile(profile);
+          
           const userWithProfile = {
             ...session.user,
             profile
@@ -65,6 +72,7 @@ export const useUser = () => {
           setUser(userWithProfile);
         } else {
           setUser(null);
+          setUserProfile(null);
         }
       }
     );
@@ -81,7 +89,7 @@ export const useUser = () => {
     loading,
     isAuthenticated: !!user,
     userId: user?.id,
-    userProfile: user?.profile
+    userProfile
   };
 };
 

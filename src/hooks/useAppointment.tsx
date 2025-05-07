@@ -46,26 +46,31 @@ export const useAppointment = () => {
         throw new Error('User is not authenticated');
       }
       
+      // Create appointment object with all necessary fields
+      const appointmentObject = {
+        provider_id: appointmentData.doctorId,
+        patient_id: appointmentData.patientId,
+        patient_name: appointmentData.patientName,
+        patient_email: appointmentData.patientEmail,
+        service_type: appointmentData.service,
+        appointment_date: formattedDate,
+        appointment_time: timeValue,
+        reason: appointmentData.reasonForVisit,
+        status: 'upcoming'
+      };
+
+      console.log('Inserting appointment with:', appointmentObject);
+      
       // Insert into appointments table
       const { data, error } = await supabase
         .from('appointments')
-        .insert({
-          provider_id: appointmentData.doctorId,
-          patient_id: appointmentData.patientId,
-          patient_name: appointmentData.patientName,
-          patient_email: appointmentData.patientEmail,
-          service_type: appointmentData.service,
-          appointment_date: formattedDate,
-          appointment_time: timeValue,
-          reason: appointmentData.reasonForVisit,
-          status: 'upcoming'
-        })
+        .insert(appointmentObject)
         .select();
       
       if (error) {
         console.error('Error saving appointment:', error);
         toast({
-          title: 'Error',
+          title: "Error",
           description: `There was a problem booking your appointment: ${error.message}. Please try again.`,
           variant: 'destructive',
         });
@@ -75,16 +80,16 @@ export const useAppointment = () => {
       console.log('Appointment saved successfully:', data);
       
       toast({
-        title: 'Appointment Booked',
-        description: 'Your appointment has been confirmed.',
+        title: "Appointment Booked",
+        description: "Your appointment has been confirmed.",
       });
       
       return true;
     } catch (err) {
       console.error('Error in saveAppointment:', err);
       toast({
-        title: 'Error',
-        description: 'There was a problem booking your appointment. Please try again.',
+        title: "Error",
+        description: "There was a problem booking your appointment. Please try again.",
         variant: 'destructive',
       });
       return false;
@@ -93,8 +98,57 @@ export const useAppointment = () => {
     }
   };
 
+  const getAppointments = async (isProvider = false) => {
+    try {
+      if (!user) {
+        return [];
+      }
+
+      let query;
+      
+      if (isProvider) {
+        // Provider is looking at their appointments
+        query = supabase
+          .from('appointments')
+          .select('*')
+          .eq('provider_id', user.id)
+          .order('appointment_date', { ascending: true });
+      } else {
+        // Patient is looking at their appointments
+        query = supabase
+          .from('appointments')
+          .select('*')
+          .eq('patient_id', user.id)
+          .order('appointment_date', { ascending: true });
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching appointments:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load appointments. Please try again.",
+          variant: 'destructive',
+        });
+        return [];
+      }
+      
+      return data || [];
+    } catch (err) {
+      console.error('Error in getAppointments:', err);
+      toast({
+        title: "Error",
+        description: "There was a problem retrieving your appointments.",
+        variant: 'destructive',
+      });
+      return [];
+    }
+  };
+
   return {
     saveAppointment,
+    getAppointments,
     isSubmitting
   };
 };

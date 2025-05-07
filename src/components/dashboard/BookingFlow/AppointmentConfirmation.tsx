@@ -41,11 +41,21 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
     });
   };
 
-  const handleConfirmAppointment = () => {
-    console.log("Confirming appointment with details:", appointmentDetails);
-    setIsConfirmed(true);
-    // Call onDone to trigger saveAppointment in the parent component
-    onDone();
+  const handleConfirmAppointment = async () => {
+    try {
+      console.log("Confirming appointment with details:", appointmentDetails);
+      setIsConfirmed(true);
+      // Call onDone to trigger saveAppointment in the parent component
+      await onDone();
+    } catch (error) {
+      console.error("Error confirming appointment:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem confirming your appointment. Please try again.",
+        variant: "destructive"
+      });
+      setIsConfirmed(false);
+    }
   };
 
   return (

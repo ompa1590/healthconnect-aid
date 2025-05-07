@@ -64,23 +64,32 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
     
     console.log("Submitting appointment with doctor name:", selectedDoctorName);
     
-    const success = await saveAppointment({
-      service: selectedService,
-      doctorId: selectedDoctor || '',
-      date: selectedDate,
-      time: selectedTime,
-      patientId: user.id,
-      patientName: userProfile?.name || 'Patient',
-      patientEmail: userProfile?.email || user.email || '',
-      reasonForVisit: "Appointment booked through the system"
-    });
-    
-    if (success) {
-      toast({
-        title: "Appointment Saved",
-        description: "Your appointment has been saved to our system.",
+    try {
+      const success = await saveAppointment({
+        service: selectedService,
+        doctorId: selectedDoctor || '',
+        date: selectedDate,
+        time: selectedTime,
+        patientId: user.id,
+        patientName: userProfile?.name || user?.user_metadata?.name || 'Patient',
+        patientEmail: userProfile?.email || user?.email || '',
+        reasonForVisit: "Appointment booked through the system"
       });
-      // Don't close the dialog yet - let the user see the confirmation page
+      
+      if (success) {
+        toast({
+          title: "Appointment Saved",
+          description: "Your appointment has been saved to our system.",
+        });
+        // Don't close the dialog yet - let the user see the confirmation page
+      }
+    } catch (error) {
+      console.error("Error in handleDone:", error);
+      toast({
+        title: "Error",
+        description: "Failed to book appointment. Please try again.",
+        variant: "destructive"
+      });
     }
   };
   
