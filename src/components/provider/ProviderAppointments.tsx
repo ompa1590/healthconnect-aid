@@ -22,6 +22,7 @@ import ConsultationNotesDialog from "./ConsultationNotesDialog";
 import OHIPBillingDialog from "./OHIPBillingDialog";
 import AvailabilityDialog from "./AvailabilityDialog";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
 interface Appointment {
   id: string | number;
@@ -33,19 +34,6 @@ interface Appointment {
   time: string;
   status: string;
   patientEmail?: string;
-}
-
-interface AppointmentRecord {
-  id: string;
-  provider_id: string;
-  patient_id: string | null;
-  patient_name: string;
-  patient_email: string;
-  service_type: string;
-  appointment_date: string;
-  appointment_time: string;
-  reason: string | null;
-  status: string;
 }
 
 interface AvailabilitySlot {
@@ -88,10 +76,9 @@ const ProviderAppointments = () => {
         
         // Fetch appointments from the appointments table
         const { data, error } = await supabase
-          .from<AppointmentRecord>('appointments')
+          .from('appointments')
           .select('*')
-          .eq('provider_id', user.id)
-          .order('appointment_date', { ascending: true });
+          .eq('provider_id', user.id);
           
         if (error) {
           throw error;
@@ -520,7 +507,7 @@ const ProviderAppointments = () => {
       <CancelAppointmentDialog
         isOpen={cancelAppointment !== null}
         onClose={() => setCancelAppointment(null)}
-        appointmentId={cancelAppointment || 0}
+        appointmentId={cancelAppointment !== null ? cancelAppointment : 0}
         patientName={getActiveAppointment()?.patient || ""}
         onConfirmCancel={handleConfirmCancel}
       />
