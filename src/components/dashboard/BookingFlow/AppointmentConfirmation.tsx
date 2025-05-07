@@ -5,6 +5,7 @@ import { CalendarCheck, Clock, User, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import RadialCard from "../../prescreening/PreScreeningAssistant";
 import { useToast } from "@/components/ui/use-toast";
+import useUser from "@/hooks/useUser";
 
 interface AppointmentConfirmationProps {
   appointmentDetails: {
@@ -20,6 +21,7 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
   const [showPrescreening, setShowPrescreening] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
 
   const togglePrescreening = () => {
     setShowPrescreening(!showPrescreening);
@@ -49,8 +51,19 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
 
   const handleConfirmAppointment = async () => {
     try {
+      // Don't proceed if not authenticated
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to confirm appointments.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       console.log("Confirming appointment with details:", appointmentDetails);
       setIsConfirmed(true);
+      
       // Call onDone to trigger saveAppointment in the parent component
       await onDone();
     } catch (error) {
