@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "@/hooks/use-toast";
 
 interface Diagnostic {
   id: number;
@@ -21,7 +22,7 @@ interface Diagnostic {
   comingSoon?: boolean;
   benefits?: string[];
   features?: string[];
-  link: string;
+  link?: string;
 }
 
 interface DiagnosticDetailsDialogProps {
@@ -39,10 +40,23 @@ const DiagnosticDetailsDialog = ({
 
   const handleSchedule = (e: React.MouseEvent) => {
     e.preventDefault();
+    toast({
+      title: `${diagnostic.title} test scheduled`,
+      description: "You will receive confirmation details shortly",
+    });
     onOpenChange(false);
   };
   
   const isAvailable = diagnostic.isAvailable;
+  
+  const handleNotifyMe = (e: React.MouseEvent) => {
+    e.preventDefault();
+    toast({
+      title: "Notification set",
+      description: `You will be notified when ${diagnostic.title} becomes available`,
+    });
+    onOpenChange(false);
+  };
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -111,8 +125,7 @@ const DiagnosticDetailsDialog = ({
           
           <div className="pt-4 flex justify-end">
             <Button 
-              onClick={handleSchedule}
-              disabled={!isAvailable}
+              onClick={isAvailable ? handleSchedule : handleNotifyMe}
             >
               {isAvailable ? "Schedule Test" : "Notify Me When Available"}
             </Button>

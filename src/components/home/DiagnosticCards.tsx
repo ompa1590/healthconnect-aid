@@ -52,7 +52,7 @@ const DiagnosticCards = () => {
   ];
 
   const handleLearnMore = (diagnostic: any, e: React.MouseEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // This prevents navigation to the link
     setSelectedDiagnostic(diagnostic);
     setDialogOpen(true);
   };
