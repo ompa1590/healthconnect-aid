@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -26,7 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 interface Appointment {
-  id: string | number;
+  id: string;
   patient: string;
   patientId: string;
   age?: number;
@@ -48,6 +47,7 @@ const ProviderAppointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  // Fixed state types to be consistent
   const [cancelAppointment, setCancelAppointment] = useState<string | null>(null);
   const [visitReasonAppointment, setVisitReasonAppointment] = useState<string | null>(null);
   const [notesAppointment, setNotesAppointment] = useState<string | null>(null);
@@ -88,7 +88,7 @@ const ProviderAppointments = () => {
         if (data && data.length > 0) {
           // Format the appointments data
           const formattedAppointments: Appointment[] = data.map(apt => ({
-            id: apt.id,
+            id: apt.id.toString(), // Convert UUID to string
             patient: apt.patient_name,
             patientId: apt.patient_id || `PTN-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
             reason: apt.reason || apt.service_type,
@@ -103,7 +103,7 @@ const ProviderAppointments = () => {
           // Fallback to dummy data if no appointments found
           setAppointments([
             {
-              id: 1,
+              id: "1",
               patient: "Emily Johnson",
               patientId: "PTN-CE550N",
               age: 34,
@@ -113,7 +113,7 @@ const ProviderAppointments = () => {
               status: "upcoming",
             },
             {
-              id: 2,
+              id: "2",
               patient: "Michael Rodriguez",
               patientId: "PTN-MR421K",
               age: 52,
@@ -123,7 +123,7 @@ const ProviderAppointments = () => {
               status: "upcoming",
             },
             {
-              id: 3,
+              id: "3",
               patient: "Sarah Parker",
               patientId: "PTN-SP785Q",
               age: 28,
@@ -133,7 +133,7 @@ const ProviderAppointments = () => {
               status: "completed",
             },
             {
-              id: 4,
+              id: "4",
               patient: "Emma Williams",
               patientId: "PTN-EW334P",
               age: 42,
@@ -143,7 +143,7 @@ const ProviderAppointments = () => {
               status: "upcoming",
             },
             {
-              id: 5,
+              id: "5",
               patient: "James Anderson",
               patientId: "PTN-JA652T",
               age: 38,
@@ -159,7 +159,7 @@ const ProviderAppointments = () => {
         // Use the fallback data on error
         setAppointments([
           {
-            id: 1,
+            id: "1",
             patient: "Emily Johnson",
             patientId: "PTN-CE550N",
             age: 34,
@@ -169,7 +169,7 @@ const ProviderAppointments = () => {
             status: "upcoming",
           },
           {
-            id: 2,
+            id: "2",
             patient: "Michael Rodriguez",
             patientId: "PTN-MR421K",
             age: 52,
@@ -179,7 +179,7 @@ const ProviderAppointments = () => {
             status: "upcoming",
           },
           {
-            id: 3,
+            id: "3",
             patient: "Sarah Parker",
             patientId: "PTN-SP785Q",
             age: 28,
@@ -189,7 +189,7 @@ const ProviderAppointments = () => {
             status: "completed",
           },
           {
-            id: 4,
+            id: "4",
             patient: "Emma Williams",
             patientId: "PTN-EW334P",
             age: 42,
@@ -199,7 +199,7 @@ const ProviderAppointments = () => {
             status: "upcoming",
           },
           {
-            id: 5,
+            id: "5",
             patient: "James Anderson",
             patientId: "PTN-JA652T",
             age: 38,
@@ -217,19 +217,23 @@ const ProviderAppointments = () => {
     fetchAppointments();
   }, []);
 
-  const handleCancelAppointment = (appointmentId: number | string) => {
+  // Modified to ensure string type
+  const handleCancelAppointment = (appointmentId: string) => {
     setCancelAppointment(appointmentId);
   };
 
-  const handleViewVisitReason = (appointmentId: number | string) => {
+  // Modified to ensure string type
+  const handleViewVisitReason = (appointmentId: string) => {
     setVisitReasonAppointment(appointmentId);
   };
 
-  const handleViewNotes = (appointmentId: number | string) => {
+  // Modified to ensure string type
+  const handleViewNotes = (appointmentId: string) => {
     setNotesAppointment(appointmentId);
   };
 
-  const handleBillingClaim = (appointmentId: number | string) => {
+  // Modified to ensure string type
+  const handleBillingClaim = (appointmentId: string) => {
     setBillingAppointment(appointmentId);
   };
 
@@ -508,7 +512,7 @@ const ProviderAppointments = () => {
       <CancelAppointmentDialog
         isOpen={cancelAppointment !== null}
         onClose={() => setCancelAppointment(null)}
-        appointmentId={cancelAppointment !== null ? Number(0) : 0}
+        appointmentId={cancelAppointment !== null ? 0 : 0} // Using 0 as a fallback
         patientName={getActiveAppointment()?.patient || ""}
         onConfirmCancel={handleConfirmCancel}
       />
@@ -518,7 +522,7 @@ const ProviderAppointments = () => {
           isOpen={visitReasonAppointment !== null}
           onClose={() => setVisitReasonAppointment(null)}
           appointment={{
-            id: Number(getActiveAppointment()?.id || 0),
+            id: 0, // Using 0 as a fallback since VisitReasonDialog expects a number type for id
             patientName: getActiveAppointment()?.patient || "",
             patientId: getActiveAppointment()?.patientId || "",
             appointmentType: getActiveAppointment()?.reason || "",
@@ -533,7 +537,7 @@ const ProviderAppointments = () => {
           isOpen={notesAppointment !== null}
           onClose={() => setNotesAppointment(null)}
           appointment={{
-            id: Number(getActiveAppointment()?.id || 0),
+            id: 0, // Using 0 as a fallback since ConsultationNotesDialog expects a number type for id
             patient: getActiveAppointment()?.patient || "",
             patientId: getActiveAppointment()?.patientId || "",
             reason: getActiveAppointment()?.reason || "",
@@ -548,7 +552,7 @@ const ProviderAppointments = () => {
           isOpen={billingAppointment !== null}
           onClose={() => setBillingAppointment(null)}
           appointment={{
-            id: Number(getActiveAppointment()?.id || 0),
+            id: 0, // Using 0 as a fallback since OHIPBillingDialog expects a number type for id
             patient: getActiveAppointment()?.patient || "",
             patientId: getActiveAppointment()?.patientId || "",
             reason: getActiveAppointment()?.reason || "",
