@@ -6,9 +6,9 @@ import DoctorSelection from "./DoctorSelection";
 import TimeSelection from "./TimeSelection";
 import AppointmentConfirmation from "./AppointmentConfirmation";
 import { CheckCircle, Clock, User2, Stethoscope } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAppointment } from "./useAppointment";
+import { useAppointment } from "@/hooks/useAppointment";
 import { useToast } from "@/components/ui/use-toast";
+import useUser from "@/hooks/useUser";
 
 interface BookAppointmentFlowProps {
   onClose: () => void;
@@ -40,40 +40,11 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
   // Final submission function
   const { saveAppointment, isSubmitting } = useAppointment();
   const { toast } = useToast();
-  const [userId, setUserId] = useState<string | null>(null);
-  const [userProfile, setUserProfile] = useState<{name?: string, email?: string} | null>(null);
-  
-  // Fetch current user info on component mount
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setUserId(user.id);
-          
-          // Get user profile data
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('name, email')
-            .eq('id', user.id)
-            .single();
-            
-          setUserProfile({
-            name: profileData?.name || 'Patient',
-            email: profileData?.email || user.email || ''
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      }
-    };
-    
-    fetchUserData();
-  }, []);
+  const { user, userProfile } = useUser();
   
   // Final submission function
   const handleDone = async () => {
-    if (!userId) {
+    if (!user) {
       toast({
         title: "Not Logged In",
         description: "Please log in to book an appointment.",
@@ -91,19 +62,16 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
       return;
     }
     
-    // Format the time properly
-    const timeValue = selectedTime.split(' ')[0]; // Extract just the time part without AM/PM
-    
     console.log("Submitting appointment with doctor name:", selectedDoctorName);
     
     const success = await saveAppointment({
       service: selectedService,
       doctorId: selectedDoctor || '',
       date: selectedDate,
-      time: timeValue,
-      patientId: userId,
+      time: selectedTime,
+      patientId: user.id,
       patientName: userProfile?.name || 'Patient',
-      patientEmail: userProfile?.email || '',
+      patientEmail: userProfile?.email || user.email || '',
       reasonForVisit: "Appointment booked through the system"
     });
     
@@ -163,7 +131,7 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
           <AppointmentConfirmation 
             appointmentDetails={{
               service: getServiceName(),
-              doctor: selectedDoctorName, // Pass the doctor name
+              doctor: selectedDoctorName,
               date: selectedDate!,
               time: selectedTime!,
             }}

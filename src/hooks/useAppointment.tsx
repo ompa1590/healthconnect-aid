@@ -47,8 +47,6 @@ export const useAppointment = () => {
       }
       
       // Insert into appointments table
-      // We're directly using the patientId and patientEmail from the appointmentData
-      // avoiding any queries to auth.users which was causing permission errors
       const { data, error } = await supabase
         .from('appointments')
         .insert({

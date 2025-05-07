@@ -46,10 +46,6 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
     setIsConfirmed(true);
     // Call onDone to trigger saveAppointment in the parent component
     onDone();
-    toast({
-      title: "Appointment Confirmed",
-      description: "Your appointment has been successfully booked and saved.",
-    });
   };
 
   return (
