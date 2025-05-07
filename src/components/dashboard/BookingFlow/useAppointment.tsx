@@ -28,6 +28,8 @@ export const useAppointment = () => {
       appointmentDate.setHours(parseInt(hours), parseInt(minutes));
       
       console.log('Saving appointment with data:', appointmentData);
+      console.log('Formatted date for DB:', appointmentDate.toISOString().split('T')[0]);
+      console.log('Time for DB:', appointmentData.time);
       
       // Insert into appointments table
       const { data, error } = await supabase
@@ -49,7 +51,7 @@ export const useAppointment = () => {
         console.error('Error saving appointment:', error);
         toast({
           title: 'Error',
-          description: 'There was a problem booking your appointment. Please try again.',
+          description: `There was a problem booking your appointment: ${error.message}. Please try again.`,
           variant: 'destructive',
         });
         return false;

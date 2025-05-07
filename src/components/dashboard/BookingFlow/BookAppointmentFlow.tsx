@@ -1,11 +1,13 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ServiceSelection from "./ServiceSelection";
 import DoctorSelection from "./DoctorSelection";
 import TimeSelection from "./TimeSelection";
 import AppointmentConfirmation from "./AppointmentConfirmation";
 import { CheckCircle, Clock, User2, Stethoscope } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAppointment } from "./useAppointment";
+import { useToast } from "@/components/ui/use-toast";
 
 interface BookAppointmentFlowProps {
   onClose: () => void;
@@ -35,8 +37,76 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
   const goToPreviousStep = () => setCurrentStep(prev => prev - 1);
   
   // Final submission function
-  const handleDone = () => {
-    onClose();
+  const { saveAppointment } = useAppointment();
+  const { toast } = useToast();
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<{name?: string, email?: string} | null>(null);
+  
+  // Fetch current user info on component mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserId(user.id);
+          
+          // Get user profile data
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('name, email')
+            .eq('id', user.id)
+            .single();
+            
+          setUserProfile({
+            name: profileData?.name || 'Patient',
+            email: profileData?.email || user.email || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+    
+    fetchUserData();
+  }, []);
+  
+  // Final submission function
+  const handleDone = async () => {
+    if (!userId) {
+      toast({
+        title: "Not Logged In",
+        description: "Please log in to book an appointment.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!selectedService || !selectedDoctor || !selectedDate || !selectedTime) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill out all appointment details.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Format the time properly
+    const timeValue = selectedTime.split(' ')[0]; // Extract just the time part without AM/PM
+    
+    const success = await saveAppointment({
+      service: selectedService,
+      doctorId: selectedDoctor || '',
+      date: selectedDate,
+      time: timeValue,
+      patientId: userId,
+      patientName: userProfile?.name || 'Patient',
+      patientEmail: userProfile?.email || '',
+      reasonForVisit: "Appointment booked through the system"
+    });
+    
+    if (success) {
+      onClose();
+    }
   };
   
   // Progress steps configuration

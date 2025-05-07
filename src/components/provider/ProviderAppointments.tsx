@@ -27,7 +27,7 @@ interface Appointment {
   id: string;
   patient: string;
   patientId: string;
-  age?: number;
+  age?: string; // Change to string to match the string | number usage
   reason: string;
   date: Date;
   time: string;

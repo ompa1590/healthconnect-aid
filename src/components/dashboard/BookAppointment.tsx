@@ -109,16 +109,24 @@ const BookAppointment = () => {
         .select('name, email')
         .eq('id', user.id)
         .single();
-        
-      const doctorObj = doctors[specialtyNeeded as keyof typeof doctors]?.find(
-        doc => doc === selectedDoctor
-      );
       
+      // Extract the time value without AM/PM
+      const timeValue = selectedTime.split(' ')[0];
+      
+      console.log('About to save appointment with:', {
+        service: appointmentType,
+        doctorId: selectedDoctor,
+        date: selectedDate,
+        time: timeValue,
+        patientName: profileData?.name || 'Patient',
+        patientEmail: profileData?.email || user.email || '',
+      });
+        
       const success = await saveAppointment({
         service: appointmentType,
         doctorId: selectedDoctor,
         date: selectedDate!,
-        time: selectedTime,
+        time: timeValue,
         patientId: user.id,
         patientName: profileData?.name || 'Patient',
         patientEmail: profileData?.email || user.email || '',
@@ -128,7 +136,7 @@ const BookAppointment = () => {
       if (success) {
         toast({
           title: "Appointment Booked",
-          description: `Your appointment with ${selectedDoctor} on ${selectedDate?.toLocaleDateString()} at ${selectedTime} has been confirmed.`,
+          description: `Your appointment with ${selectedDoctorName} on ${selectedDate?.toLocaleDateString()} at ${selectedTime} has been confirmed.`,
         });
       }
     } catch (err) {
