@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,8 +22,9 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useAppointment } from "@/hooks/useAppointment"; // Fixed import path
-import AppointmentConfirmation from "./BookingFlow/AppointmentConfirmation"; // Import the AppointmentConfirmation component
+import { useAppointment } from "@/hooks/useAppointment"; 
+import AppointmentConfirmation from "./BookingFlow/AppointmentConfirmation";
+import useUser from "@/hooks/useUser";
 
 const BookAppointment = () => {
   const [appointmentType, setAppointmentType] = useState("");
@@ -42,6 +42,7 @@ const BookAppointment = () => {
   const [aiInput, setAiInput] = useState('');
   const [bookingComplete, setBookingComplete] = useState(false);
   const { toast } = useToast();
+  const { user, userProfile } = useUser();
 
   // Mock data
   const appointmentTypes = [
@@ -93,9 +94,7 @@ const BookAppointment = () => {
 
   const handleBookAppointment = async () => {
     try {
-      // Get the currently logged in user
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      // Check if user is logged in
       if (!user) {
         toast({
           title: "Not Logged In",
@@ -105,21 +104,14 @@ const BookAppointment = () => {
         return;
       }
       
-      // Get the user's profile information
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('name, email')
-        .eq('id', user.id)
-        .single();
-      
       console.log('About to save appointment with:', {
         service: appointmentType,
         doctorId: selectedDoctor,
         date: selectedDate,
         time: selectedTime,
         patientId: user.id,
-        patientName: profileData?.name || 'Patient',
-        patientEmail: profileData?.email || user.email || '',
+        patientName: userProfile?.name || user.user_metadata?.name || 'Patient',
+        patientEmail: userProfile?.email || user.email || '',
         reasonForVisit: reasonForVisit
       });
         
@@ -129,8 +121,8 @@ const BookAppointment = () => {
         date: selectedDate!,
         time: selectedTime,
         patientId: user.id,
-        patientName: profileData?.name || 'Patient',
-        patientEmail: profileData?.email || user.email || '',
+        patientName: userProfile?.name || user.user_metadata?.name || 'Patient',
+        patientEmail: userProfile?.email || user.email || '',
         reasonForVisit: reasonForVisit
       });
       

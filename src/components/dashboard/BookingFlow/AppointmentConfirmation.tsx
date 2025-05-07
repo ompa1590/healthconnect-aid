@@ -28,8 +28,14 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
   const handlePrescreenLater = () => {
     // Calculate 8 hours before appointment
     const appointmentTime = new Date(appointmentDetails.date);
-    const [hours, minutes] = appointmentDetails.time.split(':');
-    appointmentTime.setHours(parseInt(hours), parseInt(minutes));
+    const timeComponents = appointmentDetails.time.includes(':') 
+      ? appointmentDetails.time.split(':') 
+      : ['9', '00']; // Default to 9:00 if no time format
+    
+    const hours = parseInt(timeComponents[0]);
+    const minutes = parseInt(timeComponents[1] || '0');
+    
+    appointmentTime.setHours(hours, minutes);
     
     // Format the date and time for display
     const formattedDate = format(appointmentTime, "MMMM d, yyyy");
