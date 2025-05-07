@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -47,10 +48,10 @@ const ProviderAppointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  const [cancelAppointment, setCancelAppointment] = useState<string | number | null>(null);
-  const [visitReasonAppointment, setVisitReasonAppointment] = useState<string | number | null>(null);
-  const [notesAppointment, setNotesAppointment] = useState<string | number | null>(null);
-  const [billingAppointment, setBillingAppointment] = useState<string | number | null>(null);
+  const [cancelAppointment, setCancelAppointment] = useState<string | null>(null);
+  const [visitReasonAppointment, setVisitReasonAppointment] = useState<string | null>(null);
+  const [notesAppointment, setNotesAppointment] = useState<string | null>(null);
+  const [billingAppointment, setBillingAppointment] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
   const [providerAvailability, setProviderAvailability] = useState<AvailabilitySlot[]>([
@@ -507,7 +508,7 @@ const ProviderAppointments = () => {
       <CancelAppointmentDialog
         isOpen={cancelAppointment !== null}
         onClose={() => setCancelAppointment(null)}
-        appointmentId={cancelAppointment !== null ? cancelAppointment : 0}
+        appointmentId={cancelAppointment !== null ? Number(0) : 0}
         patientName={getActiveAppointment()?.patient || ""}
         onConfirmCancel={handleConfirmCancel}
       />
@@ -517,7 +518,7 @@ const ProviderAppointments = () => {
           isOpen={visitReasonAppointment !== null}
           onClose={() => setVisitReasonAppointment(null)}
           appointment={{
-            id: getActiveAppointment()?.id || 0,
+            id: Number(getActiveAppointment()?.id || 0),
             patientName: getActiveAppointment()?.patient || "",
             patientId: getActiveAppointment()?.patientId || "",
             appointmentType: getActiveAppointment()?.reason || "",
@@ -532,7 +533,7 @@ const ProviderAppointments = () => {
           isOpen={notesAppointment !== null}
           onClose={() => setNotesAppointment(null)}
           appointment={{
-            id: getActiveAppointment()?.id || 0,
+            id: Number(getActiveAppointment()?.id || 0),
             patient: getActiveAppointment()?.patient || "",
             patientId: getActiveAppointment()?.patientId || "",
             reason: getActiveAppointment()?.reason || "",
@@ -547,7 +548,7 @@ const ProviderAppointments = () => {
           isOpen={billingAppointment !== null}
           onClose={() => setBillingAppointment(null)}
           appointment={{
-            id: getActiveAppointment()?.id || 0,
+            id: Number(getActiveAppointment()?.id || 0),
             patient: getActiveAppointment()?.patient || "",
             patientId: getActiveAppointment()?.patientId || "",
             reason: getActiveAppointment()?.reason || "",
