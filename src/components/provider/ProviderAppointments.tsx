@@ -22,7 +22,6 @@ import ConsultationNotesDialog from "./ConsultationNotesDialog";
 import OHIPBillingDialog from "./OHIPBillingDialog";
 import AvailabilityDialog from "./AvailabilityDialog";
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
 
 interface Appointment {
   id: string;
@@ -47,7 +46,7 @@ const ProviderAppointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Fixed state types to be consistent
+  // Using string type consistently for all appointment IDs
   const [cancelAppointment, setCancelAppointment] = useState<string | null>(null);
   const [visitReasonAppointment, setVisitReasonAppointment] = useState<string | null>(null);
   const [notesAppointment, setNotesAppointment] = useState<string | null>(null);
@@ -74,6 +73,8 @@ const ProviderAppointments = () => {
         if (!user) {
           throw new Error("User not authenticated");
         }
+
+        console.log("Fetching appointments for provider ID:", user.id);
         
         // Fetch appointments from the appointments table
         const { data, error } = await supabase
@@ -82,13 +83,16 @@ const ProviderAppointments = () => {
           .eq('provider_id', user.id);
           
         if (error) {
+          console.error("Error fetching appointments:", error);
           throw error;
         }
+        
+        console.log("Fetched appointments data:", data);
         
         if (data && data.length > 0) {
           // Format the appointments data
           const formattedAppointments: Appointment[] = data.map(apt => ({
-            id: apt.id.toString(), // Convert UUID to string
+            id: apt.id.toString(),
             patient: apt.patient_name,
             patientId: apt.patient_id || `PTN-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
             reason: apt.reason || apt.service_type,
@@ -99,7 +103,9 @@ const ProviderAppointments = () => {
           }));
           
           setAppointments(formattedAppointments);
+          console.log("Formatted appointments:", formattedAppointments);
         } else {
+          console.log("No appointments found, using fallback data");
           // Fallback to dummy data if no appointments found
           setAppointments([
             {
@@ -217,45 +223,58 @@ const ProviderAppointments = () => {
     fetchAppointments();
   }, []);
 
-  // Modified to ensure string type
   const handleCancelAppointment = (appointmentId: string) => {
     setCancelAppointment(appointmentId);
   };
 
-  // Modified to ensure string type
   const handleViewVisitReason = (appointmentId: string) => {
     setVisitReasonAppointment(appointmentId);
   };
 
-  // Modified to ensure string type
   const handleViewNotes = (appointmentId: string) => {
     setNotesAppointment(appointmentId);
   };
 
-  // Modified to ensure string type
   const handleBillingClaim = (appointmentId: string) => {
     setBillingAppointment(appointmentId);
   };
 
-  const handleConfirmCancel = (reason: string, details?: string) => {
-    const updatedAppointments = appointments.map(appointment => {
-      if (appointment.id === cancelAppointment) {
-        return {
-          ...appointment,
-          status: "cancelled"
-        };
+  const handleConfirmCancel = async (reason: string, details?: string) => {
+    try {
+      // Update appointment status in the database
+      if (cancelAppointment) {
+        await supabase
+          .from('appointments')
+          .update({ status: 'cancelled' })
+          .eq('id', cancelAppointment);
       }
-      return appointment;
-    });
-    
-    setAppointments(updatedAppointments);
-    
-    setCancelAppointment(null);
-    
-    toast({
-      title: "Appointment Cancelled",
-      description: `The appointment has been cancelled successfully.`,
-    });
+      
+      // Update local state
+      const updatedAppointments = appointments.map(appointment => {
+        if (appointment.id === cancelAppointment) {
+          return {
+            ...appointment,
+            status: "cancelled"
+          };
+        }
+        return appointment;
+      });
+      
+      setAppointments(updatedAppointments);
+      setCancelAppointment(null);
+      
+      toast({
+        title: "Appointment Cancelled",
+        description: `The appointment has been cancelled successfully.`,
+      });
+    } catch (error) {
+      console.error("Error cancelling appointment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel the appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSaveAvailability = (availability: AvailabilitySlot[]) => {
@@ -512,7 +531,7 @@ const ProviderAppointments = () => {
       <CancelAppointmentDialog
         isOpen={cancelAppointment !== null}
         onClose={() => setCancelAppointment(null)}
-        appointmentId={cancelAppointment !== null ? 0 : 0} // Using 0 as a fallback
+        appointmentId={cancelAppointment !== null ? cancelAppointment : "0"}
         patientName={getActiveAppointment()?.patient || ""}
         onConfirmCancel={handleConfirmCancel}
       />
@@ -522,7 +541,7 @@ const ProviderAppointments = () => {
           isOpen={visitReasonAppointment !== null}
           onClose={() => setVisitReasonAppointment(null)}
           appointment={{
-            id: 0, // Using 0 as a fallback since VisitReasonDialog expects a number type for id
+            id: visitReasonAppointment,
             patientName: getActiveAppointment()?.patient || "",
             patientId: getActiveAppointment()?.patientId || "",
             appointmentType: getActiveAppointment()?.reason || "",
@@ -537,7 +556,7 @@ const ProviderAppointments = () => {
           isOpen={notesAppointment !== null}
           onClose={() => setNotesAppointment(null)}
           appointment={{
-            id: 0, // Using 0 as a fallback since ConsultationNotesDialog expects a number type for id
+            id: notesAppointment,
             patient: getActiveAppointment()?.patient || "",
             patientId: getActiveAppointment()?.patientId || "",
             reason: getActiveAppointment()?.reason || "",
@@ -552,7 +571,7 @@ const ProviderAppointments = () => {
           isOpen={billingAppointment !== null}
           onClose={() => setBillingAppointment(null)}
           appointment={{
-            id: 0, // Using 0 as a fallback since OHIPBillingDialog expects a number type for id
+            id: billingAppointment,
             patient: getActiveAppointment()?.patient || "",
             patientId: getActiveAppointment()?.patientId || "",
             reason: getActiveAppointment()?.reason || "",
