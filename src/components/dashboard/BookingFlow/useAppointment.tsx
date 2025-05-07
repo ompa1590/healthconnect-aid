@@ -37,6 +37,12 @@ export const useAppointment = () => {
       console.log('Formatted date for DB:', formattedDate);
       console.log('Time for DB:', timeValue);
       
+      // Check if user is authenticated first
+      const { data: authData } = await supabase.auth.getSession();
+      if (!authData.session) {
+        throw new Error('User is not authenticated');
+      }
+      
       // Insert into appointments table
       const { data, error } = await supabase
         .from('appointments')

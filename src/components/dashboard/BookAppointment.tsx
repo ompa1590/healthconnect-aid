@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -136,7 +137,7 @@ const BookAppointment = () => {
       if (success) {
         toast({
           title: "Appointment Booked",
-          description: `Your appointment with ${selectedDoctorName} on ${selectedDate?.toLocaleDateString()} at ${selectedTime} has been confirmed.`,
+          description: `Your appointment with ${selectedDoctor} on ${selectedDate?.toLocaleDateString()} at ${selectedTime} has been confirmed.`,
         });
       }
     } catch (err) {
