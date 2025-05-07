@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { 
@@ -21,16 +21,18 @@ import VisitReasonDialog from "./VisitReasonDialog";
 import ConsultationNotesDialog from "./ConsultationNotesDialog";
 import OHIPBillingDialog from "./OHIPBillingDialog";
 import AvailabilityDialog from "./AvailabilityDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Appointment {
-  id: number;
+  id: number | string;
   patient: string;
   patientId: string;
-  age: number;
+  age?: number;
   reason: string;
   date: Date;
   time: string;
   status: string;
+  patientEmail?: string;
 }
 
 interface AvailabilitySlot {
@@ -41,63 +43,13 @@ interface AvailabilitySlot {
 }
 
 const ProviderAppointments = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    {
-      id: 1,
-      patient: "Emily Johnson",
-      patientId: "PTN-CE550N",
-      age: 34,
-      reason: "Annual checkup",
-      date: new Date(2024, 2, 22),
-      time: "09:00 - 09:30 AM",
-      status: "upcoming",
-    },
-    {
-      id: 2,
-      patient: "Michael Rodriguez",
-      patientId: "PTN-MR421K",
-      age: 52,
-      reason: "Diabetes management",
-      date: new Date(2024, 2, 22),
-      time: "10:30 - 11:00 AM",
-      status: "upcoming",
-    },
-    {
-      id: 3,
-      patient: "Sarah Parker",
-      patientId: "PTN-SP785Q",
-      age: 28,
-      reason: "Psychiatry consultation",
-      date: new Date(2024, 2, 21),
-      time: "02:00 - 02:30 PM",
-      status: "completed",
-    },
-    {
-      id: 4,
-      patient: "Emma Williams",
-      patientId: "PTN-EW334P",
-      age: 42,
-      reason: "Family Planning counseling",
-      date: new Date(2024, 2, 23),
-      time: "11:15 - 11:45 AM",
-      status: "upcoming",
-    },
-    {
-      id: 5,
-      patient: "James Anderson",
-      patientId: "PTN-JA652T",
-      age: 38,
-      reason: "Follow-up consultation",
-      date: new Date(2024, 2, 23),
-      time: "03:30 - 04:00 PM",
-      status: "upcoming",
-    }
-  ]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const [cancelAppointment, setCancelAppointment] = useState<number | null>(null);
-  const [visitReasonAppointment, setVisitReasonAppointment] = useState<number | null>(null);
-  const [notesAppointment, setNotesAppointment] = useState<number | null>(null);
-  const [billingAppointment, setBillingAppointment] = useState<number | null>(null);
+  const [cancelAppointment, setCancelAppointment] = useState<number | string | null>(null);
+  const [visitReasonAppointment, setVisitReasonAppointment] = useState<number | string | null>(null);
+  const [notesAppointment, setNotesAppointment] = useState<number | string | null>(null);
+  const [billingAppointment, setBillingAppointment] = useState<number | string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
   const [providerAvailability, setProviderAvailability] = useState<AvailabilitySlot[]>([
@@ -109,19 +61,174 @@ const ProviderAppointments = () => {
   ]);
   const { toast } = useToast();
 
-  const handleCancelAppointment = (appointmentId: number) => {
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get the current provider's ID
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          throw new Error("User not authenticated");
+        }
+        
+        // Fetch appointments from the appointments table
+        const { data, error } = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('provider_id', user.id)
+          .order('appointment_date', { ascending: true });
+          
+        if (error) {
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          // Format the appointments data
+          const formattedAppointments: Appointment[] = data.map(apt => ({
+            id: apt.id,
+            patient: apt.patient_name,
+            patientId: apt.patient_id || `PTN-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+            reason: apt.reason || apt.service_type,
+            date: new Date(apt.appointment_date),
+            time: apt.appointment_time,
+            status: apt.status,
+            patientEmail: apt.patient_email
+          }));
+          
+          setAppointments(formattedAppointments);
+        } else {
+          // Fallback to dummy data if no appointments found
+          setAppointments([
+            {
+              id: 1,
+              patient: "Emily Johnson",
+              patientId: "PTN-CE550N",
+              age: 34,
+              reason: "Annual checkup",
+              date: new Date(2024, 2, 22),
+              time: "09:00 - 09:30 AM",
+              status: "upcoming",
+            },
+            {
+              id: 2,
+              patient: "Michael Rodriguez",
+              patientId: "PTN-MR421K",
+              age: 52,
+              reason: "Diabetes management",
+              date: new Date(2024, 2, 22),
+              time: "10:30 - 11:00 AM",
+              status: "upcoming",
+            },
+            {
+              id: 3,
+              patient: "Sarah Parker",
+              patientId: "PTN-SP785Q",
+              age: 28,
+              reason: "Psychiatry consultation",
+              date: new Date(2024, 2, 21),
+              time: "02:00 - 02:30 PM",
+              status: "completed",
+            },
+            {
+              id: 4,
+              patient: "Emma Williams",
+              patientId: "PTN-EW334P",
+              age: 42,
+              reason: "Family Planning counseling",
+              date: new Date(2024, 2, 23),
+              time: "11:15 - 11:45 AM",
+              status: "upcoming",
+            },
+            {
+              id: 5,
+              patient: "James Anderson",
+              patientId: "PTN-JA652T",
+              age: 38,
+              reason: "Follow-up consultation",
+              date: new Date(2024, 2, 23),
+              time: "03:30 - 04:00 PM",
+              status: "upcoming",
+            }
+          ]);
+        }
+      } catch (err) {
+        console.error("Error fetching appointments:", err);
+        // Use the fallback data on error
+        setAppointments([
+          {
+            id: 1,
+            patient: "Emily Johnson",
+            patientId: "PTN-CE550N",
+            age: 34,
+            reason: "Annual checkup",
+            date: new Date(2024, 2, 22),
+            time: "09:00 - 09:30 AM",
+            status: "upcoming",
+          },
+          {
+            id: 2,
+            patient: "Michael Rodriguez",
+            patientId: "PTN-MR421K",
+            age: 52,
+            reason: "Diabetes management",
+            date: new Date(2024, 2, 22),
+            time: "10:30 - 11:00 AM",
+            status: "upcoming",
+          },
+          {
+            id: 3,
+            patient: "Sarah Parker",
+            patientId: "PTN-SP785Q",
+            age: 28,
+            reason: "Psychiatry consultation",
+            date: new Date(2024, 2, 21),
+            time: "02:00 - 02:30 PM",
+            status: "completed",
+          },
+          {
+            id: 4,
+            patient: "Emma Williams",
+            patientId: "PTN-EW334P",
+            age: 42,
+            reason: "Family Planning counseling",
+            date: new Date(2024, 2, 23),
+            time: "11:15 - 11:45 AM",
+            status: "upcoming",
+          },
+          {
+            id: 5,
+            patient: "James Anderson",
+            patientId: "PTN-JA652T",
+            age: 38,
+            reason: "Follow-up consultation",
+            date: new Date(2024, 2, 23),
+            time: "03:30 - 04:00 PM",
+            status: "upcoming",
+          }
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchAppointments();
+  }, []);
+
+  const handleCancelAppointment = (appointmentId: number | string) => {
     setCancelAppointment(appointmentId);
   };
 
-  const handleViewVisitReason = (appointmentId: number) => {
+  const handleViewVisitReason = (appointmentId: number | string) => {
     setVisitReasonAppointment(appointmentId);
   };
 
-  const handleViewNotes = (appointmentId: number) => {
+  const handleViewNotes = (appointmentId: number | string) => {
     setNotesAppointment(appointmentId);
   };
 
-  const handleBillingClaim = (appointmentId: number) => {
+  const handleBillingClaim = (appointmentId: number | string) => {
     setBillingAppointment(appointmentId);
   };
 

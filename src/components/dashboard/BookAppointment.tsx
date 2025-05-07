@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +22,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAppointment } from "./BookingFlow/useAppointment";
 
 const BookAppointment = () => {
   const [appointmentType, setAppointmentType] = useState("");
@@ -86,12 +87,58 @@ const BookAppointment = () => {
     }
   };
 
-  const handleBookAppointment = () => {
-    // Would be replaced with actual API call to book appointment
-    toast({
-      title: "Appointment Booked",
-      description: `Your appointment with ${selectedDoctor} on ${selectedDate?.toLocaleDateString()} at ${selectedTime} has been confirmed.`,
-    });
+  const { saveAppointment, isSubmitting } = useAppointment();
+
+  const handleBookAppointment = async () => {
+    try {
+      // Get the currently logged in user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Not Logged In",
+          description: "Please log in to book an appointment.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Get the user's profile information
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('id', user.id)
+        .single();
+        
+      const doctorObj = doctors[specialtyNeeded as keyof typeof doctors]?.find(
+        doc => doc === selectedDoctor
+      );
+      
+      const success = await saveAppointment({
+        service: appointmentType,
+        doctorId: selectedDoctor,
+        date: selectedDate!,
+        time: selectedTime,
+        patientId: user.id,
+        patientName: profileData?.name || 'Patient',
+        patientEmail: profileData?.email || user.email || '',
+        reasonForVisit: reasonForVisit
+      });
+      
+      if (success) {
+        toast({
+          title: "Appointment Booked",
+          description: `Your appointment with ${selectedDoctor} on ${selectedDate?.toLocaleDateString()} at ${selectedTime} has been confirmed.`,
+        });
+      }
+    } catch (err) {
+      console.error("Error booking appointment:", err);
+      toast({
+        title: "Error",
+        description: "There was a problem booking your appointment. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Handle AI assessment

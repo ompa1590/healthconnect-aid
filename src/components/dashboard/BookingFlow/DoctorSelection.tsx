@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, CheckCircle2, Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Doctor {
   id: string;
@@ -13,6 +14,10 @@ interface Doctor {
   rating: number;
   experience: string;
   image?: string;
+  first_name?: string;
+  last_name?: string;
+  specializations?: string[];
+  provider_type?: string;
 }
 
 interface DoctorSelectionProps {
@@ -31,6 +36,7 @@ const DoctorSelection = ({
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -55,7 +61,11 @@ const DoctorSelection = ({
           rating: 4.5 + (Math.random() * 0.5), // Random rating between 4.5-5.0
           experience: `${5 + Math.floor(Math.random() * 15)} years`, // Random experience
           // We'll use randomuser.me for avatars as a fallback
-          image: `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'women' : 'men'}/${Math.floor(Math.random() * 100)}.jpg`
+          image: `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'women' : 'men'}/${Math.floor(Math.random() * 100)}.jpg`,
+          first_name: doctor.first_name,
+          last_name: doctor.last_name,
+          specializations: doctor.specializations,
+          provider_type: doctor.provider_type
         }));
 
         setDoctors(formattedDoctors);
@@ -89,6 +99,10 @@ const DoctorSelection = ({
 
     fetchDoctors();
   }, []);
+
+  const getSelectedDoctor = () => {
+    return doctors.find(doctor => doctor.id === selectedDoctor) || null;
+  };
   
   return (
     <div className="space-y-6">
