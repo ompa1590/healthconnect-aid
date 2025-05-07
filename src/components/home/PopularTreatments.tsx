@@ -2,13 +2,21 @@
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 import { popularTreatments } from "@/data/serviceCategories";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import TreatmentDetailsDialog from "./TreatmentDetailsDialog";
 
 const PopularTreatments = () => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [selectedTreatment, setSelectedTreatment] = useState<any | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleLearnMore = (treatment: any, e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent default navigation
+    setSelectedTreatment(treatment);
+    setDialogOpen(true);
+  };
 
   return (
     <section className="py-16 bg-background">
@@ -71,12 +79,10 @@ const PopularTreatments = () => {
                     <Button 
                       variant="default" 
                       className="rounded-full mt-6 w-full justify-between"
-                      asChild
+                      onClick={(e) => handleLearnMore(treatment, e)}
                     >
-                      <Link to={treatment.path}>
-                        <span>Learn more</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
+                      <span>Learn more</span>
+                      <ArrowRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </GlassCard>
@@ -85,6 +91,12 @@ const PopularTreatments = () => {
           ))}
         </div>
       </div>
+
+      <TreatmentDetailsDialog 
+        treatment={selectedTreatment}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </section>
   );
 };

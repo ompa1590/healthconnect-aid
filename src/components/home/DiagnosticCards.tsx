@@ -1,10 +1,15 @@
+
 import { Badge } from "@/components/ui/badge";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ArrowRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import DiagnosticDetailsDialog from "./DiagnosticDetailsDialog";
 
 const DiagnosticCards = () => {
+  const [selectedDiagnostic, setSelectedDiagnostic] = useState<any | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  
   const diagnosticCategories = [
     {
       id: 1,
@@ -14,6 +19,9 @@ const DiagnosticCards = () => {
       isAvailable: true,
       tags: ["Diabetes", "Prediabetes", "High Cholesterol"],
       link: "/services/metabolic-health",
+      description: "Comprehensive testing and monitoring of your metabolic health markers, including blood glucose, insulin resistance, cholesterol profiles, and other key indicators.",
+      benefits: ["Early detection of metabolic disorders", "Personalized treatment plans", "Ongoing monitoring", "Lifestyle recommendations"],
+      features: ["Complete lipid panel", "Fasting blood glucose", "HbA1c testing", "Insulin resistance assessment", "Personalized report with recommendations"]
     },
     {
       id: 2,
@@ -24,6 +32,9 @@ const DiagnosticCards = () => {
       comingSoon: true,
       tags: ["Heart Disease", "Blood Pressure", "Cholesterol"],
       link: "/services/heart-health",
+      description: "Advanced cardiovascular screening to assess your heart health, identify risk factors, and develop preventative strategies for long-term cardiovascular wellness.",
+      benefits: ["Cardiovascular risk assessment", "Early detection", "Preventative strategies", "Heart-healthy recommendations"],
+      features: ["Blood pressure monitoring", "ECG assessment", "Cholesterol and triglyceride testing", "Cardiac risk calculation", "Personalized heart health plan"]
     },
     {
       id: 3,
@@ -34,8 +45,17 @@ const DiagnosticCards = () => {
       comingSoon: true,
       tags: ["Vitamins", "Hormones", "20+ tests", "Biological age"],
       link: "/services/holistic-health",
+      description: "Our most comprehensive health assessment covering multiple systems including metabolic, cardiovascular, hormonal, nutritional, and inflammatory markers for a complete health overview.",
+      benefits: ["Complete health snapshot", "Multiple system assessment", "Biological age calculation", "Comprehensive wellness plan"],
+      features: ["Over 20 health markers tested", "Hormone balance assessment", "Vitamin and mineral levels", "Inflammatory markers", "Detailed health report and recommendations"]
     },
   ];
+
+  const handleLearnMore = (diagnostic: any, e: React.MouseEvent) => {
+    e.preventDefault(); // This prevents navigation to the link
+    setSelectedDiagnostic(diagnostic);
+    setDialogOpen(true);
+  };
 
   return (
     <section className="py-16 bg-background">
@@ -79,18 +99,22 @@ const DiagnosticCards = () => {
                 <Button 
                   variant={category.isAvailable ? "default" : "outline"} 
                   className="rounded-full mt-auto w-full justify-between"
-                  asChild
+                  onClick={(e) => handleLearnMore(category, e)}
                 >
-                  <Link to={category.link}>
-                    <span>Learn more</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
+                  <span>Learn more</span>
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
             </GlassCard>
           ))}
         </div>
       </div>
+
+      <DiagnosticDetailsDialog 
+        diagnostic={selectedDiagnostic}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </section>
   );
 };

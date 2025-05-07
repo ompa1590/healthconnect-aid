@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle, Upload, Loader2 } from "lucide-react";
+import { CheckCircle, Upload, Loader2, RefreshCw } from "lucide-react";
 import { SignupFormData } from "@/pages/login/PatientSignup";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import CaptchaComponent from "@/components/auth/CaptchaComponent";
+import CaptchaComponent, { CaptchaRefType } from "@/components/auth/CaptchaComponent";
 import { TermsDialog, PrivacyDialog, HIPAAComplianceDialog } from "./LegalPopups";
 
 interface SignupCompleteProps {
@@ -23,8 +23,15 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [uploadProgress, setUploadProgress] = useState(0);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaVerified, setCaptchaVerified] = useState(false);
-  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
+  
+  // Use a stable ID for the captcha
+  const captchaId = useRef(`signup-captcha-${Math.random().toString(36).substring(2, 15)}`).current;
+  const callbackName = useRef(`signupCaptchaCallback${Math.random().toString(36).substring(2, 15)}`).current;
+  
+  const captchaRef = useRef<CaptchaRefType>(null);
+  const formSubmitAttempts = useRef(0);
   
   // Validate that all required fields are present
   const validateRequiredFields = () => {
@@ -46,18 +53,31 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     return null;
   };
   
-  // Force re-render of captcha on component mount to ensure it's visible
+  // Clear captcha state when component mounts
   useEffect(() => {
-    // Reset and regenerate captcha with unique key
-    setCaptchaKey(Date.now().toString());
+    console.log("Patient signup: Setting up captcha with ID:", captchaId);
+    setCaptchaError(null);
     setCaptchaVerified(false);
     setCaptchaToken(null);
-  }, []);
+  }, [captchaId]);
   
   const handleCaptchaVerify = (token: string) => {
-    console.log("Captcha verified with token:", token);
+    console.log("Patient signup: CAPTCHA verified, token received");
     setCaptchaToken(token);
     setCaptchaVerified(true);
+    setCaptchaError(null);
+  };
+  
+  const resetCaptcha = () => {
+    console.log("Patient signup: Resetting captcha");
+    setCaptchaVerified(false);
+    setCaptchaToken(null);
+    setCaptchaError(null);
+    
+    // Use the ref to reset the captcha
+    if (captchaRef.current) {
+      captchaRef.current.resetCaptcha();
+    }
   };
 
   const uploadDocuments = async (userId: string) => {
@@ -105,6 +125,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
 
   const handleSignup = async () => {
     try {
+      formSubmitAttempts.current += 1;
+      console.log(`Patient signup: Attempt #${formSubmitAttempts.current} starting`);
+      
       setLoading(true);
       setError(null);
       
@@ -128,11 +151,17 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           description: "Please complete the captcha verification before creating your account.",
           variant: "destructive",
         });
+        setCaptchaError("Please complete the captcha verification before proceeding.");
         setLoading(false);
         return;
       }
       
-      console.log("Starting signup with captcha token:", captchaToken);
+      const token = captchaToken;
+      console.log(`Patient signup: Starting signup with captcha token: ${token.substring(0, 15)}...`);
+      
+      // Clear captcha token immediately to prevent reuse
+      setCaptchaToken(null);
+      setCaptchaVerified(false);
       
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -140,12 +169,41 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         options: {
           data: {
             name: formData.name,
+            role: 'patient',
           },
-          captchaToken: captchaToken,
+          captchaToken: token,
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error during signup:", error);
+        
+        // Special handling for CAPTCHA errors
+        if (error.message.toLowerCase().includes('captcha')) {
+          let errorMessage = "Captcha verification failed. Please try again with a new verification.";
+          
+          if (error.message.includes('expired')) {
+            errorMessage = "Captcha token has expired. Please complete the verification again.";
+          } else if (error.message.includes('already-seen')) {
+            errorMessage = "This captcha token has already been used. Please complete a new verification.";
+          } else if (error.message.includes('timeout')) {
+            errorMessage = "The verification process timed out. Please try again.";
+          }
+          
+          toast({
+            title: "Verification error",
+            description: errorMessage,
+            variant: "destructive"
+          });
+          
+          setCaptchaError(errorMessage);
+          resetCaptcha();
+          setLoading(false);
+          return;
+        }
+        
+        throw error;
+      }
       
       console.log("Signup successful:", data);
       
@@ -215,6 +273,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         description: error.message || "There was an error creating your account. Please try again.",
         variant: "destructive",
       });
+      
+      // Reset captcha if we get a general error
+      resetCaptcha();
     } finally {
       setLoading(false);
       setUploadProgress(0);
@@ -299,13 +360,27 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         <div className="flex justify-center mb-4" id="captcha-container">
           <CaptchaComponent 
-            captchaId={`signup-captcha-${captchaKey}`}
+            captchaId={captchaId}
             onVerify={handleCaptchaVerify}
-            callbackName="signupCaptchaCallback"
+            callbackName={callbackName}
           />
         </div>
         
-        {captchaVerified && (
+        {captchaError && (
+          <div className="rounded-md bg-destructive/10 text-destructive p-3 text-sm mb-4">
+            {captchaError}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="ml-2 h-6 text-xs flex items-center"
+              onClick={resetCaptcha}
+            >
+              <RefreshCw className="h-3 w-3 mr-1" /> Reset Verification
+            </Button>
+          </div>
+        )}
+        
+        {captchaVerified && !captchaError && (
           <p className="text-green-500 text-sm font-medium flex items-center justify-center mb-4">
             <CheckCircle className="h-4 w-4 mr-1" /> Verification complete
           </p>

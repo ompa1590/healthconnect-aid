@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import CaptchaComponent from "@/components/auth/CaptchaComponent";
+import CaptchaComponent, { CaptchaRefType } from "@/components/auth/CaptchaComponent";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TermsDialog, PrivacyDialog } from "@/components/signup/LegalPopups";
 import {
@@ -31,22 +31,35 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [captchaKey, setCaptchaKey] = useState(Date.now().toString());
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
+  const captchaRef = useRef<CaptchaRefType>(null);
+  const formSubmitAttempts = useRef(0);
   
-  // Refresh the captcha when the component mounts or when we need a fresh token
+  // Use a stable ID for the captcha
+  const captchaId = useRef(`provider-signup-captcha-${Math.random().toString(36).substring(2, 15)}`).current;
+  const callbackName = useRef(`handleProviderSignupCaptcha${Math.random().toString(36).substring(2, 15)}`).current;
+  
+  // Refresh the captcha when the component mounts
   useEffect(() => {
-    setCaptchaKey(Date.now().toString());
-  }, []);
+    console.log("Provider signup: Initial captcha setup with ID:", captchaId);
+    setCaptchaError(null);
+  }, [captchaId]);
   
   const handleCaptchaVerify = (token: string) => {
-    console.log("Captcha verified, setting token:", token);
+    console.log("Provider signup: CAPTCHA verified, token received");
     setCaptchaToken(token);
+    setCaptchaError(null);
   };
   
   const resetCaptcha = () => {
-    // Generate a new captcha key to force a complete re-render
-    setCaptchaKey(Date.now().toString());
+    console.log("Provider signup: Resetting captcha");
     setCaptchaToken(null);
+    setCaptchaError(null);
+    
+    // Use the ref to reset the captcha
+    if (captchaRef.current) {
+      captchaRef.current.resetCaptcha();
+    }
   };
   
   const handleCreateAccount = async () => {
@@ -56,6 +69,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         description: "Please complete the captcha verification.",
         variant: "destructive"
       });
+      setCaptchaError("Please complete the captcha verification.");
       return;
     }
     
@@ -69,6 +83,12 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     }
     
     setSubmitting(true);
+    formSubmitAttempts.current += 1;
+    console.log(`Provider signup: Attempt #${formSubmitAttempts.current} with token: ${captchaToken.substring(0, 15)}...`);
+    
+    // Store token in a local variable and clear the state immediately to prevent reuse
+    const token = captchaToken;
+    setCaptchaToken(null);
     
     try {
       // Attempt to sign up the provider
@@ -89,19 +109,43 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             phoneNumber: formData.phoneNumber || '',
             isNewUser: true // Flag to identify new users for welcome modal
           },
-          captchaToken: captchaToken  // Pass the captcha token to Supabase
+          captchaToken: token
         }
       });
       
       if (error) {
         console.error("Error during sign up:", error);
-        toast({
-          title: "Sign up failed",
-          description: error.message,
-          variant: "destructive"
-        });
-        // Reset captcha for a fresh attempt
-        resetCaptcha();
+        
+        // Special handling for CAPTCHA errors
+        if (error.message.toLowerCase().includes('captcha')) {
+          let errorMessage = "Captcha verification failed. Please try again with a new verification.";
+          
+          if (error.message.includes('expired')) {
+            errorMessage = "Captcha token has expired. Please complete the verification again.";
+          } else if (error.message.includes('already-seen')) {
+            errorMessage = "This captcha token has already been used. Please complete a new verification.";
+          } else if (error.message.includes('timeout')) {
+            errorMessage = "The verification process timed out. Please try again.";
+          }
+          
+          toast({
+            title: "Verification error",
+            description: errorMessage,
+            variant: "destructive"
+          });
+          
+          setCaptchaError(errorMessage);
+          // Reset captcha for a fresh attempt
+          resetCaptcha();
+        } else {
+          // Handle other signup errors
+          toast({
+            title: "Sign up failed",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+        
         setSubmitting(false);
       } else {
         console.log("Provider signup successful:", data);
@@ -163,11 +207,25 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         <div className="py-4 flex justify-center">
           <CaptchaComponent 
-            captchaId={`provider-signup-captcha-${captchaKey}`}
+            captchaId={captchaId}
             onVerify={handleCaptchaVerify}
-            callbackName={`handleProviderSignupCaptcha${captchaKey}`}
+            callbackName={callbackName}
           />
         </div>
+        
+        {captchaError && (
+          <div className="rounded-md bg-destructive/10 text-destructive p-3 text-sm">
+            {captchaError}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="ml-2 h-6 text-xs"
+              onClick={resetCaptcha}
+            >
+              Reset Verification
+            </Button>
+          </div>
+        )}
         
         <div className="flex items-center space-x-2 mb-6">
           <Checkbox 

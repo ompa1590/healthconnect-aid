@@ -9,7 +9,9 @@ import {
   DialogTitle 
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { FileText, CheckCircle } from "lucide-react";
+import { FileText, CheckCircle, ScrollText, AlertTriangle, ArrowRight } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 
 interface SummaryDialogProps {
   open: boolean;
@@ -24,40 +26,97 @@ const SummaryDialog: React.FC<SummaryDialogProps> = ({
   summary,
   onVerify
 }) => {
+  // Function to parse and format sections from the summary
+  const formatSections = (text: string) => {
+    const sections: { [key: string]: string[] } = {};
+    let currentSection = "";
+    
+    text.split('\n').forEach(line => {
+      if (line.includes('###') || line.startsWith('•')) {
+        currentSection = line.replace('###', '').trim();
+        sections[currentSection] = [];
+      } else if (line.trim() && currentSection) {
+        sections[currentSection].push(line.trim());
+      }
+    });
+    
+    return sections;
+  };
+
+  const sections = formatSections(summary);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogHeader className="space-y-3">
           <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            Document Summary
+            <ScrollText className="h-5 w-5 text-primary" />
+            Medical Document Analysis
           </DialogTitle>
-          <DialogDescription>
-            AI-generated analysis of your document content
+          <DialogDescription className="text-base">
+            AI-generated analysis and key findings from your document
           </DialogDescription>
         </DialogHeader>
         
-        {summary ? (
-          <>
-            <div className="bg-muted/20 p-4 rounded-md whitespace-pre-line max-h-[400px] overflow-y-auto border text-sm">
-              {summary}
+        <div className="flex-1 overflow-y-auto pr-2">
+          {summary ? (
+            <div className="space-y-6">
+              <Accordion type="single" collapsible className="w-full">
+                {Object.entries(sections).map(([title, content], index) => (
+                  <AccordionItem value={`section-${index}`} key={index} className="border-b border-border/40">
+                    <AccordionTrigger className="text-left hover:no-underline py-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-primary/5 text-primary font-medium">
+                          {title.replace(':', '')}
+                        </Badge>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-2 pb-4">
+                      <div className="space-y-4">
+                        {content.map((line, i) => (
+                          <div key={i} className="flex items-start gap-2 group transition-colors rounded-lg p-2 hover:bg-muted/30">
+                            <ArrowRight className="h-4 w-4 text-primary/70 mt-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="space-y-1">
+                              <p className="leading-relaxed text-foreground/90 font-medical">
+                                {line}
+                              </p>
+                              {line.includes(':') && (
+                                <div className="pl-4 text-sm text-muted-foreground">
+                                  {line.split(':')[1].trim()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+              
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-medium text-amber-800 dark:text-amber-400">
+                      Important Notice
+                    </p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      This is an AI-generated summary. Please verify its accuracy against the original document before making medical decisions.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md p-3 text-amber-800 dark:text-amber-400 text-sm">
-              <p className="flex items-start gap-2">
-                <span className="flex-shrink-0 mt-0.5">⚠️</span>
-                <span>
-                  This is an AI-generated summary. Please verify its accuracy against the original document before making medical decisions.
-                </span>
-              </p>
+          ) : (
+            <div className="py-8 text-center">
+              <FileText className="h-8 w-8 mx-auto text-muted-foreground/50 mb-3" />
+              <p className="text-muted-foreground">No summary available for this document.</p>
             </div>
-          </>
-        ) : (
-          <div className="py-8 text-center">
-            <p className="text-muted-foreground">No summary available for this document.</p>
-          </div>
-        )}
+          )}
+        </div>
         
-        <DialogFooter>
+        <DialogFooter className="border-t bg-muted/10 pt-4 mt-6">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
           <Button onClick={onVerify} className="flex items-center gap-1.5">
             <CheckCircle className="h-4 w-4" />

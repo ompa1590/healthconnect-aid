@@ -3,12 +3,14 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ArrowLeft, ArrowRight, Heart, Cigarette, Brain, PanelRight, Clock, ArrowRightCircle } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import ProgramDetailsDialog from "./ProgramDetailsDialog";
 
 const HealthPrograms = () => {
   const [activeSlide, setActiveSlide] = useState(0);
   const { language } = useLanguage();
+  const [selectedProgram, setSelectedProgram] = useState<any | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   
   const programs = [
     {
@@ -20,7 +22,10 @@ const HealthPrograms = () => {
       ctaLink: "/services/weight-management",
       image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=1470&auto=format&fit=crop",
       icon: PanelRight,
-      bgColor: "from-primary/20 to-primary/5"
+      bgColor: "from-primary/20 to-primary/5",
+      details: "Our virtual weight management program provides comprehensive support for your weight loss goals. You'll receive a personalized nutrition plan, access to virtual coaching sessions, progress tracking tools, and ongoing support from certified healthcare professionals.",
+      features: ["Personalized meal plans", "Regular virtual coaching", "Progress tracking app", "Community support", "Medical supervision"],
+      benefits: ["Sustainable weight loss", "Improved health markers", "Expert guidance", "Convenience"]
     },
     {
       id: 2,
@@ -31,7 +36,10 @@ const HealthPrograms = () => {
       ctaLink: "/services/smoking-cessation",
       image: "/lovable-uploads/a49002ca-5abd-4317-bb2c-d2d6f823122e.png",
       icon: Cigarette,
-      bgColor: "from-secondary/20 to-secondary/5"
+      bgColor: "from-secondary/20 to-secondary/5",
+      details: "Our smoking cessation program combines behavioral therapy, medication support when appropriate, and ongoing accountability to help you quit smoking for good. Our approach addresses both the physical addiction and psychological habits.",
+      features: ["Nicotine replacement therapy", "Behavioral counseling", "Trigger management strategies", "Progress tracking", "Relapse prevention"],
+      benefits: ["Improved lung function", "Reduced health risks", "Cost savings", "Better quality of life"]
     },
     {
       id: 3,
@@ -42,7 +50,10 @@ const HealthPrograms = () => {
       ctaLink: "/services/mental-health",
       image: "https://images.unsplash.com/photo-1493836512294-502baa1986e2?q=80&w=1470&auto=format&fit=crop",
       icon: Brain,
-      bgColor: "from-wellness/20 to-wellness/5"
+      bgColor: "from-wellness/20 to-wellness/5",
+      details: "Our virtual mental health therapy program provides confidential, accessible support for a range of concerns including anxiety, depression, stress management, and more. All therapists are licensed professionals with extensive experience.",
+      features: ["One-on-one therapy sessions", "Secure messaging with therapist", "Progress tracking", "Homework and resources", "Emergency support"],
+      benefits: ["Improved coping skills", "Reduced symptoms", "Better relationships", "Increased self-awareness"]
     },
     {
       id: 4,
@@ -53,7 +64,10 @@ const HealthPrograms = () => {
       ctaLink: "/services/chronic-care",
       image: "https://images.unsplash.com/photo-1628348070889-cb656235b4eb?q=80&w=1470&auto=format&fit=crop",
       icon: Heart,
-      bgColor: "from-care/20 to-care/5"
+      bgColor: "from-care/20 to-care/5",
+      details: "Our chronic care management program provides continuous support for conditions like diabetes, hypertension, and heart disease. We combine regular virtual check-ins with remote monitoring to help you effectively manage your condition.",
+      features: ["Regular virtual physician visits", "Remote monitoring tools", "Medication management", "Nutrition guidance", "Emergency care coordination"],
+      benefits: ["Better symptom control", "Fewer complications", "Reduced hospital visits", "Improved quality of life"]
     }
   ];
 
@@ -63,6 +77,12 @@ const HealthPrograms = () => {
 
   const prevSlide = () => {
     setActiveSlide((prev) => (prev === 0 ? programs.length - 1 : prev - 1));
+  };
+  
+  const handleLearnMore = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setSelectedProgram(programs[activeSlide]);
+    setDialogOpen(true);
   };
   
   return (
@@ -97,11 +117,9 @@ const HealthPrograms = () => {
                 <p className="text-muted-foreground mb-6">
                   {programs[activeSlide].description}
                 </p>
-                <Button className="rounded-full w-fit px-6 group" asChild>
-                  <Link to={programs[activeSlide].ctaLink}>
-                    {programs[activeSlide].ctaText}
-                    <ArrowRightCircle className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Link>
+                <Button className="rounded-full w-fit px-6 group" onClick={handleLearnMore}>
+                  {programs[activeSlide].ctaText}
+                  <ArrowRightCircle className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </div>
               
@@ -157,6 +175,12 @@ const HealthPrograms = () => {
           ))}
         </div>
       </div>
+      
+      <ProgramDetailsDialog 
+        program={selectedProgram}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </section>
   );
 };
