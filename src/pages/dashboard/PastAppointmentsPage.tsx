@@ -93,6 +93,11 @@ const PastAppointmentsPage = () => {
         });
 
         setAppointments(formattedAppointments);
+        
+        // Automatically select the first appointment if available
+        if (formattedAppointments.length > 0) {
+          setSelectedAppointment(formattedAppointments[0]);
+        }
       } catch (err) {
         console.error("Error in appointment fetch effect:", err);
       }
@@ -347,6 +352,10 @@ const PastAppointmentsPage = () => {
                             variant="outline"
                             size="sm"
                             className="gap-2 hover:bg-primary/10 transition-colors duration-200 group"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openAppointmentDetails(appointment);
+                            }}
                           >
                             <FileText className="h-4 w-4" />
                             <span>View Details</span>
@@ -423,6 +432,10 @@ const PastAppointmentsPage = () => {
                           variant="outline"
                           size="sm"
                           className="gap-2 hover:bg-primary/10 transition-colors duration-200 group"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openAppointmentDetails(appointment);
+                          }}
                         >
                           <FileText className="h-4 w-4" />
                           <span>View Details</span>
