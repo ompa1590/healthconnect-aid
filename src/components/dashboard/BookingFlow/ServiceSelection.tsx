@@ -18,7 +18,7 @@ import {
 
 interface ServiceSelectionProps {
   selectedService: string | null;
-  onSelectService: (service: string) => void;
+  onSelectService: (service: string, serviceName: string) => void;
   onNext: () => void;
 }
 
@@ -77,7 +77,7 @@ const ServiceSelection = ({
                         : "border-muted/50 hover:border-muted"
                     }`}
                     style={{ animationDelay: `${index * 50}ms` }}
-                    onClick={() => onSelectService(serviceKey)}
+                    onClick={() => onSelectService(serviceKey, service.title)}
                   >
                     <CardContent className="p-4 flex flex-col h-full relative">
                       {isSelected && (

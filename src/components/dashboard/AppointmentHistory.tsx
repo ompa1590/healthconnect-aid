@@ -24,7 +24,9 @@ type Appointment = {
   medications?: string[];
   followUp?: string;
   service_type?: string;
+  service_name?: string;
   provider_id?: string;
+  doctor_name?: string;
   patient_name?: string;
   appointment_date?: string;
   appointment_time?: string;
@@ -47,21 +49,20 @@ const AppointmentHistory = () => {
         
         // Transform the fetched appointments to match our component's expected format
         const formattedAppointments = fetchedAppointments.map(apt => {
-          // Format the doctor name more properly - removing the raw UUID format
-          const doctorName = apt.provider_id 
-            ? `Dr. ${apt.provider_id.substring(0, 8)}` 
-            : "Dr. Unknown";
-            
           return {
             id: apt.id,
-            doctor: doctorName,
-            specialty: apt.service_type || "General Practitioner",
+            // Use the saved doctor_name first, then fall back to formatting the provider_id if needed
+            doctor: apt.doctor_name || `Dr. ${apt.provider_id?.substring(0, 8) || "Unknown"}`,
+            // Use the service_name if available, otherwise fall back to service_type
+            specialty: apt.service_name || apt.service_type || "General Practitioner",
             date: apt.appointment_date || new Date().toISOString().split('T')[0],
             time: apt.appointment_time || "10:00 AM",
             status: apt.status as "upcoming" | "completed" | "cancelled" | "in_progress", 
             service_type: apt.service_type,
+            service_name: apt.service_name,
             reason: apt.reason || "No reason provided",
             provider_id: apt.provider_id,
+            doctor_name: apt.doctor_name,
             appointment_date: apt.appointment_date,
             appointment_time: apt.appointment_time
           };
@@ -166,7 +167,7 @@ const AppointmentHistory = () => {
               <div className="space-y-1">
                 <h3 className="text-lg font-semibold tracking-tight">{appointment.doctor}</h3>
                 <p className="text-sm text-muted-foreground font-medium">
-                  {appointment.service_type || appointment.specialty}
+                  {appointment.specialty}
                 </p>
                 <Badge variant={appointment.status === "upcoming" || appointment.status === "in_progress" ? "default" : "secondary"} className="mt-2">
                   {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1).replace('_', ' ')}

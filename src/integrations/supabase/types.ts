@@ -14,12 +14,14 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           created_at: string | null
+          doctor_name: string | null
           id: string
           patient_email: string
           patient_id: string | null
           patient_name: string
           provider_id: string
           reason: string | null
+          service_name: string | null
           service_type: string
           status: string
           updated_at: string | null
@@ -28,12 +30,14 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           created_at?: string | null
+          doctor_name?: string | null
           id?: string
           patient_email: string
           patient_id?: string | null
           patient_name: string
           provider_id: string
           reason?: string | null
+          service_name?: string | null
           service_type: string
           status?: string
           updated_at?: string | null
@@ -42,12 +46,14 @@ export type Database = {
           appointment_date?: string
           appointment_time?: string
           created_at?: string | null
+          doctor_name?: string | null
           id?: string
           patient_email?: string
           patient_id?: string | null
           patient_name?: string
           provider_id?: string
           reason?: string | null
+          service_name?: string | null
           service_type?: string
           status?: string
           updated_at?: string | null

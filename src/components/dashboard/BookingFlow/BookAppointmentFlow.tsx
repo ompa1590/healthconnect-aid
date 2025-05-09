@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ServiceSelection from "./ServiceSelection";
@@ -9,6 +8,7 @@ import { CheckCircle, Clock, User2, Stethoscope } from "lucide-react";
 import { useAppointment } from "@/hooks/useAppointment";
 import { useToast } from "@/components/ui/use-toast";
 import useUser from "@/hooks/useUser";
+import { serviceCategories } from "@/data/serviceCategories";
 
 interface BookAppointmentFlowProps {
   onClose: () => void;
@@ -24,12 +24,33 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   
-  // Additional state to store the doctor's name
+  // Additional state to store the doctor's name and service name
   const [selectedDoctorName, setSelectedDoctorName] = useState<string>("");
+  const [selectedServiceName, setSelectedServiceName] = useState<string>("");
   
   // Get service name for the confirmation step
   const getServiceName = () => {
-    // In a real application, you would use the selected service ID to look up the name
+    // Try to use the stored service name first
+    if (selectedServiceName) {
+      return selectedServiceName;
+    }
+    
+    // Otherwise try to find the service in serviceCategories
+    if (selectedService) {
+      const [categoryId, serviceIndex] = selectedService.split('-');
+      const category = serviceCategories.find(cat => cat.id === categoryId);
+      
+      if (category && serviceIndex !== undefined) {
+        const index = parseInt(serviceIndex, 10);
+        if (!isNaN(index) && category.services[index]) {
+          const serviceName = category.services[index].title;
+          setSelectedServiceName(serviceName);
+          return serviceName;
+        }
+      }
+    }
+    
+    // Fallback
     return selectedService || "Medical Consultation";
   };
   
@@ -62,7 +83,11 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
       return;
     }
     
+    // Get the human-readable service name
+    const serviceName = getServiceName();
+    
     console.log("Submitting appointment with doctor name:", selectedDoctorName);
+    console.log("Submitting appointment with service name:", serviceName);
     
     try {
       const success = await saveAppointment({
@@ -73,7 +98,9 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
         patientId: user.id,
         patientName: userProfile?.name || user?.user_metadata?.name || 'Patient',
         patientEmail: userProfile?.email || user?.email || '',
-        reasonForVisit: "Appointment booked through the system"
+        reasonForVisit: "Appointment booked through the system",
+        doctorName: selectedDoctorName,
+        serviceName: serviceName
       });
       
       if (success) {
@@ -108,7 +135,10 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
         return (
           <ServiceSelection 
             selectedService={selectedService}
-            onSelectService={setSelectedService}
+            onSelectService={(service, serviceName) => {
+              setSelectedService(service);
+              setSelectedServiceName(serviceName);
+            }}
             onNext={goToNextStep}
           />
         );

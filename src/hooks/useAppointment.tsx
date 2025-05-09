@@ -13,6 +13,8 @@ interface AppointmentData {
   patientName: string;
   patientEmail: string;
   reasonForVisit: string;
+  doctorName?: string;
+  serviceName?: string;
 }
 
 export const useAppointment = () => {
@@ -58,7 +60,9 @@ export const useAppointment = () => {
         appointment_date: formattedDate,
         appointment_time: timeValue,
         reason: appointmentData.reasonForVisit || "Appointment booked through the system",
-        status: 'upcoming'
+        status: 'upcoming',
+        doctor_name: appointmentData.doctorName || `Dr. ${appointmentData.doctorId.substring(0, 8)}`,
+        service_name: appointmentData.serviceName || appointmentData.service
       };
 
       console.log('Inserting appointment with:', appointmentObject);
@@ -100,7 +104,7 @@ export const useAppointment = () => {
     }
   };
 
-  // Modified function with retry mechanism and improved doctor name handling
+  // Modified function with retry mechanism and improved data handling
   const getAppointments = useCallback(async (isProvider = false, maxRetries = 3) => {
     setIsLoading(true);
     setError(null);
@@ -149,7 +153,11 @@ export const useAppointment = () => {
         const formattedAppointments = data?.map(apt => ({
           ...apt,
           // Ensure reason is always a string
-          reason: apt.reason || "Appointment booked through the system"
+          reason: apt.reason || "Appointment booked through the system",
+          // Ensure doctor_name is present
+          doctor_name: apt.doctor_name || `Dr. ${apt.provider_id.substring(0, 8)}`,
+          // Ensure service_name is present
+          service_name: apt.service_name || apt.service_type
         })) || [];
         
         console.log("Formatted appointments:", formattedAppointments);
