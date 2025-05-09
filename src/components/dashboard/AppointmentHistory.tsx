@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarClock, Clock, FileText, Video, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -7,47 +8,61 @@ import { HeartPulseLoader } from "@/components/ui/heart-pulse-loader";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import useAppointment from "@/hooks/useAppointment";
+import { format, parseISO } from "date-fns";
 
 type Appointment = {
-  id: number;
-  doctor: string;
-  specialty: string;
+  id: number | string;
+  doctor?: string;
+  specialty?: string;
   date: string;
   time: string;
-  status: "upcoming" | "completed";
+  status: "upcoming" | "completed" | "cancelled";
   summary?: string;
   recommendations?: string;
   medications?: string[];
   followUp?: string;
+  service_type?: string;
+  provider_id?: string;
+  patient_name?: string;
+  appointment_date?: string;
+  appointment_time?: string;
 };
 
 const AppointmentHistory = () => {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const navigate = useNavigate();
+  const { getAppointments } = useAppointment();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
 
-  const appointments: Appointment[] = [
-    {
-      id: 1,
-      doctor: "Dr. Sarah Johnson",
-      specialty: "General Practitioner",
-      date: "2024-03-20",
-      time: "10:00 AM",
-      status: "upcoming",
-    },
-    {
-      id: 2,
-      doctor: "Dr. Michael Chen",
-      specialty: "Dermatologist",
-      date: "2024-03-15",
-      time: "2:30 PM",
-      status: "completed",
-      summary: "Routine skin checkup. No concerns identified.",
-      recommendations: "Continue using prescribed sunscreen daily.",
-      medications: [],
-      followUp: "Schedule next annual checkup in 12 months."
-    },
-  ];
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      setLoading(true);
+      try {
+        const fetchedAppointments = await getAppointments();
+        
+        // Transform the fetched appointments to match our component's expected format
+        const formattedAppointments = fetchedAppointments.map(apt => ({
+          id: apt.id,
+          doctor: `Dr. ${apt.provider_id?.substring(0, 8) || "Unknown"}`, // Temporary name format until we have provider profiles
+          specialty: apt.service_type || "General Practitioner",
+          date: apt.appointment_date || new Date().toISOString().split('T')[0],
+          time: apt.appointment_time || "10:00 AM",
+          status: apt.status as "upcoming" | "completed" | "cancelled", 
+          service_type: apt.service_type
+        }));
+
+        setAppointments(formattedAppointments);
+      } catch (error) {
+        console.error("Error fetching appointments:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAppointments();
+  }, [getAppointments]);
 
   const handleViewDetails = (appointment: Appointment) => {
     setLoading(true);
@@ -71,6 +86,38 @@ const AppointmentHistory = () => {
     }, 100);
   };
 
+  const formatAppointmentDate = (dateString: string) => {
+    try {
+      // Try to parse the date string and format it
+      const date = parseISO(dateString);
+      return format(date, "MMMM d, yyyy");
+    } catch (error) {
+      // Fallback if the date can't be parsed
+      return dateString;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <HeartPulseLoader size="lg" />
+        <p className="mt-4 text-muted-foreground font-medium">Loading your appointments...</p>
+      </div>
+    );
+  }
+
+  if (appointments.length === 0) {
+    return (
+      <div className="text-center py-12 border rounded-xl p-8 bg-muted/10">
+        <h3 className="text-xl font-medium mb-2">No appointments found</h3>
+        <p className="text-muted-foreground mb-6">You don't have any upcoming appointments scheduled.</p>
+        <Button onClick={() => navigate("/dashboard?tab=bookappointment")}>
+          Schedule an Appointment
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="space-y-6">
@@ -90,7 +137,7 @@ const AppointmentHistory = () => {
               <div className="space-y-1">
                 <h3 className="text-lg font-semibold tracking-tight">{appointment.doctor}</h3>
                 <p className="text-sm text-muted-foreground font-medium">
-                  {appointment.specialty}
+                  {appointment.service_type || appointment.specialty}
                 </p>
                 <Badge variant={appointment.status === "upcoming" ? "default" : "secondary"} className="mt-2">
                   {appointment.status === "upcoming" ? "Upcoming" : "Completed"}
@@ -131,7 +178,7 @@ const AppointmentHistory = () => {
             <div className="mt-4 flex items-center gap-6 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <CalendarClock className="h-4 w-4 text-primary" />
-                <span className="font-medium">{appointment.date}</span>
+                <span className="font-medium">{formatAppointmentDate(appointment.date)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" />
@@ -158,7 +205,7 @@ const AppointmentHistory = () => {
             <div className="space-y-6">
               <div className="space-y-2">
                 <h2 className="text-2xl font-semibold tracking-tight">{selectedAppointment.doctor}</h2>
-                <p className="text-primary/80 font-medium">{selectedAppointment.specialty}</p>
+                <p className="text-primary/80 font-medium">{selectedAppointment.service_type || selectedAppointment.specialty}</p>
                 <Badge variant="outline" className="mt-1">
                   {selectedAppointment.status}
                 </Badge>
@@ -167,7 +214,7 @@ const AppointmentHistory = () => {
               <div className="flex gap-6 text-sm">
                 <div className="flex items-center gap-2">
                   <CalendarClock className="h-4 w-4 text-primary" />
-                  <span className="font-medium">{selectedAppointment.date}</span>
+                  <span className="font-medium">{formatAppointmentDate(selectedAppointment.date)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-primary" />
