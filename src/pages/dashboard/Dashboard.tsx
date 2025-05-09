@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import AppointmentScheduler from "@/components/dashboard/AppointmentScheduler";
@@ -18,6 +19,8 @@ import PrescriptionsPage from "./PrescriptionsPage";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import BookAppointmentFlow from "@/components/dashboard/BookingFlow/BookAppointmentFlow";
 import { GlassCard } from "@/components/ui/GlassCard";
+import useAppointment from "@/hooks/useAppointment";
+import { format, parseISO } from "date-fns";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -26,6 +29,8 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState("");
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const { getAppointments, isLoading: appointmentsLoading } = useAppointment();
+  const [upcomingAppointment, setUpcomingAppointment] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -82,6 +87,37 @@ const Dashboard = () => {
     };
   }, [navigate, toast]);
 
+  // Fetch upcoming appointments
+  useEffect(() => {
+    const fetchUpcomingAppointments = async () => {
+      try {
+        const appointments = await getAppointments();
+        
+        // Find the first upcoming appointment (assuming appointments are sorted)
+        const upcoming = appointments.find(apt => apt.status === 'upcoming');
+        if (upcoming) {
+          setUpcomingAppointment(upcoming);
+        }
+      } catch (error) {
+        console.error("Error fetching upcoming appointments:", error);
+      }
+    };
+
+    if (!isLoading) {
+      fetchUpcomingAppointments();
+    }
+  }, [getAppointments, isLoading]);
+
+  // Format date for display
+  const formatAppointmentDate = (dateStr) => {
+    if (!dateStr) return "";
+    try {
+      return format(parseISO(dateStr), "MMMM d'th' 'at' h:mm a");
+    } catch (error) {
+      return dateStr;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-health-50/30">
@@ -121,7 +157,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Current Treatment Card */}
+      {/* Current Treatment Card - Show real appointment data */}
       <GlassCard 
         className="mb-8 rounded-xl overflow-hidden"
         variant="colored"
@@ -136,31 +172,70 @@ const Dashboard = () => {
               </div>
               <h2 className="text-xl font-medium text-gray-800">Current Treatment</h2>
             </div>
-            <div className="flex items-center gap-4 mb-2 text-sm">
-              <div className="flex items-center">
-                <span className="font-medium text-gray-700">Upcoming Appointment:</span>
-                <span className="ml-2 text-primary/80 font-medium">June 15th at 2:00 PM</span>
+            
+            {appointmentsLoading ? (
+              <div className="flex items-center gap-2 py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Loading appointment data...</span>
               </div>
-            </div>
-            <Button 
-              className="mt-4 shadow-sm transition-all hover:shadow-md bg-gradient-to-r from-primary/90 to-primary/80 hover:from-primary hover:to-primary/90 group" 
-              size="sm"
-            >
-              Join Appointment
-              <CalendarDays className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </Button>
+            ) : upcomingAppointment ? (
+              <div>
+                <div className="flex items-center gap-4 mb-2 text-sm">
+                  <div className="flex items-center">
+                    <span className="font-medium text-gray-700">Upcoming Appointment:</span>
+                    <span className="ml-2 text-primary/80 font-medium">
+                      {formatAppointmentDate(upcomingAppointment.appointment_date)}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="mt-2 mb-4">
+                  <span className="text-sm text-gray-600">
+                    With <span className="font-medium">{upcomingAppointment.doctor_name}</span> 
+                    {upcomingAppointment.service_name && (
+                      <> for <span className="font-medium">{upcomingAppointment.service_name}</span></>
+                    )}
+                  </span>
+                </div>
+                
+                <Button 
+                  className="mt-2 shadow-sm transition-all hover:shadow-md bg-gradient-to-r from-primary/90 to-primary/80 hover:from-primary hover:to-primary/90 group" 
+                  size="sm"
+                  onClick={() => navigate("/dashboard/past-appointments")}
+                >
+                  View Appointment
+                  <CalendarDays className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </div>
+            ) : (
+              <div>
+                <p className="text-muted-foreground">No upcoming appointments scheduled</p>
+                <Button 
+                  className="mt-4 shadow-sm transition-all hover:shadow-md bg-gradient-to-r from-primary/90 to-primary/80 hover:from-primary hover:to-primary/90 group" 
+                  size="sm"
+                  onClick={() => setBookingDialogOpen(true)}
+                >
+                  Schedule Appointment
+                  <PlusCircle className="ml-2 h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
+                </Button>
+              </div>
+            )}
           </div>
           <div className="bg-muted/5 p-6 w-full md:w-auto flex flex-col items-start justify-center border-t md:border-t-0 md:border-l border-border/20">
             <p className="text-sm text-muted-foreground mb-2">Your current plans</p>
             <div className="flex items-center gap-x-6 gap-y-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-primary"></div>
-                <span className="text-sm font-medium">Dermatology Consultation</span>
+                <span className="text-sm font-medium">
+                  {upcomingAppointment?.service_name || "No active treatments"}
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-secondary"></div>
-                <span className="text-sm font-medium">Monthly Wellness Check</span>
-              </div>
+              {upcomingAppointment?.service_type && upcomingAppointment.service_type !== upcomingAppointment.service_name && (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-secondary"></div>
+                  <span className="text-sm font-medium">{upcomingAppointment.service_type}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
