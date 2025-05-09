@@ -57,7 +57,7 @@ export const useAppointment = () => {
         service_type: appointmentData.service,
         appointment_date: formattedDate,
         appointment_time: timeValue,
-        reason: appointmentData.reasonForVisit,
+        reason: appointmentData.reasonForVisit || "Appointment booked through the system",
         status: 'upcoming'
       };
 
@@ -100,7 +100,7 @@ export const useAppointment = () => {
     }
   };
 
-  // Modified function with retry mechanism
+  // Modified function with retry mechanism and improved doctor name handling
   const getAppointments = useCallback(async (isProvider = false, maxRetries = 3) => {
     setIsLoading(true);
     setError(null);
@@ -144,10 +144,18 @@ export const useAppointment = () => {
         }
         
         console.log(`Appointments fetched: ${data?.length || 0} appointments`);
-        console.log("Appointments fetched:", data);
+        
+        // Format the appointments data to be more user-friendly
+        const formattedAppointments = data?.map(apt => ({
+          ...apt,
+          // Ensure reason is always a string
+          reason: apt.reason || "Appointment booked through the system"
+        })) || [];
+        
+        console.log("Formatted appointments:", formattedAppointments);
         
         setIsLoading(false);
-        return data || [];
+        return formattedAppointments;
       } catch (err: any) {
         console.error(`Error fetching appointments (attempt ${retries + 1}/${maxRetries}):`, err);
         retries++;

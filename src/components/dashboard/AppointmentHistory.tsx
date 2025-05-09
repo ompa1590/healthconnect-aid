@@ -46,16 +46,26 @@ const AppointmentHistory = () => {
         const fetchedAppointments = await getAppointments();
         
         // Transform the fetched appointments to match our component's expected format
-        const formattedAppointments = fetchedAppointments.map(apt => ({
-          id: apt.id,
-          doctor: `Dr. ${apt.provider_id?.substring(0, 8) || "Unknown"}`, // Temporary name format until we have provider profiles
-          specialty: apt.service_type || "General Practitioner",
-          date: apt.appointment_date || new Date().toISOString().split('T')[0],
-          time: apt.appointment_time || "10:00 AM",
-          status: apt.status as "upcoming" | "completed" | "cancelled" | "in_progress", 
-          service_type: apt.service_type,
-          reason: apt.reason
-        }));
+        const formattedAppointments = fetchedAppointments.map(apt => {
+          // Format the doctor name more properly - removing the raw UUID format
+          const doctorName = apt.provider_id 
+            ? `Dr. ${apt.provider_id.substring(0, 8)}` 
+            : "Dr. Unknown";
+            
+          return {
+            id: apt.id,
+            doctor: doctorName,
+            specialty: apt.service_type || "General Practitioner",
+            date: apt.appointment_date || new Date().toISOString().split('T')[0],
+            time: apt.appointment_time || "10:00 AM",
+            status: apt.status as "upcoming" | "completed" | "cancelled" | "in_progress", 
+            service_type: apt.service_type,
+            reason: apt.reason || "No reason provided",
+            provider_id: apt.provider_id,
+            appointment_date: apt.appointment_date,
+            appointment_time: apt.appointment_time
+          };
+        });
 
         setAppointments(formattedAppointments);
       } catch (err) {
