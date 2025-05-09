@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { CalendarClock, Clock, FileText, Video, MessageCircle } from "lucide-react";
+import { CalendarClock, Clock, FileText, Video, MessageCircle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { HeartPulseLoader } from "@/components/ui/heart-pulse-loader";
@@ -18,7 +18,7 @@ type Appointment = {
   specialty?: string;
   date: string;
   time: string;
-  status: "upcoming" | "completed" | "cancelled";
+  status: "upcoming" | "completed" | "cancelled" | "in_progress";
   summary?: string;
   recommendations?: string;
   medications?: string[];
@@ -28,26 +28,22 @@ type Appointment = {
   patient_name?: string;
   appointment_date?: string;
   appointment_time?: string;
+  reason?: string;
 };
 
 const AppointmentHistory = () => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const navigate = useNavigate();
-  const { getAppointments } = useAppointment();
+  const { getAppointments, isLoading, error } = useAppointment();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const { toast } = useToast();
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const fetchAppointments = async () => {
-      setLoading(true);
-      setError(null);
-      
       try {
         console.log("Fetching appointments...");
         const fetchedAppointments = await getAppointments();
-        console.log("Appointments fetched:", fetchedAppointments);
         
         // Transform the fetched appointments to match our component's expected format
         const formattedAppointments = fetchedAppointments.map(apt => ({
@@ -56,26 +52,19 @@ const AppointmentHistory = () => {
           specialty: apt.service_type || "General Practitioner",
           date: apt.appointment_date || new Date().toISOString().split('T')[0],
           time: apt.appointment_time || "10:00 AM",
-          status: apt.status as "upcoming" | "completed" | "cancelled", 
-          service_type: apt.service_type
+          status: apt.status as "upcoming" | "completed" | "cancelled" | "in_progress", 
+          service_type: apt.service_type,
+          reason: apt.reason
         }));
 
         setAppointments(formattedAppointments);
-      } catch (error) {
-        console.error("Error fetching appointments:", error);
-        setError("Failed to load appointments. Please try again.");
-        toast({
-          variant: "destructive",
-          title: "Error loading appointments",
-          description: "There was a problem loading your appointments. Please try again.",
-        });
-      } finally {
-        setLoading(false);
+      } catch (err) {
+        console.error("Error in appointment fetch effect:", err);
       }
     };
 
     fetchAppointments();
-  }, [getAppointments, toast]);
+  }, [getAppointments, retryCount]);
 
   const handleViewDetails = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
@@ -94,22 +83,31 @@ const AppointmentHistory = () => {
     }, 100);
   };
 
-  const formatAppointmentDate = (dateString: string) => {
+  const formatAppointmentDate = (dateStr: string) => {
     try {
       // Try to parse the date string and format it
-      const date = parseISO(dateString);
+      const date = parseISO(dateStr);
       return format(date, "MMMM d, yyyy");
     } catch (error) {
       // Fallback if the date can't be parsed
-      return dateString;
+      return dateStr;
     }
   };
 
-  if (loading) {
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    toast({
+      title: "Retrying",
+      description: "Attempting to reconnect and fetch your appointments...",
+    });
+  };
+
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <HeartPulseLoader size="lg" />
         <p className="mt-4 text-muted-foreground font-medium">Loading your appointments...</p>
+        <p className="text-sm text-muted-foreground">Please wait while we fetch your data</p>
       </div>
     );
   }
@@ -117,10 +115,11 @@ const AppointmentHistory = () => {
   if (error) {
     return (
       <div className="text-center py-12 border rounded-xl p-8 bg-muted/10">
-        <h3 className="text-xl font-medium mb-2">Error loading appointments</h3>
-        <p className="text-muted-foreground mb-6">{error}</p>
-        <Button onClick={() => window.location.reload()}>
-          Retry
+        <h3 className="text-xl font-medium mb-2">Connection Error</h3>
+        <p className="text-muted-foreground mb-6">We couldn't load your appointments due to a connection issue.</p>
+        <Button onClick={handleRetry} className="flex items-center gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Retry Connection
         </Button>
       </div>
     );
@@ -148,7 +147,7 @@ const AppointmentHistory = () => {
               "p-6 rounded-xl border transition-all duration-300",
               "hover:shadow-lg hover:border-primary/30",
               "bg-gradient-to-r from-white to-muted/20",
-              appointment.status === "upcoming" 
+              appointment.status === "upcoming" || appointment.status === "in_progress"
                 ? "border-primary/20 shadow-sm" 
                 : "border-border/50"
             )}
@@ -159,12 +158,12 @@ const AppointmentHistory = () => {
                 <p className="text-sm text-muted-foreground font-medium">
                   {appointment.service_type || appointment.specialty}
                 </p>
-                <Badge variant={appointment.status === "upcoming" ? "default" : "secondary"} className="mt-2">
-                  {appointment.status === "upcoming" ? "Upcoming" : "Completed"}
+                <Badge variant={appointment.status === "upcoming" || appointment.status === "in_progress" ? "default" : "secondary"} className="mt-2">
+                  {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1).replace('_', ' ')}
                 </Badge>
               </div>
               <div className="flex gap-3">
-                {appointment.status === "upcoming" ? (
+                {(appointment.status === "upcoming" || appointment.status === "in_progress") ? (
                   <Button 
                     variant="default"
                     size="sm"
@@ -198,13 +197,18 @@ const AppointmentHistory = () => {
             <div className="mt-4 flex items-center gap-6 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <CalendarClock className="h-4 w-4 text-primary" />
-                <span className="font-medium">{formatAppointmentDate(appointment.date)}</span>
+                <span className="font-medium">{formatAppointmentDate(appointment.appointment_date || appointment.date)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" />
-                <span className="font-medium">{appointment.time}</span>
+                <span className="font-medium">{appointment.appointment_time || appointment.time}</span>
               </div>
             </div>
+            {appointment.reason && (
+              <div className="mt-3 text-sm text-muted-foreground border-t pt-3 border-border/30">
+                <span className="font-medium">Reason:</span> {appointment.reason}
+              </div>
+            )}
           </div>
         ))}
       </div>

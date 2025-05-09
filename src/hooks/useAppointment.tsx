@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import useUser from './useUser';
@@ -17,6 +17,8 @@ interface AppointmentData {
 
 export const useAppointment = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useUser();
 
@@ -98,63 +100,89 @@ export const useAppointment = () => {
     }
   };
 
-  const getAppointments = async (isProvider = false) => {
-    try {
-      if (!user) {
-        console.log("No user authenticated, returning empty appointments array");
-        return [];
-      }
+  // Modified function with retry mechanism
+  const getAppointments = useCallback(async (isProvider = false, maxRetries = 3) => {
+    setIsLoading(true);
+    setError(null);
+    
+    let retries = 0;
+    
+    while (retries < maxRetries) {
+      try {
+        // Make sure we have a user before proceeding
+        if (!user || !user.id) {
+          console.log("No authenticated user found, returning empty appointments array");
+          setIsLoading(false);
+          return [];
+        }
 
-      console.log("Fetching appointments for user:", user.id, "isProvider:", isProvider);
-      
-      let query;
-      
-      if (isProvider) {
-        // Provider is looking at their appointments
-        query = supabase
-          .from('appointments')
-          .select('*')
-          .eq('provider_id', user.id)
-          .order('appointment_date', { ascending: true });
-      } else {
-        // Patient is looking at their appointments
-        query = supabase
-          .from('appointments')
-          .select('*')
-          .eq('patient_id', user.id)
-          .order('appointment_date', { ascending: true });
-      }
+        console.log(`Fetching appointments for user: ${user.id}, isProvider: ${isProvider}`);
+        
+        let query;
+        
+        if (isProvider) {
+          // Provider is looking at their appointments
+          query = supabase
+            .from('appointments')
+            .select('*')
+            .eq('provider_id', user.id)
+            .order('appointment_date', { ascending: true });
+        } else {
+          // Patient is looking at their appointments
+          query = supabase
+            .from('appointments')
+            .select('*')
+            .eq('patient_id', user.id)
+            .order('appointment_date', { ascending: true });
+        }
 
-      console.log("Executing query...");
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching appointments:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load appointments. Please try again.",
-          variant: 'destructive',
-        });
-        throw error;
+        console.log("Executing query...");
+        const { data, error } = await query;
+        
+        if (error) {
+          throw error;
+        }
+        
+        console.log(`Appointments fetched: ${data?.length || 0} appointments`);
+        console.log("Appointments fetched:", data);
+        
+        setIsLoading(false);
+        return data || [];
+      } catch (err: any) {
+        console.error(`Error fetching appointments (attempt ${retries + 1}/${maxRetries}):`, err);
+        retries++;
+        
+        if (retries >= maxRetries) {
+          console.error('Max retries reached, giving up');
+          const errorMessage = err?.message || "Network error while fetching appointments";
+          setError(errorMessage);
+          
+          toast({
+            title: "Connection Error",
+            description: "Failed to load your appointments. Please check your internet connection and try again.",
+            variant: 'destructive',
+          });
+          
+          setIsLoading(false);
+          return [];
+        }
+        
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retries)));
+        console.log(`Retrying... (${retries}/${maxRetries})`);
       }
-      
-      console.log("Appointments fetched:", data?.length || 0, "appointments");
-      return data || [];
-    } catch (err) {
-      console.error('Error in getAppointments:', err);
-      toast({
-        title: "Error",
-        description: "There was a problem retrieving your appointments.",
-        variant: 'destructive',
-      });
-      throw err;
     }
-  };
+    
+    setIsLoading(false);
+    return [];
+  }, [user, toast]);
 
   return {
     saveAppointment,
     getAppointments,
-    isSubmitting
+    isSubmitting,
+    isLoading,
+    error
   };
 };
 
