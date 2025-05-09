@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import useAppointment from "@/hooks/useAppointment";
 import { format, parseISO } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
 
 type Appointment = {
   id: number | string;
@@ -31,16 +32,22 @@ type Appointment = {
 
 const AppointmentHistory = () => {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const navigate = useNavigate();
   const { getAppointments } = useAppointment();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchAppointments = async () => {
       setLoading(true);
+      setError(null);
+      
       try {
+        console.log("Fetching appointments...");
         const fetchedAppointments = await getAppointments();
+        console.log("Appointments fetched:", fetchedAppointments);
         
         // Transform the fetched appointments to match our component's expected format
         const formattedAppointments = fetchedAppointments.map(apt => ({
@@ -56,21 +63,22 @@ const AppointmentHistory = () => {
         setAppointments(formattedAppointments);
       } catch (error) {
         console.error("Error fetching appointments:", error);
+        setError("Failed to load appointments. Please try again.");
+        toast({
+          variant: "destructive",
+          title: "Error loading appointments",
+          description: "There was a problem loading your appointments. Please try again.",
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchAppointments();
-  }, [getAppointments]);
+  }, [getAppointments, toast]);
 
   const handleViewDetails = (appointment: Appointment) => {
-    setLoading(true);
-    // Simulate loading delay
-    setTimeout(() => {
-      setSelectedAppointment(appointment);
-      setLoading(false);
-    }, 800);
+    setSelectedAppointment(appointment);
   };
 
   const handleChatWithDoctor = (doctorName: string) => {
@@ -102,6 +110,18 @@ const AppointmentHistory = () => {
       <div className="flex flex-col items-center justify-center py-12">
         <HeartPulseLoader size="lg" />
         <p className="mt-4 text-muted-foreground font-medium">Loading your appointments...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12 border rounded-xl p-8 bg-muted/10">
+        <h3 className="text-xl font-medium mb-2">Error loading appointments</h3>
+        <p className="text-muted-foreground mb-6">{error}</p>
+        <Button onClick={() => window.location.reload()}>
+          Retry
+        </Button>
       </div>
     );
   }
@@ -189,19 +209,13 @@ const AppointmentHistory = () => {
         ))}
       </div>
 
-      <Dialog open={loading || !!selectedAppointment} onOpenChange={(open) => {
+      <Dialog open={!!selectedAppointment} onOpenChange={(open) => {
         if (!open) {
           setSelectedAppointment(null);
-          setLoading(false);
         }
       }}>
         <DialogContent className="sm:max-w-lg p-6">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <HeartPulseLoader size="lg" />
-              <p className="mt-4 text-muted-foreground font-medium">Loading appointment details...</p>
-            </div>
-          ) : selectedAppointment && (
+          {selectedAppointment && (
             <div className="space-y-6">
               <div className="space-y-2">
                 <h2 className="text-2xl font-semibold tracking-tight">{selectedAppointment.doctor}</h2>

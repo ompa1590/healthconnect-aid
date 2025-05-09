@@ -101,9 +101,12 @@ export const useAppointment = () => {
   const getAppointments = async (isProvider = false) => {
     try {
       if (!user) {
+        console.log("No user authenticated, returning empty appointments array");
         return [];
       }
 
+      console.log("Fetching appointments for user:", user.id, "isProvider:", isProvider);
+      
       let query;
       
       if (isProvider) {
@@ -121,7 +124,8 @@ export const useAppointment = () => {
           .eq('patient_id', user.id)
           .order('appointment_date', { ascending: true });
       }
-      
+
+      console.log("Executing query...");
       const { data, error } = await query;
       
       if (error) {
@@ -131,9 +135,10 @@ export const useAppointment = () => {
           description: "Failed to load appointments. Please try again.",
           variant: 'destructive',
         });
-        return [];
+        throw error;
       }
       
+      console.log("Appointments fetched:", data?.length || 0, "appointments");
       return data || [];
     } catch (err) {
       console.error('Error in getAppointments:', err);
@@ -142,7 +147,7 @@ export const useAppointment = () => {
         description: "There was a problem retrieving your appointments.",
         variant: 'destructive',
       });
-      return [];
+      throw err;
     }
   };
 
