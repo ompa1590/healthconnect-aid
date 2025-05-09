@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   CalendarClock, 
   Clock, 
@@ -13,7 +13,8 @@ import {
   Stethoscope,
   Sparkles,
   Filter,
-  ChevronRight
+  ChevronRight,
+  RefreshCw
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -31,18 +32,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { HeartPulseLoader } from "@/components/ui/heart-pulse-loader";
+import useAppointment from "@/hooks/useAppointment";
 
 type Appointment = {
-  id: number;
-  doctor: string;
-  specialty: string;
-  date: string;
-  time: string;
-  status: "upcoming" | "completed";
+  id: number | string;
+  doctor?: string;
+  doctor_name?: string;
+  specialty?: string;
+  service_name?: string;
+  service_type?: string;
+  date?: string;
+  time?: string;
+  appointment_date?: string;
+  appointment_time?: string;
+  status: "upcoming" | "completed" | "cancelled" | "in_progress";
   summary?: string;
   recommendations?: string;
   medications?: string[];
   followUp?: string;
+  reason?: string;
 };
 
 const PastAppointmentsPage = () => {
@@ -50,122 +59,82 @@ const PastAppointmentsPage = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const [showAllAppointments, setShowAllAppointments] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState(0);
   const navigate = useNavigate();
+  const { getAppointments, isLoading, error } = useAppointment();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   
   const handleBackToHome = () => {
     navigate("/dashboard");
   };
-  
-  const allAppointments: Appointment[] = [
-    {
-      id: 1,
-      doctor: "Dr. Michael Chen",
-      specialty: "Dermatologist",
-      date: "2024-04-15",
-      time: "2:30 PM",
-      status: "upcoming",
-    },
-    {
-      id: 2,
-      doctor: "Dr. Emily Rodriguez",
-      specialty: "Neurologist",
-      date: "2024-05-03",
-      time: "9:15 AM",
-      status: "upcoming",
-    },
-    {
-      id: 3,
-      doctor: "Dr. James Wilson",
-      specialty: "Cardiologist",
-      date: "2024-03-15",
-      time: "10:00 AM",
-      status: "completed",
-      summary: "Follow-up after mild palpitations. ECG showed normal sinus rhythm.",
-      recommendations: "Continue monitoring. Reduce caffeine intake.",
-      medications: ["Propranolol 10mg as needed"],
-      followUp: "Return in 3 months for follow-up ECG."
-    },
-    {
-      id: 4,
-      doctor: "Dr. Sarah Johnson",
-      specialty: "General Practitioner",
-      date: "2024-02-14",
-      time: "10:00 AM",
-      status: "completed",
-      summary: "Annual check-up. All vitals within normal range.",
-      recommendations: "Continue regular exercise and balanced diet.",
-      medications: [],
-      followUp: "Schedule next annual check-up in 12 months."
-    },
-    {
-      id: 5,
-      doctor: "Dr. Michael Chen",
-      specialty: "Dermatologist",
-      date: "2024-02-29",
-      time: "2:30 PM",
-      status: "completed",
-      summary: "Patient presented with persistent rash on forearms. Diagnosed as contact dermatitis.",
-      recommendations: "Avoid scented soaps and detergents. Apply prescribed hydrocortisone cream twice daily.",
-      medications: ["Hydrocortisone 1% cream", "Cetirizine 10mg tablets"],
-      followUp: "Return in 2 weeks if symptoms persist."
-    },
-    {
-      id: 6,
-      doctor: "Dr. Lisa Patel",
-      specialty: "Endocrinologist",
-      date: "2023-12-04",
-      time: "1:15 PM",
-      status: "completed",
-      summary: "Thyroid function assessment. TSH slightly elevated.",
-      recommendations: "Regular monitoring of thyroid function.",
-      medications: ["Levothyroxine 25mcg daily"],
-      followUp: "Blood work in 6 weeks to check medication efficacy."
-    },
-    {
-      id: 7,
-      doctor: "Dr. Robert Garcia",
-      specialty: "Psychiatrist",
-      date: "2023-11-09",
-      time: "11:30 AM",
-      status: "completed",
-      summary: "Initial consultation for mild anxiety and sleep disturbance.",
-      recommendations: "Practice recommended mindfulness techniques and sleep hygiene.",
-      medications: ["Melatonin 3mg before bedtime as needed"],
-      followUp: "Follow-up in 4 weeks to assess progress."
-    }
-  ];
 
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        console.log("Fetching appointments for past appointments page...");
+        const fetchedAppointments = await getAppointments();
+        
+        // Transform the fetched appointments to match our component's expected format
+        const formattedAppointments = fetchedAppointments.map(apt => {
+          return {
+            id: apt.id,
+            doctor: apt.doctor_name || `Dr. ${apt.provider_id?.substring(0, 8) || "Unknown"}`,
+            doctor_name: apt.doctor_name,
+            specialty: apt.service_name || apt.service_type || "General Practitioner",
+            service_name: apt.service_name,
+            service_type: apt.service_type,
+            date: apt.appointment_date || new Date().toISOString().split('T')[0],
+            time: apt.appointment_time || "10:00 AM",
+            appointment_date: apt.appointment_date,
+            appointment_time: apt.appointment_time,
+            status: apt.status as "upcoming" | "completed" | "cancelled" | "in_progress",
+            reason: apt.reason || "No reason provided"
+          };
+        });
+
+        setAppointments(formattedAppointments);
+      } catch (err) {
+        console.error("Error in appointment fetch effect:", err);
+      }
+    };
+
+    fetchAppointments();
+  }, [getAppointments, retryCount]);
+  
   // Extract all unique specialties for the filter
   const specialties = useMemo(() => {
-    return [...new Set(allAppointments.map(appointment => appointment.specialty))];
-  }, [allAppointments]);
+    return [...new Set(appointments.map(appointment => appointment.specialty))];
+  }, [appointments]);
 
   // Filter and sort appointments
   const filteredAppointments = useMemo(() => {
-    return allAppointments
+    return appointments
       .filter(appointment => 
         (searchQuery === "" || 
          appointment.doctor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         appointment.specialty.toLowerCase().includes(searchQuery.toLowerCase())) &&
+         appointment.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         (appointment.reason && appointment.reason.toLowerCase().includes(searchQuery.toLowerCase()))) &&
         (selectedSpecialties.length === 0 || 
          selectedSpecialties.includes(appointment.specialty))
       )
       .sort((a, b) => {
         // Sort by date (most recent first)
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+        const dateA = a.appointment_date || a.date || "";
+        const dateB = b.appointment_date || b.date || "";
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
       });
-  }, [allAppointments, searchQuery, selectedSpecialties]);
+  }, [appointments, searchQuery, selectedSpecialties]);
 
   // Split appointments into upcoming and past
   const upcomingAppointments = useMemo(() => {
     return filteredAppointments.filter(appointment => 
-      appointment.status === "upcoming"
+      appointment.status === "upcoming" || appointment.status === "in_progress"
     );
   }, [filteredAppointments]);
 
   const pastAppointments = useMemo(() => {
     return filteredAppointments.filter(appointment => 
-      appointment.status === "completed"
+      appointment.status === "completed" || appointment.status === "cancelled"
     );
   }, [filteredAppointments]);
 
@@ -199,6 +168,10 @@ const PastAppointmentsPage = () => {
     setSelectedSpecialties([]);
   };
 
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+  };
+
   const formatDisplayDate = (dateStr: string) => {
     try {
       const date = parseISO(dateStr);
@@ -207,6 +180,33 @@ const PastAppointmentsPage = () => {
       return dateStr; // Return original string if parsing fails
     }
   };
+
+  if (isLoading) {
+    return (
+      <main className="max-w-6xl mx-auto px-6 py-10 animate-fade-in">
+        <div className="flex flex-col items-center justify-center py-12">
+          <HeartPulseLoader size="lg" />
+          <p className="mt-4 text-muted-foreground font-medium">Loading your appointments...</p>
+          <p className="text-sm text-muted-foreground">Please wait while we fetch your data</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="max-w-6xl mx-auto px-6 py-10 animate-fade-in">
+        <div className="text-center py-12 border rounded-xl p-8 bg-muted/10">
+          <h3 className="text-xl font-medium mb-2">Connection Error</h3>
+          <p className="text-muted-foreground mb-6">We couldn't load your appointments due to a connection issue.</p>
+          <Button onClick={handleRetry} className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Retry Connection
+          </Button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-6xl mx-auto px-6 py-10 animate-fade-in">
@@ -358,13 +358,19 @@ const PastAppointmentsPage = () => {
                       <div className="flex gap-6 mt-4 text-muted-foreground">
                         <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                           <CalendarClock className="h-4 w-4 text-primary/70" />
-                          <span>{formatDisplayDate(appointment.date)}</span>
+                          <span>{formatDisplayDate(appointment.appointment_date || appointment.date || "")}</span>
                         </div>
                         <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                           <Clock className="h-4 w-4 text-primary/70" />
-                          <span>{appointment.time}</span>
+                          <span>{appointment.appointment_time || appointment.time}</span>
                         </div>
                       </div>
+
+                      {appointment.reason && (
+                        <div className="mt-3 text-sm text-muted-foreground border-t pt-3 border-border/30">
+                          <span className="font-medium">Reason:</span> {appointment.reason}
+                        </div>
+                      )}
                     </div>
                   </GlassCard>
                 ))}
@@ -427,13 +433,19 @@ const PastAppointmentsPage = () => {
                       <div className="flex gap-6 mt-4 text-muted-foreground">
                         <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                           <CalendarClock className="h-4 w-4 text-primary/70" />
-                          <span>{formatDisplayDate(appointment.date)}</span>
+                          <span>{formatDisplayDate(appointment.appointment_date || appointment.date || "")}</span>
                         </div>
                         <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                           <Clock className="h-4 w-4 text-primary/70" />
-                          <span>{appointment.time}</span>
+                          <span>{appointment.appointment_time || appointment.time}</span>
                         </div>
                       </div>
+
+                      {appointment.reason && (
+                        <div className="mt-3 text-sm text-muted-foreground border-t pt-3 border-border/30">
+                          <span className="font-medium">Reason:</span> {appointment.reason}
+                        </div>
+                      )}
                     </div>
                   </GlassCard>
                 ))}
@@ -485,78 +497,22 @@ const PastAppointmentsPage = () => {
               <div className="flex gap-6 text-sm">
                 <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                   <CalendarClock className="h-4 w-4 text-primary/70" />
-                  <span>{formatDisplayDate(selectedAppointment.date)}</span>
+                  <span>{formatDisplayDate(selectedAppointment.appointment_date || selectedAppointment.date || "")}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-full">
                   <Clock className="h-4 w-4 text-primary/70" />
-                  <span>{selectedAppointment.time}</span>
+                  <span>{selectedAppointment.appointment_time || selectedAppointment.time}</span>
                 </div>
               </div>
-
-              {selectedAppointment.status === "upcoming" ? (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-4 rounded-xl shadow-sm">
-                  <h4 className="font-medium flex items-center gap-2 font-poppins text-blue-700">
-                    <CalendarClock className="h-4 w-4 text-blue-500" />
-                    Upcoming Appointment
+              
+              {selectedAppointment.reason && (
+                <div className="bg-gradient-to-r from-health-50 to-medical-light border border-health-200/40 p-4 rounded-xl shadow-sm">
+                  <h4 className="font-medium flex items-center gap-2 font-poppins text-primary">
+                    <FileText className="h-4 w-4 text-medical-DEFAULT" />
+                    Reason for Visit
                   </h4>
-                  <p className="text-sm text-blue-600 mt-2">
-                    This appointment is scheduled for {formatDisplayDate(selectedAppointment.date)} at {selectedAppointment.time}.
-                  </p>
-                  <div className="pt-2 flex gap-2 mt-3">
-                    <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
-                      Reschedule
-                    </Button>
-                    <Button variant="outline" className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50">
-                      Cancel
-                    </Button>
-                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">{selectedAppointment.reason}</p>
                 </div>
-              ) : (
-                <>
-                  {selectedAppointment.summary && (
-                    <div className="bg-gradient-to-r from-health-50 to-medical-light border border-health-200/40 p-4 rounded-xl shadow-sm">
-                      <h4 className="font-medium flex items-center gap-2 font-poppins text-primary">
-                        <FileText className="h-4 w-4 text-medical-DEFAULT" />
-                        Summary
-                      </h4>
-                      <p className="text-sm text-muted-foreground mt-2">{selectedAppointment.summary}</p>
-                    </div>
-                  )}
-
-                  {selectedAppointment.recommendations && (
-                    <div className="bg-gradient-to-r from-wellness-light to-blue-50 border border-wellness-DEFAULT/20 p-4 rounded-xl shadow-sm">
-                      <h4 className="font-medium flex items-center gap-2 font-poppins text-green-700">
-                        <MessageSquareText className="h-4 w-4 text-wellness-DEFAULT" />
-                        Recommendations
-                      </h4>
-                      <p className="text-sm text-muted-foreground mt-2">{selectedAppointment.recommendations}</p>
-                    </div>
-                  )}
-
-                  {selectedAppointment.medications && selectedAppointment.medications.length > 0 && (
-                    <div className="bg-gradient-to-r from-medical-light to-blue-50/50 border border-medical-DEFAULT/20 p-4 rounded-xl shadow-sm">
-                      <h4 className="font-medium flex items-center gap-2 font-poppins text-blue-700">
-                        <Pill className="h-4 w-4 text-medical-DEFAULT" />
-                        Prescribed Medications
-                      </h4>
-                      <ul className="list-disc list-inside text-sm text-muted-foreground pl-1 mt-2">
-                        {selectedAppointment.medications.map((medication, index) => (
-                          <li key={index} className="mb-1">{medication}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {selectedAppointment.followUp && (
-                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 p-4 rounded-xl shadow-sm">
-                      <h4 className="font-medium flex items-center gap-2 font-poppins text-indigo-700">
-                        <CalendarClock className="h-4 w-4 text-indigo-500" />
-                        Follow-up
-                      </h4>
-                      <p className="text-sm text-muted-foreground mt-2">{selectedAppointment.followUp}</p>
-                    </div>
-                  )}
-                </>
               )}
 
               <div className="pt-2">
