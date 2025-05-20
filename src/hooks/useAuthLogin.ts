@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export const useAuthLogin = () => {
   const [email, setEmail] = useState("");
@@ -51,18 +51,29 @@ export const useAuthLogin = () => {
       return;
     }
     
+    // Create unique login attempt ID and store token locally
+    const loginAttemptId = `login-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const token = captchaToken;
+    
+    // Clear captcha token from state immediately to prevent reuse
+    setCaptchaToken(null);
+    setCaptchaVerified(false);
+    
     try {
+      console.log(`Login attempt ${loginAttemptId} starting with token: ${token.substring(0, 15)}...`);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
         options: {
-          captchaToken: captchaToken,
+          captchaToken: token,
         }
       });
       
       if (error) throw error;
       
       if (data.user) {
+        console.log(`Login successful for ${loginAttemptId}`);
         toast({
           title: "Login successful",
           description: "Welcome to Vyra Health Patient Portal!",
@@ -70,8 +81,22 @@ export const useAuthLogin = () => {
         navigate("/dashboard");
       }
     } catch (error) {
-      console.error("Login error:", error);
-      setErrorMessage(error.message || "Failed to sign in. Please check your credentials.");
+      console.error(`Login error for ${loginAttemptId}:`, error);
+      
+      // Special handling for captcha errors
+      if (error.message.toLowerCase().includes('captcha')) {
+        let errorMsg = "Captcha verification failed. Please try again.";
+        
+        if (error.message.includes('expired')) {
+          errorMsg = "Captcha token has expired. Please complete the verification again.";
+        } else if (error.message.includes('already-seen')) {
+          errorMsg = "This captcha token has already been used. Please complete a new verification.";
+        }
+        
+        setErrorMessage(errorMsg);
+      } else {
+        setErrorMessage(error.message || "Failed to sign in. Please check your credentials.");
+      }
     } finally {
       setIsLoading(false);
     }

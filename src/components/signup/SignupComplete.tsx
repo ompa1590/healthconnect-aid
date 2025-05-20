@@ -26,12 +26,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [captchaError, setCaptchaError] = useState<string | null>(null);
   
-  // Use a stable ID for the captcha
+  // Generate a unique ID for this signup session
   const captchaId = useRef(`signup-captcha-${Math.random().toString(36).substring(2, 15)}`).current;
   const callbackName = useRef(`signupCaptchaCallback${Math.random().toString(36).substring(2, 15)}`).current;
   
   const captchaRef = useRef<CaptchaRefType>(null);
-  const formSubmitAttempts = useRef(0);
   
   // Validate that all required fields are present
   const validateRequiredFields = () => {
@@ -125,9 +124,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
 
   const handleSignup = async () => {
     try {
-      formSubmitAttempts.current += 1;
-      console.log(`Patient signup: Attempt #${formSubmitAttempts.current} starting`);
-      
       setLoading(true);
       setError(null);
       
@@ -156,12 +152,17 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         return;
       }
       
+      // Store token in a local variable and immediately clear state to prevent reuse
       const token = captchaToken;
       console.log(`Patient signup: Starting signup with captcha token: ${token.substring(0, 15)}...`);
       
       // Clear captcha token immediately to prevent reuse
       setCaptchaToken(null);
       setCaptchaVerified(false);
+      
+      // Create a signup session ID to track this attempt
+      const signupSessionId = `signup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      console.log(`Signup attempt ID: ${signupSessionId}`);
       
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -170,13 +171,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           data: {
             name: formData.name,
             role: 'patient',
+            signupSessionId,
           },
           captchaToken: token,
         },
       });
       
       if (error) {
-        console.error("Error during signup:", error);
+        console.error(`Error during signup (${signupSessionId}):`, error);
         
         // Special handling for CAPTCHA errors
         if (error.message.toLowerCase().includes('captcha')) {
@@ -205,12 +207,13 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         throw error;
       }
       
-      console.log("Signup successful:", data);
+      console.log(`Signup successful (${signupSessionId}):`, data);
       
       if (!data.user) {
         throw new Error("Failed to create user account");
       }
       
+      // Continue with saving user profile data
       const { error: profileError } = await supabase
         .from('profiles')
         .update({

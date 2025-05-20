@@ -33,9 +33,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [captchaError, setCaptchaError] = useState<string | null>(null);
   const captchaRef = useRef<CaptchaRefType>(null);
-  const formSubmitAttempts = useRef(0);
   
-  // Use a stable ID for the captcha
+  // Use a unique ID for this provider signup session
   const captchaId = useRef(`provider-signup-captcha-${Math.random().toString(36).substring(2, 15)}`).current;
   const callbackName = useRef(`handleProviderSignupCaptcha${Math.random().toString(36).substring(2, 15)}`).current;
   
@@ -83,8 +82,10 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     }
     
     setSubmitting(true);
-    formSubmitAttempts.current += 1;
-    console.log(`Provider signup: Attempt #${formSubmitAttempts.current} with token: ${captchaToken.substring(0, 15)}...`);
+    
+    // Create a signup session ID to track this attempt
+    const signupSessionId = `provider-signup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    console.log(`Provider signup: Attempt with ID ${signupSessionId} - token: ${captchaToken.substring(0, 15)}...`);
     
     // Store token in a local variable and clear the state immediately to prevent reuse
     const token = captchaToken;
@@ -107,14 +108,15 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             province: formData.province || '',
             postalCode: formData.postalCode || '',
             phoneNumber: formData.phoneNumber || '',
-            isNewUser: true // Flag to identify new users for welcome modal
+            isNewUser: true, // Flag to identify new users for welcome modal
+            signupSessionId // Track this signup attempt
           },
           captchaToken: token
         }
       });
       
       if (error) {
-        console.error("Error during sign up:", error);
+        console.error(`Error during sign up (${signupSessionId}):`, error);
         
         // Special handling for CAPTCHA errors
         if (error.message.toLowerCase().includes('captcha')) {
@@ -148,7 +150,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         setSubmitting(false);
       } else {
-        console.log("Provider signup successful:", data);
+        console.log(`Provider signup successful (${signupSessionId}):`, data);
         
         // Success - show the success dialog
         setShowSuccessDialog(true);

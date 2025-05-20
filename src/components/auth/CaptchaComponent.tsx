@@ -22,6 +22,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
   const captchaRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<number | null>(null);
   const mountedRef = useRef(true);
+  const tokenRef = useRef<string | null>(null);
   
   // Define window function for hCaptcha callback
   useEffect(() => {
@@ -30,7 +31,10 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     // Define the callback function on window that hCaptcha will call
     window[callbackName] = (token: string) => {
       console.log(`Captcha verified with token (${token.substring(0, 10)}...)`);
-      if (mountedRef.current) {
+      
+      // Store token in ref to prevent multiple calls with the same token
+      if (mountedRef.current && token !== tokenRef.current) {
+        tokenRef.current = token;
         onVerify(token);
       }
     };
@@ -49,6 +53,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
       try {
         console.log(`Resetting captcha widget: ${widgetIdRef.current}`);
         window.hcaptcha.reset(widgetIdRef.current);
+        tokenRef.current = null; // Clear stored token
         setError(null);
         return true;
       } catch (err) {
@@ -86,6 +91,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
               console.log(`Cleaning up existing widget: ${widgetIdRef.current}`);
               window.hcaptcha.reset(widgetIdRef.current);
               window.hcaptcha.remove(widgetIdRef.current);
+              tokenRef.current = null; // Clear any stored token
             } catch (error) {
               // Just log the error but continue with creating a new widget
               console.error("Error cleaning up existing captcha:", error);
@@ -104,7 +110,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
             return;
           }
           
-          // Render a new captcha widget
+          // Render a new captcha widget with a unique rqdata value to prevent reuse
           console.log("Creating new hCaptcha widget");
           const widgetId = window.hcaptcha.render(captchaId, {
             sitekey: '62a482d2-14c8-4640-96a8-95a28a30d50c',
@@ -112,16 +118,27 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
             'expired-callback': () => {
               console.warn("hCaptcha token expired");
               if (mountedRef.current) {
+                tokenRef.current = null; // Clear stored token on expiry
                 setError("Verification expired. Please complete the captcha again.");
               }
             },
             'error-callback': (err: string) => {
               console.error(`hCaptcha error: ${err}`);
               if (mountedRef.current) {
+                tokenRef.current = null; // Clear stored token on error
                 setIsLoading(false);
                 setError(`Captcha error: ${err}`);
               }
-            }
+            },
+            'chalexpired-callback': () => {
+              console.warn("hCaptcha challenge expired");
+              if (mountedRef.current) {
+                tokenRef.current = null; // Clear stored token on challenge expiry
+                setError("Challenge expired. Please try again.");
+              }
+            },
+            // Add unique rqdata to prevent token reuse issues
+            rqdata: `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
           });
           
           if (mountedRef.current) {
@@ -185,6 +202,7 @@ const CaptchaComponent: React.FC<CaptchaComponentProps> = ({
     return () => {
       console.log("Cleaning up captcha component");
       mountedRef.current = false;
+      tokenRef.current = null; // Clear token when unmounting
       
       // If hCaptcha is initialized and we have a widget ID, reset it
       if (window.hcaptcha && widgetIdRef.current !== null) {

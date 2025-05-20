@@ -1,11 +1,11 @@
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Mail, Lock } from "lucide-react";
-import CaptchaComponent from "./CaptchaComponent";
+import { AlertCircle, Loader2, Mail, Lock, RefreshCw } from "lucide-react";
+import CaptchaComponent, { CaptchaRefType } from "./CaptchaComponent";
 
 interface LoginFormProps {
   email: string;
@@ -38,10 +38,27 @@ const LoginForm: React.FC<LoginFormProps> = ({
 }) => {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
+  const captchaRef = useRef<CaptchaRefType>(null);
+  
+  // Generate unique IDs for the captcha
+  const captchaId = useRef(`login-captcha-${Math.random().toString(36).substring(2, 15)}`).current;
+  const callbackName = useRef(`loginCaptchaCallback${Math.random().toString(36).substring(2, 15)}`).current;
 
   const handleCaptchaVerify = (token: string) => {
     setCaptchaToken(token);
     setCaptchaVerified(true);
+    setCaptchaError(null);
+  };
+  
+  const resetCaptcha = () => {
+    setCaptchaVerified(false);
+    setCaptchaToken("");
+    setCaptchaError(null);
+    
+    if (captchaRef.current) {
+      captchaRef.current.resetCaptcha();
+    }
   };
 
   const validateForm = (e: React.FormEvent) => {
@@ -59,6 +76,11 @@ const LoginForm: React.FC<LoginFormProps> = ({
       isValid = false;
     } else {
       setPasswordError(null);
+    }
+    
+    if (!captchaVerified) {
+      setCaptchaError("Please complete the captcha verification");
+      isValid = false;
     }
     
     if (!isValid) {
@@ -143,13 +165,28 @@ const LoginForm: React.FC<LoginFormProps> = ({
       {/* hCaptcha container */}
       <div className="flex justify-center mt-4">
         <CaptchaComponent 
-          captchaId="login-captcha"
+          captchaId={captchaId}
           onVerify={handleCaptchaVerify}
-          callbackName="loginCaptchaCallback"
+          callbackName={callbackName}
         />
       </div>
       
-      {captchaVerified && (
+      {captchaError && (
+        <div className="text-destructive text-sm text-center">
+          {captchaError}
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm" 
+            className="ml-2 h-6 text-xs flex items-center"
+            onClick={resetCaptcha}
+          >
+            <RefreshCw className="h-3 w-3 mr-1" /> Reset Verification
+          </Button>
+        </div>
+      )}
+      
+      {captchaVerified && !captchaError && (
         <p className="text-green-500 text-sm font-medium text-center">
           ✓ Captcha verification complete
         </p>
