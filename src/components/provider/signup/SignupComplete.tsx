@@ -6,7 +6,6 @@ import { CheckCircle, ArrowRight, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { CaptchaComponentWithRef, CaptchaRefType } from "@/components/auth/CaptchaComponent";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TermsDialog, PrivacyDialog } from "@/components/signup/LegalPopups";
 import {
@@ -34,18 +33,11 @@ interface EnhancedError extends Error {
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [captchaError, setCaptchaError] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [detailedError, setDetailedError] = useState<string | null>(null);
-  const captchaRef = useRef<CaptchaRefType>(null);
-  
-  // Use a unique ID for this provider signup session
-  const captchaId = useRef(`provider-signup-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`).current;
-  const callbackName = useRef(`handleProviderSignupCaptcha${Math.random().toString(36).substring(2, 15)}`).current;
   
   // Check Supabase connection on component mount
   useEffect(() => {
@@ -72,36 +64,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     
     checkConnection();
   }, []);
-  
-  // Refresh the captcha when the component mounts
-  useEffect(() => {
-    console.log("Provider signup: Initial captcha setup with ID:", captchaId);
-    setCaptchaError(null);
-  }, [captchaId]);
-  
-  const handleCaptchaVerify = (token: string) => {
-    // Enhanced logging for captcha verification
-    const tokenLength = token.length;
-    const tokenPrefix = token.substring(0, 8); // Log only first 8 chars for security
-    const timestamp = new Date().toISOString();
-    
-    console.log(`Provider signup: CAPTCHA verified at ${timestamp}`);
-    console.log(`Token details - length: ${tokenLength}, prefix: ${tokenPrefix}..., unique ID: ${captchaId}`);
-    
-    setCaptchaToken(token);
-    setCaptchaError(null);
-  };
-  
-  const resetCaptcha = () => {
-    console.log("Provider signup: Resetting captcha");
-    setCaptchaToken(null);
-    setCaptchaError(null);
-    
-    // Use the ref to reset the captcha
-    if (captchaRef.current) {
-      captchaRef.current.resetCaptcha();
-    }
-  };
 
   // Helper function to save provider profile with retries
   const saveProviderProfile = async (userId: string, retries = 3): Promise<{success: boolean, error?: any}> => {
@@ -178,16 +140,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       return;
     }
     
-    if (!captchaToken) {
-      toast({
-        title: "Verification required",
-        description: "Please complete the captcha verification.",
-        variant: "destructive"
-      });
-      setCaptchaError("Please complete the captcha verification.");
-      return;
-    }
-    
     if (!agreedToTerms) {
       toast({
         title: "Terms agreement required",
@@ -202,11 +154,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     // Create a signup session ID to track this attempt
     const signupSessionId = `provider-signup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     console.log(`Provider signup: Attempt with ID ${signupSessionId} starting...`);
-    console.log(`Provider email: ${formData.email}, token length:`, captchaToken.length);
-    
-    // Store token in a local variable and clear the state immediately to prevent reuse
-    const token = captchaToken;
-    setCaptchaToken(null);
+    console.log(`Provider email: ${formData.email}`);
     
     try {
       // First verify the Supabase client is initialized
@@ -239,44 +187,20 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             phoneNumber: formData.phoneNumber || '',
             isNewUser: true, // Flag to identify new users for welcome modal
             signupSessionId // Track this signup attempt
-          },
-          captchaToken: token
+          }
         }
       });
       
       if (error) {
         console.error(`Error during sign up (${signupSessionId}):`, error);
-        setDetailedError(`Authentication error: ${error.message}${error.cause ? ` (Cause: ${String(error.cause)})` : ''}`);
+        setDetailedError(`Authentication error: ${error.message}`);
         
-        // Special handling for CAPTCHA errors
-        if (error.message.toLowerCase().includes('captcha')) {
-          let errorMessage = "Captcha verification failed. Please try again with a new verification.";
-          
-          if (error.message.includes('expired')) {
-            errorMessage = "Captcha token has expired. Please complete the verification again.";
-          } else if (error.message.includes('already-seen')) {
-            errorMessage = "This captcha token has already been used. Please complete a new verification.";
-          } else if (error.message.includes('timeout')) {
-            errorMessage = "The verification process timed out. Please try again.";
-          }
-          
-          toast({
-            title: "Verification error",
-            description: errorMessage,
-            variant: "destructive"
-          });
-          
-          setCaptchaError(errorMessage);
-          // Reset captcha for a fresh attempt
-          resetCaptcha();
-        } else {
-          // Handle other signup errors
-          toast({
-            title: "Sign up failed",
-            description: error.message,
-            variant: "destructive"
-          });
-        }
+        // Handle other signup errors
+        toast({
+          title: "Sign up failed",
+          description: error.message,
+          variant: "destructive"
+        });
         
         setSubmitting(false);
       } else {
@@ -296,7 +220,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
               toast({
                 title: "Account created with warnings",
                 description: "Your account was created but some profile details may be incomplete. You can update them later.",
-                variant: "warning"
+                variant: "destructive"
               });
             }
           } catch (profileSaveError: any) {
@@ -328,8 +252,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
-      // Reset captcha for a fresh attempt
-      resetCaptcha();
       setSubmitting(false);
     }
   };
@@ -383,29 +305,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </ol>
         </div>
         
-        <div className="py-4 flex justify-center">
-          <CaptchaComponentWithRef 
-            captchaId={captchaId}
-            onVerify={handleCaptchaVerify}
-            callbackName={callbackName}
-            ref={captchaRef}
-          />
-        </div>
-        
-        {captchaError && (
-          <div className="rounded-md bg-destructive/10 text-destructive p-3 text-sm">
-            {captchaError}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="ml-2 h-6 text-xs"
-              onClick={resetCaptcha}
-            >
-              Reset Verification
-            </Button>
-          </div>
-        )}
-        
         {detailedError && (
           <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-amber-800 text-sm">
             <details>
@@ -439,7 +338,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         <Button 
           onClick={handleCreateAccount} 
           className="w-full mt-6"
-          disabled={!captchaToken || !agreedToTerms || submitting || connectionStatus !== 'connected'}
+          disabled={!agreedToTerms || submitting || connectionStatus !== 'connected'}
         >
           {submitting ? "Creating Account..." : "Create Account"} 
           {!submitting && <ArrowRight className="ml-2 h-4 w-4" />}
