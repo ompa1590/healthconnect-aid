@@ -25,13 +25,43 @@ const createResponse = (body: any, status = 200) => {
 
 async function handleCreateProviderProfile(req: Request) {
   try {
-    const { providerData, userId } = await req.json()
+    // Starting the function handler
+    console.log("Provider signup edge function started")
+    
+    let reqBody;
+    try {
+      reqBody = await req.json()
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError)
+      return createResponse({ 
+        success: false, 
+        error: "Invalid JSON in request body" 
+      }, 400)
+    }
+    
+    const { providerData, userId } = reqBody
+    
+    if (!userId) {
+      console.error("Missing userId in request")
+      return createResponse({ 
+        success: false, 
+        error: "Missing required parameter: userId" 
+      }, 400)
+    }
+    
+    if (!providerData) {
+      console.error("Missing providerData in request")
+      return createResponse({ 
+        success: false, 
+        error: "Missing required parameter: providerData" 
+      }, 400)
+    }
+    
     console.log('Creating provider profile for user:', userId)
     console.log('Provider data summary:', {
       provider_type: providerData.providerType,
       email: providerData.email,
       name: `${providerData.firstName} ${providerData.lastName}`,
-      file_uploads: providerData.profilePicture ? 'profile picture included' : 'no profile picture',
       data_size: JSON.stringify(providerData).length,
     })
 
@@ -57,22 +87,31 @@ async function handleCreateProviderProfile(req: Request) {
     
     console.log('Provider profile data structure:', Object.keys(profileData))
     
-    // Create the provider profile
-    const { data, error } = await adminAuthClient
-      .from('provider_profiles')
-      .insert(profileData)
+    try {
+      // Create the provider profile
+      const { data, error } = await adminAuthClient
+        .from('provider_profiles')
+        .insert(profileData)
+        
+      if (error) {
+        console.error('Error creating provider profile:', error)
+        return createResponse({ success: false, error: error.message }, 400)
+      }
       
-    if (error) {
-      console.error('Error creating provider profile:', error)
-      return createResponse({ success: false, error: error.message }, 400)
+      console.log('Provider profile created successfully')
+      return createResponse({ 
+        success: true, 
+        message: "Provider profile created successfully" 
+      })
+    } catch (dbError) {
+      console.error('Database error in provider profile creation:', dbError)
+      return createResponse({ 
+        success: false, 
+        error: dbError instanceof Error ? dbError.message : String(dbError) 
+      }, 500)
     }
-    
-    return createResponse({ 
-      success: true, 
-      message: "Provider profile created successfully" 
-    })
   } catch (error) {
-    console.error('Exception in provider profile creation:', error)
+    console.error('Unexpected exception in provider profile creation:', error)
     return createResponse({ 
       success: false, 
       error: error instanceof Error ? error.message : String(error) 
@@ -82,6 +121,9 @@ async function handleCreateProviderProfile(req: Request) {
 
 // Request handler
 serve(async (req) => {
+  // Display information about the request for debugging
+  console.log(`Provider signup function received ${req.method} request to ${req.url}`)
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })

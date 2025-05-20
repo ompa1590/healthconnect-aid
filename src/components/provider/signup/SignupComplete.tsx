@@ -106,6 +106,12 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         return { success: false, error };
       }
       
+      // Check if we got data back and it contains success status
+      if (!data) {
+        console.error("No data returned from edge function");
+        return { success: false, error: "No response from server" };
+      }
+      
       if (!data.success) {
         console.error("Profile creation failed:", data.error);
         return { success: false, error: data.error };
@@ -166,6 +172,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       setRegistrationPhase('creating_auth');
       console.log(`Attempting minimal auth signup (${signupSessionId}) with email:`, formData.email);
       
+      // Set a timeout for the auth request to detect if it's taking too long
+      const authTimeoutID = setTimeout(() => {
+        console.log("Auth request is taking longer than expected...");
+      }, 5000); // 5 seconds warning
+      
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -180,24 +191,34 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         }
       });
       
+      // Clear the timeout since we got a response
+      clearTimeout(authTimeoutID);
+      
       if (error) {
         console.error(`Error during sign up (${signupSessionId}):`, error);
         
-        // Detailed error logging for debugging
+        // Format error with more details for debugging
         const errorDetails = {
-          message: error.message,
-          code: error?.code,
-          status: error?.status,
-          name: error?.name,
-          stack: error?.stack
+          message: error.message || "Unknown error",
+          code: error.code,
+          status: error.status,
+          name: error.name
         };
+        
         console.error("Detailed error info:", errorDetails);
         
-        setDetailedError(`Authentication error: ${JSON.stringify(errorDetails)}`);
+        // Show a more helpful error message based on error type
+        if (error.status === 504 || error.status === 408) {
+          setDetailedError(`Authentication timeout: The signup request took too long to process. Please try again with a slower internet connection or try again later.`);
+        } else if (error.message && error.message.includes("already registered")) {
+          setDetailedError(`This email is already registered. Please try logging in instead, or use a different email address.`);
+        } else {
+          setDetailedError(`Authentication error: ${JSON.stringify(errorDetails)}`);
+        }
         
         toast({
           title: "Sign up failed",
-          description: error.message || "Authentication error occurred",
+          description: "Authentication error occurred. Please check the error details and try again.",
           variant: "destructive"
         });
         
@@ -224,7 +245,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         }
       } else {
         console.warn("Auth signup returned no user data, but also no error.");
-        setDetailedError("Auth signup returned no user data, but also no error.");
+        setDetailedError("Auth signup returned no user data, but also no error. This may indicate a partial registration.");
       }
       
       // Success - show the success dialog
@@ -240,7 +261,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     } catch (error: any) {
       console.error("Unexpected error during sign up:", error);
       
-      // Enhanced error logging
+      // Enhanced error logging for debugging
       const errorOutput = {
         message: error.message || String(error),
         code: error?.code,
