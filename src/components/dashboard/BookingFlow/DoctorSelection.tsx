@@ -22,7 +22,7 @@ interface Doctor {
 
 interface DoctorSelectionProps {
   selectedDoctor: string | null;
-  onSelectDoctor: (doctorId: string, doctorName: string) => void; // Updated to also return doctor name
+  onSelectDoctor: (doctorId: string, doctorName: string) => void;
   onBack: () => void;
   onNext: () => void;
 }
@@ -52,22 +52,47 @@ const DoctorSelection = ({
           throw error;
         }
 
-        // Transform the data to match our Doctor interface
-        const formattedDoctors = data.map(doctor => ({
-          id: doctor.id,
-          name: `${doctor.first_name || ''} ${doctor.last_name || ''}`.trim(),
-          specialty: doctor.specializations?.[0] || doctor.provider_type || "General Practitioner",
-          // For now we'll use fixed ratings and experience until we have actual data
-          rating: 4.5 + (Math.random() * 0.5), // Random rating between 4.5-5.0
-          experience: `${5 + Math.floor(Math.random() * 15)} years`, // Random experience
-          // We'll use randomuser.me for avatars as a fallback
-          image: `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'women' : 'men'}/${Math.floor(Math.random() * 100)}.jpg`,
-          first_name: doctor.first_name,
-          last_name: doctor.last_name,
-          specializations: doctor.specializations,
-          provider_type: doctor.provider_type
-        }));
+        console.log("Fetched provider data:", data);
+        
+        if (!data || data.length === 0) {
+          console.log("No providers found in the database");
+        }
 
+        // Transform the data to match our Doctor interface
+        const formattedDoctors = data.map(doctor => {
+          // Ensure first_name and last_name are treated as strings, even if null
+          const firstName = doctor.first_name || '';
+          const lastName = doctor.last_name || '';
+          const fullName = `${firstName} ${lastName}`.trim();
+          
+          // Use provider_type or first specialization as specialty
+          const specialty = doctor.specializations?.[0] || doctor.provider_type || "General Practitioner";
+          
+          // Generate a random experience and rating for demonstration
+          const rating = 4.5 + (Math.random() * 0.5); // Random rating between 4.5-5.0
+          const experience = `${5 + Math.floor(Math.random() * 15)} years`; // Random experience
+          
+          // Generate a random avatar URL
+          const gender = Math.random() > 0.5 ? 'women' : 'men';
+          const imageNumber = Math.floor(Math.random() * 100);
+          const imageUrl = `https://randomuser.me/api/portraits/${gender}/${imageNumber}.jpg`;
+          
+          return {
+            id: doctor.id,
+            name: fullName,
+            specialty: specialty,
+            rating: rating,
+            experience: experience,
+            image: imageUrl,
+            first_name: firstName,
+            last_name: lastName,
+            specializations: doctor.specializations,
+            provider_type: doctor.provider_type
+          };
+        });
+
+        console.log("Transformed provider data:", formattedDoctors);
+        
         setDoctors(formattedDoctors);
       } catch (err) {
         console.error("Error fetching doctors:", err);
