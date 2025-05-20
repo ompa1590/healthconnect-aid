@@ -1,7 +1,7 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
 import { useDoctors } from "@/hooks/useDoctors";
 import DoctorCard from "./DoctorCard";
 import DoctorSelectionLoading from "./DoctorSelectionLoading";
@@ -19,13 +19,32 @@ const DoctorSelection = ({
   onBack,
   onNext
 }: DoctorSelectionProps) => {
-  const { doctors, isLoading, error } = useDoctors();
+  const { doctors, isLoading, error, refreshDoctors } = useDoctors();
+  
+  // Refresh the doctor list whenever this component is mounted
+  useEffect(() => {
+    refreshDoctors();
+  }, [refreshDoctors]);
+  
+  const handleRefresh = () => {
+    refreshDoctors();
+  };
   
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-medium mb-2">Select a Specialist</h2>
-        <p className="text-muted-foreground">Choose a healthcare provider for your appointment</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-medium mb-2">Select a Specialist</h2>
+          <p className="text-muted-foreground">Choose a healthcare provider for your appointment</p>
+        </div>
+        <Button 
+          variant="outline" 
+          size="icon"
+          onClick={handleRefresh}
+          title="Refresh doctor list"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
       </div>
       
       {isLoading ? (
