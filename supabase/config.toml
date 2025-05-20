@@ -39,6 +39,7 @@ enabled = true
 
 [functions]
 [functions.provider-signup]
+timeout_seconds = 15  # Increasing timeout to prevent timeouts during profile creation
 
 [auth]
 enabled = true

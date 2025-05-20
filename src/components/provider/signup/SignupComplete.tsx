@@ -102,6 +102,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         postalCode: formData.postalCode
       };
       
+      // Set a short timeout to detect if the function call is taking too long
+      const timeout = setTimeout(() => {
+        console.log("Profile creation taking longer than expected...");
+      }, 5000);
+      
       // Call the edge function to create the provider profile
       const { data, error } = await supabase.functions.invoke('provider-signup/create-profile', {
         body: { 
@@ -109,6 +114,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           providerData 
         }
       });
+      
+      clearTimeout(timeout);
       
       if (error) {
         console.error("Error from edge function:", error);
@@ -134,102 +141,122 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     }
   };
 
-  // New function to handle file uploads separately after successful signup
-  const uploadProviderFiles = async (userId: string): Promise<boolean> => {
+  // Function to upload files to Storage Bucket directly
+  const uploadProfilePicture = async (userId: string, file: File): Promise<{ success: boolean, path?: string, error?: any }> => {
+    if (!file) {
+      return { success: false, error: "No file provided" };
+    }
+    
     try {
-      setUploadProgress(0);
-      let totalUploads = 0;
-      let completedUploads = 0;
+      console.log(`Starting upload of profile picture: ${file.name}, size: ${(file.size / 1024).toFixed(2)} KB`);
       
-      // Calculate total number of potential uploads
-      if (formData.profilePicture) totalUploads++;
-      if (formData.certificateFile) totalUploads++;
-      if (formData.signatureImage) totalUploads++;
+      // Create a unique file path
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}/profile/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
       
-      if (totalUploads === 0) {
-        console.log("No files to upload");
-        return true;
+      // Upload the file to Storage
+      const { data, error } = await supabase.storage
+        .from('provider-files')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (error) {
+        console.error("Error uploading profile picture:", error);
+        return { success: false, error };
       }
       
-      console.log(`Starting upload of ${totalUploads} files`);
+      console.log("Profile picture uploaded successfully:", data.path);
       
-      // Upload profile picture if exists
-      if (formData.profilePicture) {
-        try {
-          const filePath = `${userId}/profile/${Date.now()}-${formData.profilePicture.name}`;
-          const { error: uploadError } = await supabase.storage
-            .from('provider-files')
-            .upload(filePath, formData.profilePicture);
-            
-          if (uploadError) {
-            console.error("Error uploading profile picture:", uploadError);
-          } else {
-            completedUploads++;
-            setUploadProgress((completedUploads / totalUploads) * 100);
-            
-            // Update the profile with the picture URL
-            const { data: publicUrlData } = supabase.storage
-              .from('provider-files')
-              .getPublicUrl(filePath);
-              
-            // Here you could update the provider profile with the picture URL
-            console.log("Profile picture uploaded:", publicUrlData.publicUrl);
-          }
-        } catch (err) {
-          console.error("Exception uploading profile picture:", err);
+      // Notify the edge function about the file upload
+      await supabase.functions.invoke('provider-signup/upload-file', {
+        body: {
+          userId,
+          fileType: 'profile_picture',
+          fileData: "uploaded_directly", // Just a marker since we uploaded directly
+          fileName: data.path
         }
-      }
+      });
       
-      // Upload certificate file if exists
-      if (formData.certificateFile) {
-        try {
-          const filePath = `${userId}/certificates/${Date.now()}-${formData.certificateFile.name}`;
-          const { error: uploadError } = await supabase.storage
-            .from('provider-files')
-            .upload(filePath, formData.certificateFile);
-            
-          if (uploadError) {
-            console.error("Error uploading certificate:", uploadError);
-          } else {
-            completedUploads++;
-            setUploadProgress((completedUploads / totalUploads) * 100);
-            console.log("Certificate uploaded successfully");
-          }
-        } catch (err) {
-          console.error("Exception uploading certificate:", err);
-        }
-      }
-      
-      // Upload signature image if exists
-      if (formData.signatureImage) {
-        try {
-          // Convert base64 to blob
-          const response = await fetch(formData.signatureImage);
-          const blob = await response.blob();
-          const filePath = `${userId}/signatures/${Date.now()}-signature.png`;
-          
-          const { error: uploadError } = await supabase.storage
-            .from('provider-files')
-            .upload(filePath, blob);
-            
-          if (uploadError) {
-            console.error("Error uploading signature:", uploadError);
-          } else {
-            completedUploads++;
-            setUploadProgress((completedUploads / totalUploads) * 100);
-            console.log("Signature uploaded successfully");
-          }
-        } catch (err) {
-          console.error("Exception uploading signature:", err);
-        }
-      }
-      
-      console.log(`Completed ${completedUploads} of ${totalUploads} uploads`);
-      return completedUploads > 0;
-      
+      return { success: true, path: data.path };
     } catch (err) {
-      console.error("Error in file upload process:", err);
-      return false;
+      console.error("Exception uploading profile picture:", err);
+      return { success: false, error: err };
+    }
+  };
+  
+  const uploadCertificate = async (userId: string, file: File): Promise<{ success: boolean, path?: string, error?: any }> => {
+    if (!file) {
+      return { success: false, error: "No file provided" };
+    }
+    
+    try {
+      console.log(`Starting upload of certificate: ${file.name}, size: ${(file.size / 1024).toFixed(2)} KB`);
+      
+      // Check file size - if too large, compress or reject
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        console.warn("Certificate file is very large, might cause issues");
+      }
+      
+      // Create a unique file path
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}/certificates/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      
+      // Upload the file to Storage
+      const { data, error } = await supabase.storage
+        .from('provider-files')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (error) {
+        console.error("Error uploading certificate:", error);
+        return { success: false, error };
+      }
+      
+      console.log("Certificate uploaded successfully:", data.path);
+      return { success: true, path: data.path };
+    } catch (err) {
+      console.error("Exception uploading certificate:", err);
+      return { success: false, error: err };
+    }
+  };
+  
+  const uploadSignature = async (userId: string, signatureImage: string): Promise<{ success: boolean, path?: string, error?: any }> => {
+    if (!signatureImage) {
+      return { success: false, error: "No signature provided" };
+    }
+    
+    try {
+      console.log("Starting upload of signature image");
+      
+      // Convert base64 to blob
+      const response = await fetch(signatureImage);
+      const blob = await response.blob();
+      
+      // Create a unique file path
+      const fileName = `${userId}/signatures/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.png`;
+      
+      // Upload the file to Storage
+      const { data, error } = await supabase.storage
+        .from('provider-files')
+        .upload(fileName, blob, {
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (error) {
+        console.error("Error uploading signature:", error);
+        return { success: false, error };
+      }
+      
+      console.log("Signature uploaded successfully:", data.path);
+      return { success: true, path: data.path };
+    } catch (err) {
+      console.error("Exception uploading signature:", err);
+      return { success: false, error: err };
     }
   };
   
@@ -285,11 +312,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         console.log("Auth request is taking longer than expected...");
       }, 5000); // 5 seconds warning
       
+      // Important: Only include minimal metadata - NO FILES OR LARGE OBJECTS
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
-          // CRITICAL OPTIMIZATION: Only include absolutely minimal metadata - NO FILES OR LARGE OBJECTS
           data: {
             role: 'provider',
             firstName: formData.firstName,
@@ -313,15 +340,13 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           name: error.name
         };
         
-        console.error("Detailed error info:", errorDetails);
-        
         // Show a more helpful error message based on error type
         if (error.status === 504 || error.status === 408) {
           setDetailedError(`Authentication timeout: The signup request took too long to process. Please try again with a better internet connection or try again later.`);
         } else if (error.message && error.message.includes("already registered")) {
           setDetailedError(`This email is already registered. Please try logging in instead, or use a different email address.`);
         } else {
-          setDetailedError(`Authentication error: ${JSON.stringify(errorDetails)}`);
+          setDetailedError(`Authentication error (${error.status}): ${error.message || "Unknown error"}`);
         }
         
         toast({
@@ -352,16 +377,61 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           });
         }
         
-        // PHASE 3: Upload any files separately after successful profile creation
+        // PHASE 3: Upload files separately after successful profile creation
         setRegistrationPhase('uploading_documents');
+        setUploadProgress(0);
+        let totalFiles = 0;
+        let completedFiles = 0;
         
+        // Count total files to upload
+        if (formData.profilePicture) totalFiles++;
+        if (formData.certificateFile) totalFiles++;
+        if (formData.signatureImage) totalFiles++;
+        
+        if (totalFiles > 0) {
+          console.log(`Starting upload of ${totalFiles} files`);
+          
+          // Upload profile picture
+          if (formData.profilePicture) {
+            const result = await uploadProfilePicture(data.user.id, formData.profilePicture);
+            if (result.success) {
+              completedFiles++;
+              setUploadProgress((completedFiles / totalFiles) * 100);
+            }
+          }
+          
+          // Upload certificate
+          if (formData.certificateFile) {
+            const result = await uploadCertificate(data.user.id, formData.certificateFile);
+            if (result.success) {
+              completedFiles++;
+              setUploadProgress((completedFiles / totalFiles) * 100);
+            }
+          }
+          
+          // Upload signature
+          if (formData.signatureImage) {
+            const result = await uploadSignature(data.user.id, formData.signatureImage);
+            if (result.success) {
+              completedFiles++;
+              setUploadProgress((completedFiles / totalFiles) * 100);
+            }
+          }
+          
+          console.log(`Completed ${completedFiles} of ${totalFiles} file uploads`);
+        } else {
+          console.log("No files to upload");
+        }
+        
+        // PHASE 4: Send confirmation email through Supabase Auth
         try {
-          const filesUploaded = await uploadProviderFiles(data.user.id);
-          console.log("File upload process complete, success:", filesUploaded);
-        } catch (uploadError) {
-          console.error("Error during file uploads:", uploadError);
-          // Don't fail the entire process for file upload errors
-          // Files can be uploaded later from the dashboard
+          console.log("Sending email confirmation");
+          // Relies on Supabase email confirmation template
+          // This is just a notification, not a blocker
+          // No custom code needed as Supabase handles this
+        } catch (emailError) {
+          console.error("Error sending confirmation email:", emailError);
+          // Continue anyway - non-critical
         }
       } else {
         console.warn("Auth signup returned no user data, but also no error.");

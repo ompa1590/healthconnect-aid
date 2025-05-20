@@ -1,459 +1,311 @@
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, File, X, FileText, CheckCircle, Loader2, Pen } from "lucide-react";
+import { Camera, Upload, X, FileText, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { Textarea } from "@/components/ui/textarea";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
+import SignaturePad from "react-signature-canvas";
+import { cn } from "@/lib/utils";
 
 interface DocumentUploadStepProps {
   formData: ProviderFormData;
   updateFormData: (data: Partial<ProviderFormData>) => void;
 }
 
-const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updateFormData }) => {
-  const [uploading, setUploading] = useState(false);
-  const [parsing, setParsing] = useState<{[key: string]: boolean}>({});
-  const [summaries, setSummaries] = useState<{[key: string]: string}>({});
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [signatureMode, setSignatureMode] = useState<"upload" | "draw">("upload");
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawingActive, setIsDrawingActive] = useState(false);
-  const [lastPoint, setLastPoint] = useState<{x: number, y: number} | null>(null);
-  
-  const { toast } = useToast();
+// Maximum file size limit in bytes (5MB)
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
+const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updateFormData }) => {
+  const [signaturePad, setSignaturePad] = useState<SignaturePad | null>(null);
+  const { toast } = useToast();
+  const [profilePreview, setProfilePreview] = useState<string | null>(null);
+  const [certificatePreview, setCertificatePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Handle profile picture change
   const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload an image file for your profile picture",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check file size limit (2MB)
-    if (file.size > 2 * 1024 * 1024) {
+    
+    if (file.size > MAX_FILE_SIZE) {
       toast({
         title: "File too large",
-        description: "Profile picture must be less than 2MB",
+        description: `Maximum file size is ${MAX_FILE_SIZE / (1024 * 1024)}MB. Please choose a smaller file.`,
         variant: "destructive",
       });
       return;
     }
-
+    
+    // Create a preview URL for display
+    const previewUrl = URL.createObjectURL(file);
+    setProfilePreview(previewUrl);
+    
+    // Store the file reference in formData
     updateFormData({ profilePicture: file });
+    
+    toast({
+      title: "Profile picture added",
+      description: "Your profile picture has been added successfully.",
+    });
   };
 
-  const handleCertificateChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle certificate upload
+  const handleCertificateUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (file.type !== "application/pdf") {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload a PDF file for your certificate",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check file size limit (5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    
+    if (file.size > MAX_FILE_SIZE) {
       toast({
         title: "File too large",
-        description: "Certificate file must be less than 5MB",
+        description: `Maximum file size is ${MAX_FILE_SIZE / (1024 * 1024)}MB. Please choose a smaller file.`,
         variant: "destructive",
       });
       return;
     }
-
-    const fileId = `cert-${Date.now()}`;
-    setParsing(prev => ({ ...prev, [fileId]: true }));
     
-    try {
-      const summary = await parsePdfContent(file);
-      setSummaries(prev => ({ ...prev, [fileId]: summary }));
-      
-      // Add summary to form data
-      updateFormData({ 
-        certificateFile: file,
-        certificateSummary: summary,
-        certificateVerified: false
-      });
-      
-      toast({
-        title: "Certificate analyzed",
-        description: "We've extracted key information from your certificate",
-      });
-    } catch (error) {
-      console.error("Error parsing PDF:", error);
-      toast({
-        title: "Could not analyze certificate",
-        description: "We were unable to extract information from this PDF",
-        variant: "destructive",
-      });
-      updateFormData({ certificateFile: file });
-    } finally {
-      setParsing(prev => ({ ...prev, [fileId]: false }));
-    }
-  };
-
-  const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
+    // Check file type - only PDF or image files allowed
+    const acceptedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    if (!acceptedTypes.includes(file.type)) {
       toast({
         title: "Invalid file type",
-        description: "Please upload an image file for your signature",
+        description: "Please upload a PDF or image file.",
         variant: "destructive",
       });
       return;
     }
-
-    // Check file size limit (1MB)
-    if (file.size > 1 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Signature image must be less than 1MB",
-        variant: "destructive",
-      });
-      return;
+    
+    // For image files, create a preview
+    if (file.type.startsWith('image/')) {
+      const previewUrl = URL.createObjectURL(file);
+      setCertificatePreview(previewUrl);
+    } else {
+      // For PDFs, show a generic thumbnail
+      setCertificatePreview('pdf');
     }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        updateFormData({ signatureImage: event.target.result as string });
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleVerificationChange = (isVerified: boolean) => {
-    updateFormData({
-      certificateVerified: isVerified
+    
+    // Store the file reference in formData
+    updateFormData({ certificateFile: file });
+    
+    toast({
+      title: "Certificate uploaded",
+      description: "Your certificate has been uploaded successfully.",
     });
   };
 
-  const updateSummary = (newSummary: string) => {
-    updateFormData({
-      certificateSummary: newSummary
-    });
-  };
-
-  const parsePdfContent = async (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (file.name.toLowerCase().includes('certif')) {
-          resolve("Certificate Analysis:\n• Document Type: Professional Medical Certificate\n• Issuing Authority: Canadian Medical Association\n• License Type: Full Practice\n• Status: Active\n• Specialization: Internal Medicine\n• Date of Issue: 2022-05-15\n• Expiration Date: 2025-05-14");
-        } else {
-          resolve("Professional Document Summary:\n• Document appears to be a professional credential\n• Please verify all information for accuracy\n• Contains registration details and qualifications");
-        }
-      }, 1500);
-    });
-  };
-
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    setIsDrawingActive(true);
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = 'touches' in e 
-      ? e.touches[0].clientX - rect.left 
-      : e.clientX - rect.left;
-    const y = 'touches' in e 
-      ? e.touches[0].clientY - rect.top 
-      : e.clientY - rect.top;
-    
-    setLastPoint({x, y});
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawingActive || !lastPoint) return;
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = 'touches' in e 
-      ? e.touches[0].clientX - rect.left 
-      : e.clientX - rect.left;
-    const y = 'touches' in e 
-      ? e.touches[0].clientY - rect.top 
-      : e.clientY - rect.top;
-    
-    ctx.beginPath();
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000';
-    ctx.moveTo(lastPoint.x, lastPoint.y);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    
-    setLastPoint({x, y});
-  };
-
-  const endDrawing = () => {
-    setIsDrawingActive(false);
-    setLastPoint(null);
-    
-    const canvas = canvasRef.current;
-    if (canvas) {
-      // Use a lower quality to reduce size
-      const dataURL = canvas.toDataURL('image/png', 0.7);
-      updateFormData({ signatureImage: dataURL });
-    }
-  };
-
+  // Handle signature pad
   const clearSignature = () => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        updateFormData({ signatureImage: undefined });
-      }
+    if (signaturePad) {
+      signaturePad.clear();
+      updateFormData({ signatureImage: undefined });
     }
   };
+
+  const saveSignature = () => {
+    if (signaturePad && !signaturePad.isEmpty()) {
+      // Convert to PNG data URL with smaller size (more optimized)
+      const dataURL = signaturePad.toDataURL('image/png', 0.5);
+      updateFormData({ signatureImage: dataURL });
+      
+      toast({
+        title: "Signature saved",
+        description: "Your signature has been saved successfully.",
+      });
+    } else {
+      toast({
+        title: "Empty signature",
+        description: "Please draw your signature before saving.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Clear previews when component unmounts
+  React.useEffect(() => {
+    return () => {
+      if (profilePreview && profilePreview !== 'pdf') URL.revokeObjectURL(profilePreview);
+      if (certificatePreview && certificatePreview !== 'pdf') URL.revokeObjectURL(certificatePreview);
+    };
+  }, [profilePreview, certificatePreview]);
 
   return (
     <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h3 className="text-xl font-semibold">Document Upload & Signature</h3>
-        <p className="text-muted-foreground mt-2">
-          Please upload your profile picture, professional certificate, and add your e-signature
-        </p>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <div>
-          <label className="block text-sm font-medium mb-2">Profile Picture</label>
-          <div 
-            className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:bg-muted/50 transition-colors cursor-pointer relative"
-            onClick={() => document.getElementById('profile-upload')?.click()}
-          >
-            <input
-              id="profile-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleProfilePictureChange}
-            />
-            
-            {formData.profilePicture ? (
-              <div className="flex flex-col items-center">
-                <img 
-                  src={URL.createObjectURL(formData.profilePicture)} 
-                  alt="Profile Preview" 
-                  className="w-24 h-24 object-cover rounded-full mb-2"
-                />
-                <span className="text-xs text-muted-foreground">Click to change</span>
-              </div>
-            ) : (
-              <>
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Upload a professional headshot
-                </p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
-                  Max size: 2MB
-                </p>
-              </>
-            )}
-          </div>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-2">Professional Certificate (PDF)</label>
-          <div 
-            className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:bg-muted/50 transition-colors cursor-pointer relative"
-            onClick={() => document.getElementById('certificate-upload')?.click()}
-          >
-            <input
-              id="certificate-upload"
-              type="file"
-              accept="application/pdf"
-              className="hidden"
-              onChange={handleCertificateChange}
-            />
-            
-            {formData.certificateFile ? (
-              <div className="flex flex-col items-center">
-                <div className="h-12 w-12 rounded bg-primary/10 flex items-center justify-center mb-1">
-                  <FileText className="h-6 w-6 text-primary" />
-                </div>
-                <span className="text-sm font-medium truncate max-w-[200px]">
-                  {formData.certificateFile.name}
-                </span>
-                <span className="text-xs text-muted-foreground mt-1">Click to change</span>
-              </div>
-            ) : (
-              <>
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Upload your professional certificate
-                </p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
-                  Max size: 5MB
-                </p>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {formData.certificateFile && formData.certificateSummary && (
-        <div className="bg-muted/30 p-4 rounded-md">
-          <div className="flex justify-between items-center mb-2">
-            <h5 className="text-sm font-medium">Certificate Analysis</h5>
-            {formData.certificateVerified ? (
-              <span className="text-xs text-green-500 flex items-center">
-                <CheckCircle className="h-3 w-3 mr-1" /> Verified
-              </span>
-            ) : (
-              <span className="text-xs text-amber-500 flex items-center">
-                Needs verification
-              </span>
-            )}
-          </div>
-          <Textarea
-            className="min-h-[100px] text-sm mb-2"
-            value={formData.certificateSummary}
-            onChange={(e) => updateSummary(e.target.value)}
-            placeholder="Certificate summary will appear here..."
-          />
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="verify-certificate"
-              checked={formData.certificateVerified}
-              onChange={(e) => handleVerificationChange(e.target.checked)}
-              className="mr-2"
-            />
-            <label htmlFor="verify-certificate" className="text-xs text-muted-foreground">
-              I confirm this summary is accurate and matches my professional certificate
-            </label>
-          </div>
-        </div>
-      )}
-
       <div>
-        <label className="block text-sm font-medium mb-2">E-Signature</label>
-        <div className="bg-muted/30 p-4 rounded-md">
-          <div className="flex justify-between items-center mb-4">
-            <h5 className="text-sm font-medium">Your Electronic Signature</h5>
-            <div className="flex space-x-2">
+        <h3 className="text-lg font-medium mb-4">Profile Picture</h3>
+        <div className="flex items-center space-x-4">
+          <div 
+            className={cn(
+              "h-24 w-24 rounded-full border-2 flex items-center justify-center overflow-hidden",
+              profilePreview ? "border-primary" : "border-dashed border-muted-foreground/50"
+            )}
+          >
+            {profilePreview ? (
+              <img 
+                src={profilePreview} 
+                alt="Profile" 
+                className="h-full w-full object-cover" 
+              />
+            ) : (
+              <Camera className="h-8 w-8 text-muted-foreground/70" />
+            )}
+          </div>
+          <div className="space-y-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => document.getElementById('profile-upload')?.click()}
+              className="w-full"
+              disabled={isUploading}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {profilePreview ? "Change Picture" : "Upload Picture"}
+            </Button>
+            {profilePreview && (
               <Button 
                 variant="outline" 
                 size="sm" 
-                className={signatureMode === "upload" ? "bg-muted" : ""}
-                onClick={() => setSignatureMode("upload")}
+                onClick={() => {
+                  if (profilePreview) URL.revokeObjectURL(profilePreview);
+                  setProfilePreview(null);
+                  updateFormData({ profilePicture: undefined });
+                }}
+                className="w-full text-destructive"
               >
-                Upload
+                <X className="h-4 w-4 mr-2" />
+                Remove
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className={signatureMode === "draw" ? "bg-muted" : ""}
-                onClick={() => setSignatureMode("draw")}
-              >
-                Draw
-              </Button>
-            </div>
+            )}
+            <input 
+              id="profile-upload" 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              onChange={handleProfilePictureChange}
+            />
+            <p className="text-xs text-muted-foreground">
+              Upload a professional photo for your provider profile.
+              <br />
+              Maximum size: 5MB
+            </p>
           </div>
-          
-          {signatureMode === "upload" ? (
-            <div 
-              className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:bg-muted/50 transition-colors cursor-pointer relative"
-              onClick={() => document.getElementById('signature-upload')?.click()}
-            >
-              <input
-                id="signature-upload"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleSignatureUpload}
-              />
-              
-              {formData.signatureImage && signatureMode === "upload" ? (
-                <div className="flex flex-col items-center">
-                  <img 
-                    src={formData.signatureImage} 
-                    alt="Signature" 
-                    className="max-h-24 mb-2"
-                  />
-                  <span className="text-xs text-muted-foreground">Click to change</span>
-                </div>
-              ) : (
-                <>
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Upload an image of your signature
-                  </p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
-                    Max size: 1MB
-                  </p>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="border-2 border-muted-foreground/25 rounded-lg bg-white">
-              <div className="flex justify-between items-center p-2 bg-muted/20 border-b">
-                <span className="text-xs text-muted-foreground flex items-center">
-                  <Pen className="h-3 w-3 mr-1" /> Draw your signature below
-                </span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={clearSignature}
-                >
-                  Clear
-                </Button>
-              </div>
-              <canvas
-                ref={canvasRef}
-                width={500}
-                height={150}
-                className="w-full h-[150px] touch-none"
-                onMouseDown={startDrawing}
-                onMouseMove={draw}
-                onMouseUp={endDrawing}
-                onMouseLeave={endDrawing}
-                onTouchStart={startDrawing}
-                onTouchMove={draw}
-                onTouchEnd={endDrawing}
-              ></canvas>
-              {formData.signatureImage && signatureMode === "draw" && (
-                <div className="p-2 text-center">
-                  <span className="text-xs text-green-500 flex items-center justify-center">
-                    <CheckCircle className="h-3 w-3 mr-1" /> Signature saved
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-          
-          <p className="text-xs text-muted-foreground/70 mt-2">
-            Your e-signature will be securely stored and used for signing medical documents
-          </p>
         </div>
       </div>
 
-      <div className="text-sm text-muted-foreground mt-2">
-        <p>All uploaded documents will be securely stored and will require verification before your provider account is activated.</p>
+      <div className="border-t border-border/40 pt-6">
+        <h3 className="text-lg font-medium mb-4">Professional Certificate</h3>
+        <div className="space-y-4">
+          <div 
+            className={cn(
+              "border-2 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer",
+              certificatePreview ? "border-primary bg-primary/5" : "border-dashed border-muted-foreground/30 hover:bg-muted/50 transition-colors"
+            )}
+            onClick={() => document.getElementById('certificate-upload')?.click()}
+          >
+            {certificatePreview ? (
+              certificatePreview === 'pdf' ? (
+                <div className="flex flex-col items-center">
+                  <FileText className="h-12 w-12 text-primary mb-2" />
+                  <p className="text-sm font-medium">PDF Document Uploaded</p>
+                  <p className="text-xs text-muted-foreground mt-1">Click to change</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center">
+                  <div className="max-h-40 overflow-hidden rounded mb-2">
+                    <img 
+                      src={certificatePreview} 
+                      alt="Certificate" 
+                      className="max-h-40 object-contain" 
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Click to change</p>
+                </div>
+              )
+            ) : (
+              <>
+                <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                <p className="text-sm font-medium">Upload Certificate</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  PDF or Image (max 5MB)
+                </p>
+              </>
+            )}
+          </div>
+          <input 
+            id="certificate-upload" 
+            type="file" 
+            accept=".pdf,image/*" 
+            className="hidden" 
+            onChange={handleCertificateUpload}
+          />
+          {certificatePreview && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-destructive"
+              onClick={() => {
+                if (certificatePreview && certificatePreview !== 'pdf') {
+                  URL.revokeObjectURL(certificatePreview);
+                }
+                setCertificatePreview(null);
+                updateFormData({ certificateFile: undefined });
+              }}
+            >
+              <X className="h-4 w-4 mr-2" />
+              Remove Certificate
+            </Button>
+          )}
+        </div>
+        <p className="text-sm text-muted-foreground mt-2">
+          Upload a copy of your professional certification or license. This will be verified by our team.
+        </p>
+      </div>
+
+      <div className="border-t border-border/40 pt-6">
+        <h3 className="text-lg font-medium mb-4">Digital Signature</h3>
+        <div className="space-y-4">
+          <div 
+            className={cn(
+              "border-2 p-4 rounded-lg",
+              signaturePad && !signaturePad.isEmpty() ? "border-primary" : "border-dashed border-muted-foreground/30"
+            )}
+          >
+            <SignaturePad
+              ref={(ref) => setSignaturePad(ref)}
+              canvasProps={{
+                className: "w-full h-40 bg-white rounded",
+              }}
+              backgroundColor="white"
+            />
+          </div>
+          <div className="flex space-x-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={clearSignature}
+              className="flex-1"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Clear
+            </Button>
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={saveSignature}
+              className="flex-1"
+              disabled={!signaturePad || signaturePad.isEmpty()}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Save Signature
+            </Button>
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground mt-2">
+          Add your signature for prescriptions and medical documents. 
+          Use your mouse or touchscreen to sign.
+        </p>
+      </div>
+
+      <div className="text-xs text-muted-foreground/70 mt-4 p-3 bg-muted/20 rounded-md">
+        <p>Note: All documents are securely stored and encrypted. Your professional information will be verified by our team before your account is activated.</p>
       </div>
     </div>
   );

@@ -99,6 +99,22 @@ async function handleCreateProviderProfile(req: Request) {
       }
       
       console.log('Provider profile created successfully')
+      
+      // Also add a record to the profiles table for general user data
+      const { error: profilesError } = await adminAuthClient
+        .from('profiles')
+        .upsert({
+          id: userId,
+          name: `${providerData.firstName} ${providerData.lastName}`,
+          email: providerData.email,
+          role: 'provider'
+        })
+        
+      if (profilesError) {
+        console.error('Warning: Error creating general profile record:', profilesError)
+        // Continue anyway since the provider profile was created
+      }
+      
       return createResponse({ 
         success: true, 
         message: "Provider profile created successfully" 
@@ -134,7 +150,7 @@ async function handleFileUpload(req: Request) {
       }, 400)
     }
     
-    const { userId, fileType, fileData } = reqBody
+    const { userId, fileType, fileData, fileName } = reqBody
     
     if (!userId) {
       return createResponse({ 
@@ -153,8 +169,26 @@ async function handleFileUpload(req: Request) {
     console.log(`Processing ${fileType} upload for user: ${userId}`)
     
     // Here we would handle file upload to storage bucket
-    // For now, we'll just acknowledge receipt and return success
-    // This can be expanded later with actual file storage logic
+    // This function is just acknowledging receipt, actual file upload is done client-side
+    // But we can save metadata about the file or update user profile with file references
+    
+    // Update provider profile with reference to uploaded file
+    if (fileType === 'profile_picture' && fileName) {
+      try {
+        const { error } = await adminAuthClient
+          .from('provider_profiles')
+          .update({ 
+            profile_image_path: fileName 
+          })
+          .eq('id', userId)
+          
+        if (error) {
+          console.error('Error updating profile with file reference:', error)
+        }
+      } catch (err) {
+        console.error('Exception updating profile with file reference:', err)
+      }
+    }
     
     return createResponse({
       success: true, 
@@ -188,6 +222,8 @@ serve(async (req) => {
       return await handleCreateProviderProfile(req)
     } else if (path === 'upload-file') {
       return await handleFileUpload(req)
+    } else if (path === 'health-check') {
+      return createResponse({ status: 'ok', message: 'Provider signup function is healthy' })
     }
     
     return createResponse({ error: 'Invalid endpoint' }, 404)
