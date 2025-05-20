@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
-import { CheckCircle, ArrowRight } from "lucide-react";
+import { CheckCircle, ArrowRight, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,13 @@ interface SignupCompleteProps {
   onComplete: () => void;
 }
 
+// Extended error interface to handle Supabase errors better
+interface EnhancedError extends Error {
+  status?: number;
+  code?: string;
+  details?: string;
+}
+
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -32,11 +39,39 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [captchaError, setCaptchaError] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+  const [detailedError, setDetailedError] = useState<string | null>(null);
   const captchaRef = useRef<CaptchaRefType>(null);
   
   // Use a unique ID for this provider signup session
   const captchaId = useRef(`provider-signup-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`).current;
   const callbackName = useRef(`handleProviderSignupCaptcha${Math.random().toString(36).substring(2, 15)}`).current;
+  
+  // Check Supabase connection on component mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        console.log("Checking Supabase connection status...");
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Supabase connection check failed:", error);
+          setConnectionStatus('error');
+          setDetailedError(`Connection error: ${error.message}`);
+          return;
+        }
+        
+        console.log("Supabase connection check successful:", data.session ? "Active session exists" : "No active session");
+        setConnectionStatus('connected');
+      } catch (err) {
+        console.error("Unexpected error checking Supabase connection:", err);
+        setConnectionStatus('error');
+        setDetailedError(`Unexpected connection error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    };
+    
+    checkConnection();
+  }, []);
   
   // Refresh the captcha when the component mounts
   useEffect(() => {
@@ -45,7 +80,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   }, [captchaId]);
   
   const handleCaptchaVerify = (token: string) => {
-    console.log("Provider signup: CAPTCHA verified, token received of length:", token.length);
+    // Enhanced logging for captcha verification
+    const tokenLength = token.length;
+    const tokenPrefix = token.substring(0, 8); // Log only first 8 chars for security
+    const timestamp = new Date().toISOString();
+    
+    console.log(`Provider signup: CAPTCHA verified at ${timestamp}`);
+    console.log(`Token details - length: ${tokenLength}, prefix: ${tokenPrefix}..., unique ID: ${captchaId}`);
+    
     setCaptchaToken(token);
     setCaptchaError(null);
   };
@@ -60,8 +102,82 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       captchaRef.current.resetCaptcha();
     }
   };
+
+  // Helper function to save provider profile with retries
+  const saveProviderProfile = async (userId: string, retries = 3): Promise<{success: boolean, error?: any}> => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        console.log(`Attempting to save provider profile (attempt ${attempt}/${retries})...`);
+        
+        // Map form data to database schema
+        const profileData = {
+          id: userId,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          phone_number: formData.phoneNumber,
+          provider_type: formData.providerType,
+          registration_number: formData.registrationNumber,
+          specializations: formData.specializations,
+          biography: formData.biography,
+          availability: formData.availability,
+          date_of_birth: formData.dateOfBirth?.toISOString().split('T')[0],
+          registration_expiry: formData.registrationExpiry?.toISOString().split('T')[0],
+          address_line1: formData.address,
+          city: formData.city,
+          state: formData.province,
+          zip_code: formData.postalCode
+        };
+        
+        // Log the data being saved (excluding sensitive info)
+        console.log("Provider profile data structure:", Object.keys(profileData));
+        
+        const { error } = await supabase.from('provider_profiles').insert(profileData);
+        
+        if (error) {
+          console.error(`Error saving provider profile (attempt ${attempt}/${retries}):`, error);
+          
+          // If this is the last attempt, propagate the error
+          if (attempt === retries) {
+            return { success: false, error };
+          }
+          
+          // Wait before retrying (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+        
+        console.log("Provider profile saved successfully!");
+        return { success: true };
+      } catch (err) {
+        console.error(`Exception during profile save (attempt ${attempt}/${retries}):`, err);
+        
+        // If this is the last attempt, propagate the error
+        if (attempt === retries) {
+          return { success: false, error: err };
+        }
+        
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+    
+    return { success: false, error: new Error("Failed to save provider profile after multiple attempts") };
+  };
   
   const handleCreateAccount = async () => {
+    // Clear previous errors
+    setDetailedError(null);
+    
+    if (connectionStatus === 'error') {
+      toast({
+        title: "Connection error",
+        description: "Unable to connect to authentication service. Please try again later.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (!captchaToken) {
       toast({
         title: "Verification required",
@@ -85,7 +201,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     
     // Create a signup session ID to track this attempt
     const signupSessionId = `provider-signup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    console.log(`Provider signup: Attempt with ID ${signupSessionId} - token length:`, captchaToken.length);
+    console.log(`Provider signup: Attempt with ID ${signupSessionId} starting...`);
+    console.log(`Provider email: ${formData.email}, token length:`, captchaToken.length);
     
     // Store token in a local variable and clear the state immediately to prevent reuse
     const token = captchaToken;
@@ -94,11 +211,16 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     try {
       // First verify the Supabase client is initialized
       console.log("Verifying Supabase client is initialized...");
-      const { data: sessionCheck } = await supabase.auth.getSession();
-      console.log("Current session check:", sessionCheck ? "successful" : "failed");
+      const { data: sessionCheck, error: sessionCheckError } = await supabase.auth.getSession();
+      
+      if (sessionCheckError) {
+        throw new Error(`Session check failed: ${sessionCheckError.message}`);
+      }
+      
+      console.log("Connection check successful:", sessionCheck ? "client ready" : "no active session");
       
       // Attempt to sign up the provider
-      console.log("Attempting to sign up provider with email:", formData.email);
+      console.log(`Attempting to sign up provider (${signupSessionId}) with email:`, formData.email);
       
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -124,6 +246,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       if (error) {
         console.error(`Error during sign up (${signupSessionId}):`, error);
+        setDetailedError(`Authentication error: ${error.message}${error.cause ? ` (Cause: ${String(error.cause)})` : ''}`);
         
         // Special handling for CAPTCHA errors
         if (error.message.toLowerCase().includes('captcha')) {
@@ -162,30 +285,23 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         // Save provider profile data
         if (data.user) {
           try {
-            const { error: profileError } = await supabase.from('provider_profiles').insert({
-              id: data.user.id,
-              first_name: formData.firstName,
-              last_name: formData.lastName,
-              email: formData.email,
-              phone_number: formData.phoneNumber,
-              provider_type: formData.providerType,
-              registration_number: formData.registrationNumber,
-              specializations: formData.specializations,
-              biography: formData.biography,
-              availability: formData.availability,
-              date_of_birth: formData.dateOfBirth?.toISOString().split('T')[0],
-              registration_expiry: formData.registrationExpiry?.toISOString().split('T')[0],
-              address_line1: formData.address,
-              city: formData.city,
-              state: formData.province,
-              zip_code: formData.postalCode
-            });
+            const { success, error: profileError } = await saveProviderProfile(data.user.id);
             
-            if (profileError) {
+            if (!success) {
               console.error("Error saving provider profile:", profileError);
+              setDetailedError(`Auth success but profile save failed: ${profileError.message || JSON.stringify(profileError)}`);
+              
+              // Even if profile save fails, we'll still consider signup successful
+              // as the auth record was created successfully
+              toast({
+                title: "Account created with warnings",
+                description: "Your account was created but some profile details may be incomplete. You can update them later.",
+                variant: "warning"
+              });
             }
-          } catch (profileSaveError) {
+          } catch (profileSaveError: any) {
             console.error("Exception during profile save:", profileSaveError);
+            setDetailedError(`Profile save exception: ${profileSaveError.message || String(profileSaveError)}`);
           }
         }
         
@@ -199,7 +315,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         onComplete();
       }
     } catch (error: any) {
-      console.error("Unexpected error during sign up:", error);
+      const enhancedError = error as EnhancedError;
+      console.error("Unexpected error during sign up:", enhancedError);
+      
+      setDetailedError(`Unexpected error: ${enhancedError.message || String(enhancedError)}
+        ${enhancedError.code ? `\nCode: ${enhancedError.code}` : ''}
+        ${enhancedError.details ? `\nDetails: ${enhancedError.details}` : ''}
+        ${enhancedError.status ? `\nStatus: ${enhancedError.status}` : ''}`);
+      
       toast({
         title: "Sign up failed",
         description: "An unexpected error occurred. Please try again.",
@@ -232,6 +355,22 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             Thank you, Dr. {formData.lastName}, for registering with Vyra Health!
           </p>
         </div>
+        
+        {connectionStatus === 'checking' && (
+          <div className="bg-muted/30 p-4 rounded-md text-center">
+            <div className="animate-pulse">Checking connection...</div>
+          </div>
+        )}
+        
+        {connectionStatus === 'error' && (
+          <div className="bg-destructive/10 p-4 rounded-md text-destructive flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            <div>
+              <p className="font-medium">Connection error</p>
+              <p className="text-sm">Unable to connect to authentication service. Please try refreshing the page.</p>
+            </div>
+          </div>
+        )}
         
         <div className="bg-muted/30 p-4 rounded-md text-left">
           <p className="text-sm font-medium mb-2">Next Steps:</p>
@@ -267,6 +406,15 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           </div>
         )}
         
+        {detailedError && (
+          <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-amber-800 text-sm">
+            <details>
+              <summary className="font-medium cursor-pointer">Technical error details</summary>
+              <pre className="mt-2 text-xs whitespace-pre-wrap">{detailedError}</pre>
+            </details>
+          </div>
+        )}
+        
         <div className="flex items-center space-x-2 mb-6">
           <Checkbox 
             id="terms" 
@@ -291,7 +439,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         <Button 
           onClick={handleCreateAccount} 
           className="w-full mt-6"
-          disabled={!captchaToken || !agreedToTerms || submitting}
+          disabled={!captchaToken || !agreedToTerms || submitting || connectionStatus !== 'connected'}
         >
           {submitting ? "Creating Account..." : "Create Account"} 
           {!submitting && <ArrowRight className="ml-2 h-4 w-4" />}
