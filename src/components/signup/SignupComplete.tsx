@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -173,6 +172,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       // Attempt to sign up
       console.log("Attempting to sign up user with email:", formData.email);
       
+      // Include all necessary user data in the metadata during signup
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -182,6 +182,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             role: 'patient',
             province: formData.province,
             health_card_number: formData.healthCardNumber,
+            health_card_version: formData.healthCardVersion,
+            health_card_province: formData.healthCardProvince,
+            health_card_expiry: formData.healthCardExpiry,
             signupSessionId,
           },
           captchaToken: token,
@@ -223,22 +226,13 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       if (!data.user) {
         throw new Error("Failed to create user account");
       }
+
+      // Wait for the auth trigger to create the profile
+      // Short delay to ensure the trigger has time to execute
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Continue with saving user profile data
-      console.log("Saving additional profile data...");
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          province: formData.province,
-          health_card_number: formData.healthCardNumber,
-        })
-        .eq('id', data.user.id);
-        
-      if (profileError) {
-        console.error("Error updating profile:", profileError);
-        // Continue despite error
-      }
-      
+      // Insert medical history data directly with the user_id
+      console.log("Saving medical history data...");
       const { error: medicalHistoryError } = await supabase
         .from('medical_history')
         .insert({
