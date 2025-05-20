@@ -27,6 +27,13 @@ async function handleCreateProviderProfile(req: Request) {
   try {
     const { providerData, userId } = await req.json()
     console.log('Creating provider profile for user:', userId)
+    console.log('Provider data summary:', {
+      provider_type: providerData.providerType,
+      email: providerData.email,
+      name: `${providerData.firstName} ${providerData.lastName}`,
+      file_uploads: providerData.profilePicture ? 'profile picture included' : 'no profile picture',
+      data_size: JSON.stringify(providerData).length,
+    })
 
     // Map provider data to the database schema
     const profileData = {

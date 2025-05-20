@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
@@ -21,13 +21,6 @@ import {
 interface SignupCompleteProps {
   formData: ProviderFormData;
   onComplete: () => void;
-}
-
-// Extended error interface to handle Supabase errors better
-interface EnhancedError extends Error {
-  status?: number;
-  code?: string;
-  details?: string;
 }
 
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
@@ -79,11 +72,25 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     try {
       console.log("Creating provider profile via edge function...");
       
-      // Convert date objects to ISO strings for transport
+      // Only send necessary data for profile creation, not files
       const providerData = {
-        ...formData,
-        dateOfBirth: formData.dateOfBirth?.toISOString(),
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        providerType: formData.providerType,
+        customProviderType: formData.customProviderType,
+        registrationNumber: formData.registrationNumber,
         registrationExpiry: formData.registrationExpiry?.toISOString(),
+        specializations: formData.specializations,
+        servicesOffered: formData.servicesOffered,
+        biography: formData.biography,
+        availability: formData.availability,
+        dateOfBirth: formData.dateOfBirth?.toISOString(),
+        address: formData.address,
+        city: formData.city,
+        province: formData.province,
+        postalCode: formData.postalCode
       };
       
       // Call the edge function to create the provider profile
@@ -162,12 +169,12 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        // Only include essential minimal metadata - no large objects
         options: {
+          // Only include essential minimal metadata - no large objects
           data: {
+            role: 'provider',
             firstName: formData.firstName,
             lastName: formData.lastName,
-            role: 'provider',
             signupSessionId
           }
         }
@@ -175,11 +182,22 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       if (error) {
         console.error(`Error during sign up (${signupSessionId}):`, error);
-        setDetailedError(`Authentication error: ${error.message}`);
+        
+        // Detailed error logging for debugging
+        const errorDetails = {
+          message: error.message,
+          code: error?.code,
+          status: error?.status,
+          name: error?.name,
+          stack: error?.stack
+        };
+        console.error("Detailed error info:", errorDetails);
+        
+        setDetailedError(`Authentication error: ${JSON.stringify(errorDetails)}`);
         
         toast({
           title: "Sign up failed",
-          description: error.message,
+          description: error.message || "Authentication error occurred",
           variant: "destructive"
         });
         
@@ -189,14 +207,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       // PHASE 2: Now create the provider profile using our edge function
       if (data.user) {
-        console.log(`Provider auth signup successful (${signupSessionId}):`, data);
+        console.log(`Provider auth signup successful (${signupSessionId}):`, data.user.id);
         setRegistrationPhase('creating_profile');
         
         const { success, error: profileError } = await createProviderProfile(data.user.id);
         
         if (!success) {
           console.error("Error creating provider profile:", profileError);
-          setDetailedError(`Auth success but profile creation failed: ${profileError}`);
+          setDetailedError(`Auth success but profile creation failed: ${JSON.stringify(profileError)}`);
           
           toast({
             title: "Account created with warnings",
@@ -204,6 +222,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             variant: "destructive"
           });
         }
+      } else {
+        console.warn("Auth signup returned no user data, but also no error.");
+        setDetailedError("Auth signup returned no user data, but also no error.");
       }
       
       // Success - show the success dialog
@@ -217,13 +238,18 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       onComplete();
       
     } catch (error: any) {
-      const enhancedError = error as EnhancedError;
-      console.error("Unexpected error during sign up:", enhancedError);
+      console.error("Unexpected error during sign up:", error);
       
-      setDetailedError(`Unexpected error: ${enhancedError.message || String(enhancedError)}
-        ${enhancedError.code ? `\nCode: ${enhancedError.code}` : ''}
-        ${enhancedError.details ? `\nDetails: ${enhancedError.details}` : ''}
-        ${enhancedError.status ? `\nStatus: ${enhancedError.status}` : ''}`);
+      // Enhanced error logging
+      const errorOutput = {
+        message: error.message || String(error),
+        code: error?.code,
+        name: error?.name,
+        stack: error?.stack?.substring(0, 500) || 'No stack trace',
+        cause: error?.cause ? String(error.cause) : undefined
+      };
+      
+      setDetailedError(`Unexpected error: ${JSON.stringify(errorOutput)}`);
       
       toast({
         title: "Sign up failed",

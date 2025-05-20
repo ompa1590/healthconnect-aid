@@ -207,6 +207,6 @@ enabled = false
 # Tools enable automigration of functions and dropping of migrations tables
 tools = true
 
-# Function feature flag
+# Function feature flag - DISABLE JWT VERIFICATION FOR PROVIDER-SIGNUP
 [functions.provider-signup]
-verify_jwt = true
+verify_jwt = false

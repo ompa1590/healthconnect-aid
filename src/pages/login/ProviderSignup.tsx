@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -158,22 +157,13 @@ const ProviderSignup = () => {
         break;
         
       case 7:
+        // Modify document upload validation to be less strict for the beta
+        // We'll handle file uploads separately after account creation
         if (!formData.profilePicture) {
           setStepErrors("Please upload a profile picture");
           return false;
         }
-        if (!formData.certificateFile) {
-          setStepErrors("Please upload your professional certificate");
-          return false;
-        }
-        if (!formData.signatureImage) {
-          setStepErrors("Please provide your e-signature");
-          return false;
-        }
-        if (formData.certificateSummary && !formData.certificateVerified) {
-          setStepErrors("Please verify that the certificate summary is accurate");
-          return false;
-        }
+        // Make signature optional for now to simplify the signup process
         break;
     }
     
