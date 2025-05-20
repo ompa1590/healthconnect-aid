@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
@@ -35,7 +34,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const captchaRef = useRef<CaptchaRefType>(null);
   
   // Use a unique ID for this provider signup session
-  const captchaId = useRef(`provider-signup-captcha-${Math.random().toString(36).substring(2, 15)}`).current;
+  const captchaId = useRef(`provider-signup-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`).current;
   const callbackName = useRef(`handleProviderSignupCaptcha${Math.random().toString(36).substring(2, 15)}`).current;
   
   // Refresh the captcha when the component mounts
@@ -45,7 +44,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   }, [captchaId]);
   
   const handleCaptchaVerify = (token: string) => {
-    console.log("Provider signup: CAPTCHA verified, token received");
+    console.log("Provider signup: CAPTCHA verified, token received of length:", token.length);
     setCaptchaToken(token);
     setCaptchaError(null);
   };
@@ -85,14 +84,21 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     
     // Create a signup session ID to track this attempt
     const signupSessionId = `provider-signup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    console.log(`Provider signup: Attempt with ID ${signupSessionId} - token: ${captchaToken.substring(0, 15)}...`);
+    console.log(`Provider signup: Attempt with ID ${signupSessionId} - token length:`, captchaToken.length);
     
     // Store token in a local variable and clear the state immediately to prevent reuse
     const token = captchaToken;
     setCaptchaToken(null);
     
     try {
+      // First verify the Supabase client is initialized
+      console.log("Verifying Supabase client is initialized...");
+      const { data: sessionCheck } = await supabase.auth.getSession();
+      console.log("Current session check:", sessionCheck ? "successful" : "failed");
+      
       // Attempt to sign up the provider
+      console.log("Attempting to sign up provider with email:", formData.email);
+      
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -152,6 +158,36 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       } else {
         console.log(`Provider signup successful (${signupSessionId}):`, data);
         
+        // Save provider profile data
+        if (data.user) {
+          try {
+            const { error: profileError } = await supabase.from('provider_profiles').insert({
+              id: data.user.id,
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              email: formData.email,
+              phone_number: formData.phoneNumber,
+              provider_type: formData.providerType,
+              registration_number: formData.registrationNumber,
+              specializations: formData.specializations,
+              biography: formData.biography,
+              availability: formData.availability,
+              date_of_birth: formData.dateOfBirth?.toISOString().split('T')[0],
+              registration_expiry: formData.registrationExpiry?.toISOString().split('T')[0],
+              address_line1: formData.address,
+              city: formData.city,
+              state: formData.province,
+              zip_code: formData.postalCode
+            });
+            
+            if (profileError) {
+              console.error("Error saving provider profile:", profileError);
+            }
+          } catch (profileSaveError) {
+            console.error("Exception during profile save:", profileSaveError);
+          }
+        }
+        
         // Success - show the success dialog
         setShowSuccessDialog(true);
         
@@ -161,7 +197,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         // Call the onComplete callback
         onComplete();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Unexpected error during sign up:", error);
       toast({
         title: "Sign up failed",
@@ -212,6 +248,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             captchaId={captchaId}
             onVerify={handleCaptchaVerify}
             callbackName={callbackName}
+            ref={captchaRef}
           />
         </div>
         

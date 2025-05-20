@@ -27,7 +27,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [captchaError, setCaptchaError] = useState<string | null>(null);
   
   // Generate a unique ID for this signup session
-  const captchaId = useRef(`signup-captcha-${Math.random().toString(36).substring(2, 15)}`).current;
+  const captchaId = useRef(`signup-captcha-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`).current;
   const callbackName = useRef(`signupCaptchaCallback${Math.random().toString(36).substring(2, 15)}`).current;
   
   const captchaRef = useRef<CaptchaRefType>(null);
@@ -61,7 +61,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   }, [captchaId]);
   
   const handleCaptchaVerify = (token: string) => {
-    console.log("Patient signup: CAPTCHA verified, token received");
+    console.log("Patient signup: CAPTCHA verified, token received of length:", token.length);
     setCaptchaToken(token);
     setCaptchaVerified(true);
     setCaptchaError(null);
@@ -111,7 +111,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       }
       
       return documentUrls;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading documents:", error);
       toast({
         title: "Document upload failed",
@@ -154,7 +154,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       // Store token in a local variable and immediately clear state to prevent reuse
       const token = captchaToken;
-      console.log(`Patient signup: Starting signup with captcha token: ${token.substring(0, 15)}...`);
+      console.log(`Patient signup: Starting signup with captcha token of length: ${token.length}`);
       
       // Clear captcha token immediately to prevent reuse
       setCaptchaToken(null);
@@ -164,6 +164,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       const signupSessionId = `signup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       console.log(`Signup attempt ID: ${signupSessionId}`);
       
+      // First try to properly initialize the Supabase client
+      console.log("Verifying Supabase client is initialized...");
+      const { data: sessionCheck } = await supabase.auth.getSession();
+      console.log("Current session check:", sessionCheck ? "successful" : "failed");
+      
+      // Attempt to sign up
+      console.log("Attempting to sign up user with email:", formData.email);
+      
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -171,6 +179,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           data: {
             name: formData.name,
             role: 'patient',
+            province: formData.province,
+            health_card_number: formData.healthCardNumber,
             signupSessionId,
           },
           captchaToken: token,
@@ -214,6 +224,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       }
       
       // Continue with saving user profile data
+      console.log("Saving additional profile data...");
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -224,6 +235,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
       if (profileError) {
         console.error("Error updating profile:", profileError);
+        // Continue despite error
       }
       
       const { error: medicalHistoryError } = await supabase
@@ -238,6 +250,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
       if (medicalHistoryError) {
         console.error("Error saving medical history:", medicalHistoryError);
+        // Continue despite error
       }
       
       if (formData.documentFiles && formData.documentFiles.length > 0) {
@@ -258,17 +271,23 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             
           if (documentsError) {
             console.error("Error saving document references:", documentsError);
+            // Continue despite error
           }
         }
       }
       
+      // Successful signup
       toast({
         title: "Account created successfully",
-        description: "Welcome to Vyra Health! You are now logged in.",
+        description: "Welcome to Vyra Health! You can now log in.",
       });
       
-      navigate('/dashboard');
-    } catch (error) {
+      // Call onComplete callback to trigger any parent component actions
+      onComplete();
+      
+      // Navigate to login page instead of dashboard to ensure a clean session
+      navigate('/login');
+    } catch (error: any) {
       console.error("Error during signup:", error);
       setError(error.message || "There was an error creating your account. Please try again.");
       toast({
@@ -366,6 +385,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             captchaId={captchaId}
             onVerify={handleCaptchaVerify}
             callbackName={callbackName}
+            ref={captchaRef}
           />
         </div>
         

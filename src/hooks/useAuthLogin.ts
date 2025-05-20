@@ -18,9 +18,18 @@ export const useAuthLogin = () => {
   // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        navigate("/dashboard");
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Session check error:", error);
+          return;
+        }
+        
+        if (data.session) {
+          navigate("/dashboard");
+        }
+      } catch (err) {
+        console.error("Unexpected error during session check:", err);
       }
     };
     
@@ -28,6 +37,7 @@ export const useAuthLogin = () => {
     
     // Set up auth state listener
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session ? "session exists" : "no session");
       if (event === 'SIGNED_IN' && session) {
         navigate("/dashboard");
       }
@@ -60,7 +70,7 @@ export const useAuthLogin = () => {
     setCaptchaVerified(false);
     
     try {
-      console.log(`Login attempt ${loginAttemptId} starting with token: ${token.substring(0, 15)}...`);
+      console.log(`Login attempt ${loginAttemptId} starting with token length: ${token.length}`);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -80,11 +90,11 @@ export const useAuthLogin = () => {
         });
         navigate("/dashboard");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Login error for ${loginAttemptId}:`, error);
       
       // Special handling for captcha errors
-      if (error.message.toLowerCase().includes('captcha')) {
+      if (error.message?.toLowerCase().includes('captcha')) {
         let errorMsg = "Captcha verification failed. Please try again.";
         
         if (error.message.includes('expired')) {
@@ -117,7 +127,7 @@ export const useAuthLogin = () => {
       if (error) throw error;
       
       // No need to navigate, OAuth will handle the redirect
-    } catch (error) {
+    } catch (error: any) {
       console.error("Google login error:", error);
       setErrorMessage(error.message || "Failed to sign in with Google. Please try again.");
       setIsGoogleLoading(false);
@@ -150,7 +160,7 @@ export const useAuthLogin = () => {
       
       // Navigate to home/login page after successful sign out
       navigate("/login");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign out error:", error);
       toast({
         title: "Sign out failed",

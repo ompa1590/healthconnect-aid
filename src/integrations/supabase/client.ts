@@ -45,3 +45,17 @@ export const supabase = createClient<Database>(
     }
   }
 );
+
+// Test the Supabase connection and log the result
+(async () => {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error("Supabase connection test error:", error.message);
+    } else {
+      console.log("Supabase connection test successful:", data.session ? "Active session exists" : "No active session");
+    }
+  } catch (err) {
+    console.error("Unexpected error testing Supabase connection:", err);
+  }
+})();
