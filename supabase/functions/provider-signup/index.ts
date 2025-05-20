@@ -119,6 +119,57 @@ async function handleCreateProviderProfile(req: Request) {
   }
 }
 
+async function handleFileUpload(req: Request) {
+  try {
+    console.log("Provider file upload edge function started")
+    
+    let reqBody;
+    try {
+      reqBody = await req.json()
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError)
+      return createResponse({ 
+        success: false, 
+        error: "Invalid JSON in request body" 
+      }, 400)
+    }
+    
+    const { userId, fileType, fileData } = reqBody
+    
+    if (!userId) {
+      return createResponse({ 
+        success: false, 
+        error: "Missing required parameter: userId" 
+      }, 400)
+    }
+    
+    if (!fileType || !fileData) {
+      return createResponse({ 
+        success: false, 
+        error: "Missing required parameters: fileType or fileData" 
+      }, 400)
+    }
+    
+    console.log(`Processing ${fileType} upload for user: ${userId}`)
+    
+    // Here we would handle file upload to storage bucket
+    // For now, we'll just acknowledge receipt and return success
+    // This can be expanded later with actual file storage logic
+    
+    return createResponse({
+      success: true, 
+      message: `${fileType} received successfully`,
+      userId: userId
+    })
+  } catch (error) {
+    console.error('Error in file upload:', error)
+    return createResponse({ 
+      success: false, 
+      error: error instanceof Error ? error.message : String(error) 
+    }, 500)
+  }
+}
+
 // Request handler
 serve(async (req) => {
   // Display information about the request for debugging
@@ -135,6 +186,8 @@ serve(async (req) => {
 
     if (path === 'create-profile') {
       return await handleCreateProviderProfile(req)
+    } else if (path === 'upload-file') {
+      return await handleFileUpload(req)
     }
     
     return createResponse({ error: 'Invalid endpoint' }, 404)

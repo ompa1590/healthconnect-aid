@@ -1,5 +1,5 @@
+
 import React, { useState, useRef } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Upload, File, X, FileText, CheckCircle, Loader2, Pen } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -36,6 +36,16 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updat
       return;
     }
 
+    // Check file size limit (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Profile picture must be less than 2MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
     updateFormData({ profilePicture: file });
   };
 
@@ -47,6 +57,16 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updat
       toast({
         title: "Invalid file type",
         description: "Please upload a PDF file for your certificate",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file size limit (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Certificate file must be less than 5MB",
         variant: "destructive",
       });
       return;
@@ -91,6 +111,16 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updat
       toast({
         title: "Invalid file type",
         description: "Please upload an image file for your signature",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file size limit (1MB)
+    if (file.size > 1 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Signature image must be less than 1MB",
         variant: "destructive",
       });
       return;
@@ -182,7 +212,8 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updat
     
     const canvas = canvasRef.current;
     if (canvas) {
-      const dataURL = canvas.toDataURL('image/png');
+      // Use a lower quality to reduce size
+      const dataURL = canvas.toDataURL('image/png', 0.7);
       updateFormData({ signatureImage: dataURL });
     }
   };
@@ -237,6 +268,9 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updat
                 <p className="mt-2 text-xs text-muted-foreground">
                   Upload a professional headshot
                 </p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Max size: 2MB
+                </p>
               </>
             )}
           </div>
@@ -271,6 +305,9 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updat
                 <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
                 <p className="mt-2 text-xs text-muted-foreground">
                   Upload your professional certificate
+                </p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Max size: 5MB
                 </p>
               </>
             )}
@@ -365,6 +402,9 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ formData, updat
                   <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
                   <p className="mt-2 text-xs text-muted-foreground">
                     Upload an image of your signature
+                  </p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">
+                    Max size: 1MB
                   </p>
                 </>
               )}

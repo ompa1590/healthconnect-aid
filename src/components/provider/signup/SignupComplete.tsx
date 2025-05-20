@@ -23,6 +23,13 @@ interface SignupCompleteProps {
   onComplete: () => void;
 }
 
+type RegistrationPhase = 
+  | 'initial' 
+  | 'creating_auth' 
+  | 'creating_profile' 
+  | 'uploading_documents'
+  | 'complete';
+
 const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -32,7 +39,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [detailedError, setDetailedError] = useState<string | null>(null);
   const [retryAttempt, setRetryAttempt] = useState(0);
-  const [registrationPhase, setRegistrationPhase] = useState<'initial' | 'creating_auth' | 'creating_profile' | 'complete'>('initial');
+  const [registrationPhase, setRegistrationPhase] = useState<RegistrationPhase>('initial');
+  const [uploadProgress, setUploadProgress] = useState(0);
   const maxRetries = 3;
   
   // Check Supabase connection on component mount
@@ -66,13 +74,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setRetryAttempt(0);
     setSubmitting(false);
     setRegistrationPhase('initial');
+    setUploadProgress(0);
   };
   
   const createProviderProfile = async (userId: string): Promise<{ success: boolean; error?: any }> => {
     try {
       console.log("Creating provider profile via edge function...");
       
-      // Only send necessary data for profile creation, not files
+      // IMPORTANT: Only send text-based data needed for profile creation, NO FILES
       const providerData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -124,6 +133,105 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       return { success: false, error: err };
     }
   };
+
+  // New function to handle file uploads separately after successful signup
+  const uploadProviderFiles = async (userId: string): Promise<boolean> => {
+    try {
+      setUploadProgress(0);
+      let totalUploads = 0;
+      let completedUploads = 0;
+      
+      // Calculate total number of potential uploads
+      if (formData.profilePicture) totalUploads++;
+      if (formData.certificateFile) totalUploads++;
+      if (formData.signatureImage) totalUploads++;
+      
+      if (totalUploads === 0) {
+        console.log("No files to upload");
+        return true;
+      }
+      
+      console.log(`Starting upload of ${totalUploads} files`);
+      
+      // Upload profile picture if exists
+      if (formData.profilePicture) {
+        try {
+          const filePath = `${userId}/profile/${Date.now()}-${formData.profilePicture.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('provider-files')
+            .upload(filePath, formData.profilePicture);
+            
+          if (uploadError) {
+            console.error("Error uploading profile picture:", uploadError);
+          } else {
+            completedUploads++;
+            setUploadProgress((completedUploads / totalUploads) * 100);
+            
+            // Update the profile with the picture URL
+            const { data: publicUrlData } = supabase.storage
+              .from('provider-files')
+              .getPublicUrl(filePath);
+              
+            // Here you could update the provider profile with the picture URL
+            console.log("Profile picture uploaded:", publicUrlData.publicUrl);
+          }
+        } catch (err) {
+          console.error("Exception uploading profile picture:", err);
+        }
+      }
+      
+      // Upload certificate file if exists
+      if (formData.certificateFile) {
+        try {
+          const filePath = `${userId}/certificates/${Date.now()}-${formData.certificateFile.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('provider-files')
+            .upload(filePath, formData.certificateFile);
+            
+          if (uploadError) {
+            console.error("Error uploading certificate:", uploadError);
+          } else {
+            completedUploads++;
+            setUploadProgress((completedUploads / totalUploads) * 100);
+            console.log("Certificate uploaded successfully");
+          }
+        } catch (err) {
+          console.error("Exception uploading certificate:", err);
+        }
+      }
+      
+      // Upload signature image if exists
+      if (formData.signatureImage) {
+        try {
+          // Convert base64 to blob
+          const response = await fetch(formData.signatureImage);
+          const blob = await response.blob();
+          const filePath = `${userId}/signatures/${Date.now()}-signature.png`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('provider-files')
+            .upload(filePath, blob);
+            
+          if (uploadError) {
+            console.error("Error uploading signature:", uploadError);
+          } else {
+            completedUploads++;
+            setUploadProgress((completedUploads / totalUploads) * 100);
+            console.log("Signature uploaded successfully");
+          }
+        } catch (err) {
+          console.error("Exception uploading signature:", err);
+        }
+      }
+      
+      console.log(`Completed ${completedUploads} of ${totalUploads} uploads`);
+      return completedUploads > 0;
+      
+    } catch (err) {
+      console.error("Error in file upload process:", err);
+      return false;
+    }
+  };
   
   const handleCreateAccount = async () => {
     // Clear previous errors
@@ -167,8 +275,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       console.log("Connection check successful:", sessionCheck ? "client ready" : "no active session");
       
-      // PHASE 1: Minimal Auth Signup - only email and password
-      // This minimizes the data sent in the initial auth call to reduce timeouts
+      // PHASE 1: MINIMAL AUTH SIGNUP - ONLY email, password, and essential metadata
+      // No files or large data objects in initial auth call
       setRegistrationPhase('creating_auth');
       console.log(`Attempting minimal auth signup (${signupSessionId}) with email:`, formData.email);
       
@@ -181,7 +289,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         email: formData.email,
         password: formData.password,
         options: {
-          // Only include essential minimal metadata - no large objects
+          // CRITICAL OPTIMIZATION: Only include absolutely minimal metadata - NO FILES OR LARGE OBJECTS
           data: {
             role: 'provider',
             firstName: formData.firstName,
@@ -209,7 +317,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         // Show a more helpful error message based on error type
         if (error.status === 504 || error.status === 408) {
-          setDetailedError(`Authentication timeout: The signup request took too long to process. Please try again with a slower internet connection or try again later.`);
+          setDetailedError(`Authentication timeout: The signup request took too long to process. Please try again with a better internet connection or try again later.`);
         } else if (error.message && error.message.includes("already registered")) {
           setDetailedError(`This email is already registered. Please try logging in instead, or use a different email address.`);
         } else {
@@ -242,6 +350,18 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             description: "Your account was created but profile setup is incomplete. You can update it later.",
             variant: "destructive"
           });
+        }
+        
+        // PHASE 3: Upload any files separately after successful profile creation
+        setRegistrationPhase('uploading_documents');
+        
+        try {
+          const filesUploaded = await uploadProviderFiles(data.user.id);
+          console.log("File upload process complete, success:", filesUploaded);
+        } catch (uploadError) {
+          console.error("Error during file uploads:", uploadError);
+          // Don't fail the entire process for file upload errors
+          // Files can be uploaded later from the dashboard
         }
       } else {
         console.warn("Auth signup returned no user data, but also no error.");
@@ -297,10 +417,14 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     switch(registrationPhase) {
       case 'creating_auth':
         phaseText = "Creating your account...";
-        phaseProgress = 50;
+        phaseProgress = 25;
         break;
       case 'creating_profile':
         phaseText = "Setting up your provider profile...";
+        phaseProgress = 50;
+        break;
+      case 'uploading_documents':
+        phaseText = "Uploading your documents...";
         phaseProgress = 75;
         break;
       case 'complete':
@@ -309,7 +433,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         break;
       default:
         phaseText = "Processing...";
-        phaseProgress = 25;
+        phaseProgress = 10;
     }
     
     return (
@@ -327,6 +451,18 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         <p className="text-xs text-muted-foreground mt-1 text-right">
           Attempt {retryAttempt}/{maxRetries}
         </p>
+        
+        {registrationPhase === 'uploading_documents' && uploadProgress > 0 && (
+          <div className="mt-2">
+            <p className="text-xs text-muted-foreground">Uploading documents: {Math.round(uploadProgress)}%</p>
+            <div className="w-full bg-muted/50 h-1 mt-1 rounded-full">
+              <div 
+                className="bg-green-500 h-1 rounded-full transition-all duration-500"
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
