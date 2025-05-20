@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
-import { CheckCircle, ArrowRight, AlertTriangle, RefreshCw } from "lucide-react";
+import { CheckCircle, ArrowRight, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -39,7 +39,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [detailedError, setDetailedError] = useState<string | null>(null);
   const [retryAttempt, setRetryAttempt] = useState(0);
-  const maxRetries = 3;
+  const [registrationPhase, setRegistrationPhase] = useState<'initial' | 'creating_auth' | 'creating_profile' | 'complete'>('initial');
+  const maxRetries = 5; // Increased from 3 to 5 for more resilience
   
   // Check Supabase connection on component mount
   useEffect(() => {
@@ -133,6 +134,15 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setDetailedError(null);
     setRetryAttempt(0);
     setSubmitting(false);
+    setRegistrationPhase('initial');
+  };
+  
+  // Add exponential backoff with jitter to prevent thundering herd problem
+  const calculateBackoff = (attempt: number, baseMs = 1000, maxMs = 10000) => {
+    // Calculate exponential backoff: baseMs * 2^attempt
+    const backoff = Math.min(baseMs * Math.pow(2, attempt), maxMs);
+    // Add jitter: randomize by +/- 30% to prevent all clients retrying at once
+    return backoff * (0.7 + Math.random() * 0.6);
   };
   
   const handleCreateAccount = async () => {
@@ -158,12 +168,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     }
     
     setSubmitting(true);
-    
-    // Create a signup session ID to track this attempt
-    const signupSessionId = `provider-signup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const currentRetry = retryAttempt + 1;
     setRetryAttempt(currentRetry);
     
+    // Create a signup session ID to track this attempt
+    const signupSessionId = `provider-signup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     console.log(`Provider signup: Attempt ${currentRetry}/${maxRetries} with ID ${signupSessionId} starting...`);
     console.log(`Provider email: ${formData.email}`);
     
@@ -177,36 +186,31 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       }
       
       console.log("Connection check successful:", sessionCheck ? "client ready" : "no active session");
+      setRegistrationPhase('creating_auth');
       
-      // Attempt to sign up the provider with retry metadata
-      console.log(`Attempting to sign up provider (${signupSessionId}) with email:`, formData.email);
+      // PHASE 1: Minimal Auth Signup - only email and password
+      // This minimizes the data sent in the initial auth call to reduce timeouts
+      console.log(`Attempting minimal auth signup (${signupSessionId}) with email:`, formData.email);
       
-      // Set a longer timeout for the signup request (15 seconds)
+      // Set a timeout promise for the auth operation
       const signupPromise = supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
+          // Only include essential metadata - minimal data
           data: {
             firstName: formData.firstName,
             lastName: formData.lastName,
             role: 'provider',
-            specialization: formData.specializations ? formData.specializations.join(',') : '',
-            registrationNumber: formData.registrationNumber || '',
-            address: formData.address || '',
-            city: formData.city || '',
-            province: formData.province || '',
-            postalCode: formData.postalCode || '',
-            phoneNumber: formData.phoneNumber || '',
-            isNewUser: true, // Flag to identify new users for welcome modal
-            signupSessionId, // Track this signup attempt
-            retryAttempt: currentRetry // Track which attempt this is
+            signupSessionId,
+            retryAttempt: currentRetry
           }
         }
       });
       
-      // Create a timeout promise
+      // Create a longer timeout promise - increased from 15s to 30s
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Signup request timed out after 15 seconds")), 15000);
+        setTimeout(() => reject(new Error("Signup request timed out after 30 seconds")), 30000);
       });
       
       // Race the signup promise against the timeout
@@ -220,18 +224,20 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       if (error) {
         console.error(`Error during sign up (${signupSessionId}):`, error);
         
-        // Handle timeout or network error
+        // Handle timeout or network error with exponential backoff
         if (error.message.includes("timeout") || error.message.includes("network") || error.status === 504) {
           if (currentRetry < maxRetries) {
+            const backoffTime = calculateBackoff(currentRetry);
+            
             toast({
-              title: "Connection timeout",
-              description: `Attempt ${currentRetry}/${maxRetries} timed out. Trying again...`,
-              variant: "destructive"
+              title: "Processing taking longer than expected",
+              description: `Attempt ${currentRetry}/${maxRetries} - Retrying in ${Math.round(backoffTime/1000)} seconds...`,
+              variant: "default"
             });
             
             setSubmitting(false);
-            // Wait a moment before retrying
-            setTimeout(() => handleCreateAccount(), 1000);
+            // Wait calculated backoff time before retrying
+            setTimeout(() => handleCreateAccount(), backoffTime);
             return;
           } else {
             setDetailedError(`Maximum retry attempts reached (${maxRetries}). The server might be experiencing high load. Please try again later.`);
@@ -255,10 +261,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         
         setSubmitting(false);
       } else {
-        console.log(`Provider signup successful (${signupSessionId}):`, data);
+        console.log(`Provider auth signup successful (${signupSessionId}):`, data);
         
-        // Save provider profile data
+        // PHASE 2: Save provider profile data
         if (data.user) {
+          setRegistrationPhase('creating_profile');
           try {
             const { success, error: profileError } = await saveProviderProfile(data.user.id);
             
@@ -281,6 +288,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         }
         
         // Success - show the success dialog
+        setRegistrationPhase('complete');
         setShowSuccessDialog(true);
         
         // Sign out the user first (in case they were automatically signed in)
@@ -296,15 +304,17 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       // Handle gateway timeouts specifically
       if (enhancedError.status === 504 || enhancedError.message?.includes("timeout") || enhancedError.message?.includes("Gateway Timeout")) {
         if (currentRetry < maxRetries) {
+          const backoffTime = calculateBackoff(currentRetry);
           toast({
             title: "Request timed out",
-            description: `Attempt ${currentRetry}/${maxRetries} timed out. Trying again in a moment...`,
-            variant: "warning"
+            description: `Attempt ${currentRetry}/${maxRetries} timed out. Trying again in ${Math.round(backoffTime/1000)} seconds...`,
+            // Fix the build error by using a valid variant
+            variant: "default"
           });
           
           setSubmitting(false);
           // Wait a moment before retrying with increasing backoff
-          setTimeout(() => handleCreateAccount(), 1000 * currentRetry);
+          setTimeout(() => handleCreateAccount(), backoffTime);
           return;
         } else {
           setDetailedError(`Maximum retry attempts reached (${maxRetries}). The server might be experiencing high load. Please try again later.`);
@@ -329,6 +339,50 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setShowSuccessDialog(false);
     // Navigate to provider login page
     navigate('/provider-login');
+  };
+  
+  // Helper function to render registration phase status
+  const renderRegistrationPhaseStatus = () => {
+    if (!submitting) return null;
+    
+    let phaseText = "";
+    let phaseProgress = 0;
+    
+    switch(registrationPhase) {
+      case 'creating_auth':
+        phaseText = "Creating your account...";
+        phaseProgress = 50;
+        break;
+      case 'creating_profile':
+        phaseText = "Setting up your provider profile...";
+        phaseProgress = 75;
+        break;
+      case 'complete':
+        phaseText = "Registration complete!";
+        phaseProgress = 100;
+        break;
+      default:
+        phaseText = "Processing...";
+        phaseProgress = 25;
+    }
+    
+    return (
+      <div className="bg-muted/30 p-3 rounded-md">
+        <div className="flex items-center gap-2 mb-1">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <p className="text-sm font-medium">{phaseText}</p>
+        </div>
+        <div className="w-full bg-muted h-1.5 rounded-full">
+          <div 
+            className="bg-primary h-1.5 rounded-full transition-all duration-700"
+            style={{ width: `${phaseProgress}%` }}
+          ></div>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1 text-right">
+          Attempt {retryAttempt}/{maxRetries}
+        </p>
+      </div>
+    );
   };
   
   return (
@@ -373,6 +427,9 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             <li>You can start offering virtual care services to patients</li>
           </ol>
         </div>
+        
+        {/* Display registration phase status */}
+        {renderRegistrationPhaseStatus()}
         
         {detailedError && (
           <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-amber-800 text-sm">
@@ -421,7 +478,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           className="w-full mt-6"
           disabled={!agreedToTerms || submitting || connectionStatus !== 'connected'}
         >
-          {submitting ? `Creating Account${retryAttempt > 0 ? ` (Attempt ${retryAttempt}/${maxRetries})` : ''}...` : "Create Account"} 
+          {submitting ? `Creating Account...` : "Create Account"} 
           {!submitting && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </div>
