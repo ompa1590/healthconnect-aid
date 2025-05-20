@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
 import { CheckCircle, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import CaptchaComponent, { CaptchaRefType } from "@/components/auth/CaptchaComponent";
+import { useToast } from "@/hooks/use-toast";
+import { CaptchaComponentWithRef, CaptchaRefType } from "@/components/auth/CaptchaComponent";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TermsDialog, PrivacyDialog } from "@/components/signup/LegalPopups";
 import {
@@ -244,7 +245,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </div>
         
         <div className="py-4 flex justify-center">
-          <CaptchaComponent 
+          <CaptchaComponentWithRef 
             captchaId={captchaId}
             onVerify={handleCaptchaVerify}
             callbackName={callbackName}

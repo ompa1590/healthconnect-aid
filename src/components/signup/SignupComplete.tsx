@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -5,9 +6,9 @@ import { CheckCircle, Upload, Loader2, RefreshCw } from "lucide-react";
 import { SignupFormData } from "@/pages/login/PatientSignup";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import CaptchaComponent, { CaptchaRefType } from "@/components/auth/CaptchaComponent";
+import { CaptchaComponentWithRef, CaptchaRefType } from "@/components/auth/CaptchaComponent";
 import { TermsDialog, PrivacyDialog, HIPAAComplianceDialog } from "./LegalPopups";
 
 interface SignupCompleteProps {
@@ -381,7 +382,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         </p>
         
         <div className="flex justify-center mb-4" id="captcha-container">
-          <CaptchaComponent 
+          <CaptchaComponentWithRef 
             captchaId={captchaId}
             onVerify={handleCaptchaVerify}
             callbackName={callbackName}
