@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderFormData } from "@/pages/login/ProviderSignup";
-import { CheckCircle, ArrowRight, AlertTriangle } from "lucide-react";
+import { CheckCircle, ArrowRight, AlertTriangle, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +38,8 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [detailedError, setDetailedError] = useState<string | null>(null);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  const maxRetries = 3;
   
   // Check Supabase connection on component mount
   useEffect(() => {
@@ -126,6 +128,12 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     
     return { success: false, error: new Error("Failed to save provider profile after multiple attempts") };
   };
+
+  const handleRetry = () => {
+    setDetailedError(null);
+    setRetryAttempt(0);
+    setSubmitting(false);
+  };
   
   const handleCreateAccount = async () => {
     // Clear previous errors
@@ -153,7 +161,10 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     
     // Create a signup session ID to track this attempt
     const signupSessionId = `provider-signup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    console.log(`Provider signup: Attempt with ID ${signupSessionId} starting...`);
+    const currentRetry = retryAttempt + 1;
+    setRetryAttempt(currentRetry);
+    
+    console.log(`Provider signup: Attempt ${currentRetry}/${maxRetries} with ID ${signupSessionId} starting...`);
     console.log(`Provider email: ${formData.email}`);
     
     try {
@@ -167,10 +178,11 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       
       console.log("Connection check successful:", sessionCheck ? "client ready" : "no active session");
       
-      // Attempt to sign up the provider
+      // Attempt to sign up the provider with retry metadata
       console.log(`Attempting to sign up provider (${signupSessionId}) with email:`, formData.email);
       
-      const { data, error } = await supabase.auth.signUp({
+      // Set a longer timeout for the signup request (15 seconds)
+      const signupPromise = supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -186,16 +198,55 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
             postalCode: formData.postalCode || '',
             phoneNumber: formData.phoneNumber || '',
             isNewUser: true, // Flag to identify new users for welcome modal
-            signupSessionId // Track this signup attempt
+            signupSessionId, // Track this signup attempt
+            retryAttempt: currentRetry // Track which attempt this is
           }
         }
       });
       
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Signup request timed out after 15 seconds")), 15000);
+      });
+      
+      // Race the signup promise against the timeout
+      const { data, error } = await Promise.race([
+        signupPromise,
+        timeoutPromise.then(() => {
+          throw new Error("Signup request timed out");
+        })
+      ]) as any;
+      
       if (error) {
         console.error(`Error during sign up (${signupSessionId}):`, error);
+        
+        // Handle timeout or network error
+        if (error.message.includes("timeout") || error.message.includes("network") || error.status === 504) {
+          if (currentRetry < maxRetries) {
+            toast({
+              title: "Connection timeout",
+              description: `Attempt ${currentRetry}/${maxRetries} timed out. Trying again...`,
+              variant: "destructive"
+            });
+            
+            setSubmitting(false);
+            // Wait a moment before retrying
+            setTimeout(() => handleCreateAccount(), 1000);
+            return;
+          } else {
+            setDetailedError(`Maximum retry attempts reached (${maxRetries}). The server might be experiencing high load. Please try again later.`);
+            toast({
+              title: "Sign up failed after multiple attempts",
+              description: "The server is experiencing high load. Please try again later.",
+              variant: "destructive"
+            });
+            setSubmitting(false);
+            return;
+          }
+        }
+        
         setDetailedError(`Authentication error: ${error.message}`);
         
-        // Handle other signup errors
         toast({
           title: "Sign up failed",
           description: error.message,
@@ -242,10 +293,28 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       const enhancedError = error as EnhancedError;
       console.error("Unexpected error during sign up:", enhancedError);
       
-      setDetailedError(`Unexpected error: ${enhancedError.message || String(enhancedError)}
-        ${enhancedError.code ? `\nCode: ${enhancedError.code}` : ''}
-        ${enhancedError.details ? `\nDetails: ${enhancedError.details}` : ''}
-        ${enhancedError.status ? `\nStatus: ${enhancedError.status}` : ''}`);
+      // Handle gateway timeouts specifically
+      if (enhancedError.status === 504 || enhancedError.message?.includes("timeout") || enhancedError.message?.includes("Gateway Timeout")) {
+        if (currentRetry < maxRetries) {
+          toast({
+            title: "Request timed out",
+            description: `Attempt ${currentRetry}/${maxRetries} timed out. Trying again in a moment...`,
+            variant: "warning"
+          });
+          
+          setSubmitting(false);
+          // Wait a moment before retrying with increasing backoff
+          setTimeout(() => handleCreateAccount(), 1000 * currentRetry);
+          return;
+        } else {
+          setDetailedError(`Maximum retry attempts reached (${maxRetries}). The server might be experiencing high load. Please try again later.`);
+        }
+      } else {
+        setDetailedError(`Unexpected error: ${enhancedError.message || String(enhancedError)}
+          ${enhancedError.code ? `\nCode: ${enhancedError.code}` : ''}
+          ${enhancedError.details ? `\nDetails: ${enhancedError.details}` : ''}
+          ${enhancedError.status ? `\nStatus: ${enhancedError.status}` : ''}`);
+      }
       
       toast({
         title: "Sign up failed",
@@ -311,6 +380,18 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
               <summary className="font-medium cursor-pointer">Technical error details</summary>
               <pre className="mt-2 text-xs whitespace-pre-wrap">{detailedError}</pre>
             </details>
+            {retryAttempt >= maxRetries && (
+              <div className="mt-3 flex justify-center">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRetry} 
+                  className="text-xs flex items-center"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" /> Reset and try again
+                </Button>
+              </div>
+            )}
           </div>
         )}
         
@@ -340,7 +421,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
           className="w-full mt-6"
           disabled={!agreedToTerms || submitting || connectionStatus !== 'connected'}
         >
-          {submitting ? "Creating Account..." : "Create Account"} 
+          {submitting ? `Creating Account${retryAttempt > 0 ? ` (Attempt ${retryAttempt}/${maxRetries})` : ''}...` : "Create Account"} 
           {!submitting && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </div>
