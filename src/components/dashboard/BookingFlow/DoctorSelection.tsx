@@ -43,38 +43,50 @@ const DoctorSelection = ({
       try {
         setIsLoading(true);
         
-        // Fetch doctors from the provider_profiles table
+        console.log("Fetching doctors from provider_profiles table...");
+        
+        // Fetch doctors from the provider_profiles table with no filters
         const { data, error } = await supabase
           .from('provider_profiles')
           .select('id, first_name, last_name, specializations, provider_type');
         
         if (error) {
+          console.error("Supabase error:", error);
           throw error;
         }
 
-        console.log("Fetched provider data:", data);
+        console.log("Raw provider data from supabase:", data);
+        console.log("Number of providers found:", data?.length || 0);
         
         if (!data || data.length === 0) {
           console.log("No providers found in the database");
+          setDoctors([]);
+          setIsLoading(false);
+          return;
         }
 
         // Transform the data to match our Doctor interface
-        const formattedDoctors = data.map(doctor => {
+        // Make sure we aren't filtering out any providers in this transformation
+        const formattedDoctors = data.map((doctor, index) => {
           // Ensure first_name and last_name are treated as strings, even if null
           const firstName = doctor.first_name || '';
           const lastName = doctor.last_name || '';
-          const fullName = `${firstName} ${lastName}`.trim();
+          const fullName = `${firstName} ${lastName}`.trim() || `Provider ${index + 1}`;
+          
+          console.log(`Processing provider: ${fullName} (ID: ${doctor.id})`);
           
           // Use provider_type or first specialization as specialty
           const specialty = doctor.specializations?.[0] || doctor.provider_type || "General Practitioner";
           
-          // Generate a random experience and rating for demonstration
-          const rating = 4.5 + (Math.random() * 0.5); // Random rating between 4.5-5.0
-          const experience = `${5 + Math.floor(Math.random() * 15)} years`; // Random experience
+          // Generate consistent rating and experience based on the doctor's ID
+          // This ensures the same doctor always gets the same random values
+          const idSum = doctor.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const rating = 4.5 + ((idSum % 5) / 10); // Consistent rating between 4.5-5.0
+          const experience = `${5 + (idSum % 15)} years`; // Consistent experience
           
-          // Generate a random avatar URL
-          const gender = Math.random() > 0.5 ? 'women' : 'men';
-          const imageNumber = Math.floor(Math.random() * 100);
+          // Generate consistent avatar URL based on doctor ID
+          const gender = idSum % 2 === 0 ? 'men' : 'women';
+          const imageNumber = idSum % 100;
           const imageUrl = `https://randomuser.me/api/portraits/${gender}/${imageNumber}.jpg`;
           
           return {
@@ -91,8 +103,10 @@ const DoctorSelection = ({
           };
         });
 
-        console.log("Transformed provider data:", formattedDoctors);
+        console.log("Transformed all provider data:", formattedDoctors);
+        console.log("Number of transformed providers:", formattedDoctors.length);
         
+        // Make sure we set all doctors to the state
         setDoctors(formattedDoctors);
       } catch (err) {
         console.error("Error fetching doctors:", err);
