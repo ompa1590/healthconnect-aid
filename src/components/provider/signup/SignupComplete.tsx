@@ -40,7 +40,7 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
   const [detailedError, setDetailedError] = useState<string | null>(null);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [registrationPhase, setRegistrationPhase] = useState<'initial' | 'creating_auth' | 'creating_profile' | 'complete'>('initial');
-  const maxRetries = 5; // Increased from 3 to 5 for more resilience
+  const maxRetries = 3;
   
   // Check Supabase connection on component mount
   useEffect(() => {
@@ -68,68 +68,6 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     checkConnection();
   }, []);
 
-  // Helper function to save provider profile with retries
-  const saveProviderProfile = async (userId: string, retries = 3): Promise<{success: boolean, error?: any}> => {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        console.log(`Attempting to save provider profile (attempt ${attempt}/${retries})...`);
-        
-        // Map form data to database schema
-        const profileData = {
-          id: userId,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          phone_number: formData.phoneNumber,
-          provider_type: formData.providerType,
-          registration_number: formData.registrationNumber,
-          specializations: formData.specializations,
-          biography: formData.biography,
-          availability: formData.availability,
-          date_of_birth: formData.dateOfBirth?.toISOString().split('T')[0],
-          registration_expiry: formData.registrationExpiry?.toISOString().split('T')[0],
-          address_line1: formData.address,
-          city: formData.city,
-          state: formData.province,
-          zip_code: formData.postalCode
-        };
-        
-        // Log the data being saved (excluding sensitive info)
-        console.log("Provider profile data structure:", Object.keys(profileData));
-        
-        const { error } = await supabase.from('provider_profiles').insert(profileData);
-        
-        if (error) {
-          console.error(`Error saving provider profile (attempt ${attempt}/${retries}):`, error);
-          
-          // If this is the last attempt, propagate the error
-          if (attempt === retries) {
-            return { success: false, error };
-          }
-          
-          // Wait before retrying (exponential backoff)
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-          continue;
-        }
-        
-        console.log("Provider profile saved successfully!");
-        return { success: true };
-      } catch (err) {
-        console.error(`Exception during profile save (attempt ${attempt}/${retries}):`, err);
-        
-        // If this is the last attempt, propagate the error
-        if (attempt === retries) {
-          return { success: false, error: err };
-        }
-        
-        // Wait before retrying (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-      }
-    }
-    
-    return { success: false, error: new Error("Failed to save provider profile after multiple attempts") };
-  };
-
   const handleRetry = () => {
     setDetailedError(null);
     setRetryAttempt(0);
@@ -137,12 +75,41 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
     setRegistrationPhase('initial');
   };
   
-  // Add exponential backoff with jitter to prevent thundering herd problem
-  const calculateBackoff = (attempt: number, baseMs = 1000, maxMs = 10000) => {
-    // Calculate exponential backoff: baseMs * 2^attempt
-    const backoff = Math.min(baseMs * Math.pow(2, attempt), maxMs);
-    // Add jitter: randomize by +/- 30% to prevent all clients retrying at once
-    return backoff * (0.7 + Math.random() * 0.6);
+  const createProviderProfile = async (userId: string): Promise<{ success: boolean; error?: any }> => {
+    try {
+      console.log("Creating provider profile via edge function...");
+      
+      // Convert date objects to ISO strings for transport
+      const providerData = {
+        ...formData,
+        dateOfBirth: formData.dateOfBirth?.toISOString(),
+        registrationExpiry: formData.registrationExpiry?.toISOString(),
+      };
+      
+      // Call the edge function to create the provider profile
+      const { data, error } = await supabase.functions.invoke('provider-signup/create-profile', {
+        body: { 
+          userId, 
+          providerData 
+        }
+      });
+      
+      if (error) {
+        console.error("Error from edge function:", error);
+        return { success: false, error };
+      }
+      
+      if (!data.success) {
+        console.error("Profile creation failed:", data.error);
+        return { success: false, error: data.error };
+      }
+      
+      console.log("Provider profile created successfully!");
+      return { success: true };
+    } catch (err) {
+      console.error("Exception during profile creation:", err);
+      return { success: false, error: err };
+    }
   };
   
   const handleCreateAccount = async () => {
@@ -186,71 +153,28 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
       }
       
       console.log("Connection check successful:", sessionCheck ? "client ready" : "no active session");
-      setRegistrationPhase('creating_auth');
       
       // PHASE 1: Minimal Auth Signup - only email and password
       // This minimizes the data sent in the initial auth call to reduce timeouts
+      setRegistrationPhase('creating_auth');
       console.log(`Attempting minimal auth signup (${signupSessionId}) with email:`, formData.email);
       
-      // Set a timeout promise for the auth operation
-      const signupPromise = supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        // Only include essential minimal metadata - no large objects
         options: {
-          // Only include essential metadata - minimal data
           data: {
             firstName: formData.firstName,
             lastName: formData.lastName,
             role: 'provider',
-            signupSessionId,
-            retryAttempt: currentRetry
+            signupSessionId
           }
         }
       });
-      
-      // Create a longer timeout promise - increased from 15s to 30s
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Signup request timed out after 30 seconds")), 30000);
-      });
-      
-      // Race the signup promise against the timeout
-      const { data, error } = await Promise.race([
-        signupPromise,
-        timeoutPromise.then(() => {
-          throw new Error("Signup request timed out");
-        })
-      ]) as any;
       
       if (error) {
         console.error(`Error during sign up (${signupSessionId}):`, error);
-        
-        // Handle timeout or network error with exponential backoff
-        if (error.message.includes("timeout") || error.message.includes("network") || error.status === 504) {
-          if (currentRetry < maxRetries) {
-            const backoffTime = calculateBackoff(currentRetry);
-            
-            toast({
-              title: "Processing taking longer than expected",
-              description: `Attempt ${currentRetry}/${maxRetries} - Retrying in ${Math.round(backoffTime/1000)} seconds...`,
-              variant: "default"
-            });
-            
-            setSubmitting(false);
-            // Wait calculated backoff time before retrying
-            setTimeout(() => handleCreateAccount(), backoffTime);
-            return;
-          } else {
-            setDetailedError(`Maximum retry attempts reached (${maxRetries}). The server might be experiencing high load. Please try again later.`);
-            toast({
-              title: "Sign up failed after multiple attempts",
-              description: "The server is experiencing high load. Please try again later.",
-              variant: "destructive"
-            });
-            setSubmitting(false);
-            return;
-          }
-        }
-        
         setDetailedError(`Authentication error: ${error.message}`);
         
         toast({
@@ -260,71 +184,46 @@ const SignupComplete: React.FC<SignupCompleteProps> = ({ formData, onComplete })
         });
         
         setSubmitting(false);
-      } else {
-        console.log(`Provider auth signup successful (${signupSessionId}):`, data);
-        
-        // PHASE 2: Save provider profile data
-        if (data.user) {
-          setRegistrationPhase('creating_profile');
-          try {
-            const { success, error: profileError } = await saveProviderProfile(data.user.id);
-            
-            if (!success) {
-              console.error("Error saving provider profile:", profileError);
-              setDetailedError(`Auth success but profile save failed: ${profileError.message || JSON.stringify(profileError)}`);
-              
-              // Even if profile save fails, we'll still consider signup successful
-              // as the auth record was created successfully
-              toast({
-                title: "Account created with warnings",
-                description: "Your account was created but some profile details may be incomplete. You can update them later.",
-                variant: "destructive"
-              });
-            }
-          } catch (profileSaveError: any) {
-            console.error("Exception during profile save:", profileSaveError);
-            setDetailedError(`Profile save exception: ${profileSaveError.message || String(profileSaveError)}`);
-          }
-        }
-        
-        // Success - show the success dialog
-        setRegistrationPhase('complete');
-        setShowSuccessDialog(true);
-        
-        // Sign out the user first (in case they were automatically signed in)
-        await supabase.auth.signOut();
-        
-        // Call the onComplete callback
-        onComplete();
+        return;
       }
+      
+      // PHASE 2: Now create the provider profile using our edge function
+      if (data.user) {
+        console.log(`Provider auth signup successful (${signupSessionId}):`, data);
+        setRegistrationPhase('creating_profile');
+        
+        const { success, error: profileError } = await createProviderProfile(data.user.id);
+        
+        if (!success) {
+          console.error("Error creating provider profile:", profileError);
+          setDetailedError(`Auth success but profile creation failed: ${profileError}`);
+          
+          toast({
+            title: "Account created with warnings",
+            description: "Your account was created but profile setup is incomplete. You can update it later.",
+            variant: "destructive"
+          });
+        }
+      }
+      
+      // Success - show the success dialog
+      setRegistrationPhase('complete');
+      setShowSuccessDialog(true);
+      
+      // Sign out the user (in case they were automatically signed in)
+      await supabase.auth.signOut();
+      
+      // Call the onComplete callback
+      onComplete();
+      
     } catch (error: any) {
       const enhancedError = error as EnhancedError;
       console.error("Unexpected error during sign up:", enhancedError);
       
-      // Handle gateway timeouts specifically
-      if (enhancedError.status === 504 || enhancedError.message?.includes("timeout") || enhancedError.message?.includes("Gateway Timeout")) {
-        if (currentRetry < maxRetries) {
-          const backoffTime = calculateBackoff(currentRetry);
-          toast({
-            title: "Request timed out",
-            description: `Attempt ${currentRetry}/${maxRetries} timed out. Trying again in ${Math.round(backoffTime/1000)} seconds...`,
-            // Fix the build error by using a valid variant
-            variant: "default"
-          });
-          
-          setSubmitting(false);
-          // Wait a moment before retrying with increasing backoff
-          setTimeout(() => handleCreateAccount(), backoffTime);
-          return;
-        } else {
-          setDetailedError(`Maximum retry attempts reached (${maxRetries}). The server might be experiencing high load. Please try again later.`);
-        }
-      } else {
-        setDetailedError(`Unexpected error: ${enhancedError.message || String(enhancedError)}
-          ${enhancedError.code ? `\nCode: ${enhancedError.code}` : ''}
-          ${enhancedError.details ? `\nDetails: ${enhancedError.details}` : ''}
-          ${enhancedError.status ? `\nStatus: ${enhancedError.status}` : ''}`);
-      }
+      setDetailedError(`Unexpected error: ${enhancedError.message || String(enhancedError)}
+        ${enhancedError.code ? `\nCode: ${enhancedError.code}` : ''}
+        ${enhancedError.details ? `\nDetails: ${enhancedError.details}` : ''}
+        ${enhancedError.status ? `\nStatus: ${enhancedError.status}` : ''}`);
       
       toast({
         title: "Sign up failed",
