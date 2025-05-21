@@ -1,291 +1,461 @@
-
-import React, { useState, useEffect } from "react";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Calendar } from "@/components/ui/calendar";
-import { 
-  CalendarDays, 
-  CheckCircle, 
-  Clock, 
-  User, 
-  XCircle, 
-  Edit, 
-  Eye, 
-  MessageSquare, 
-  Phone, 
-  Video 
-} from "lucide-react";
-import { format } from "date-fns";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import { 
+  CalendarClock, 
+  Clock, 
+  Video, 
+  FileText, 
+  XCircle, 
+  Search,
+  Calendar,
+  DollarSign 
+} from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import CancelAppointmentDialog from "./CancelAppointmentDialog";
+import { format } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import VisitReasonDialog from "./VisitReasonDialog";
+import ConsultationNotesDialog from "./ConsultationNotesDialog";
+import OHIPBillingDialog from "./OHIPBillingDialog";
+import AvailabilityDialog from "./AvailabilityDialog";
 
 interface Appointment {
-  id: string;
-  patient_name: string;
-  patient_email: string;
-  service_type: string;
-  appointment_date: string;
-  appointment_time: string;
-  reason: string | null;
+  id: number;
+  patient: string;
+  patientId: string;
+  age: number;
+  reason: string;
+  date: Date;
+  time: string;
   status: string;
 }
 
+interface AvailabilitySlot {
+  id: number;
+  day: string;
+  startTime: string;
+  endTime: string;
+}
+
 const ProviderAppointments = () => {
-  // State variables
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [isLoading, setIsLoading] = useState(true);
-  const [showChartDialog, setShowChartDialog] = useState(false);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([
+    {
+      id: 1,
+      patient: "Emily Johnson",
+      patientId: "PTN-CE550N",
+      age: 34,
+      reason: "Annual checkup",
+      date: new Date(2024, 2, 22),
+      time: "09:00 - 09:30 AM",
+      status: "upcoming",
+    },
+    {
+      id: 2,
+      patient: "Michael Rodriguez",
+      patientId: "PTN-MR421K",
+      age: 52,
+      reason: "Diabetes management",
+      date: new Date(2024, 2, 22),
+      time: "10:30 - 11:00 AM",
+      status: "upcoming",
+    },
+    {
+      id: 3,
+      patient: "Sarah Parker",
+      patientId: "PTN-SP785Q",
+      age: 28,
+      reason: "Psychiatry consultation",
+      date: new Date(2024, 2, 21),
+      time: "02:00 - 02:30 PM",
+      status: "completed",
+    },
+    {
+      id: 4,
+      patient: "Emma Williams",
+      patientId: "PTN-EW334P",
+      age: 42,
+      reason: "Family Planning counseling",
+      date: new Date(2024, 2, 23),
+      time: "11:15 - 11:45 AM",
+      status: "upcoming",
+    },
+    {
+      id: 5,
+      patient: "James Anderson",
+      patientId: "PTN-JA652T",
+      age: 38,
+      reason: "Follow-up consultation",
+      date: new Date(2024, 2, 23),
+      time: "03:30 - 04:00 PM",
+      status: "upcoming",
+    }
+  ]);
+  
+  const [cancelAppointment, setCancelAppointment] = useState<number | null>(null);
+  const [visitReasonAppointment, setVisitReasonAppointment] = useState<number | null>(null);
+  const [notesAppointment, setNotesAppointment] = useState<number | null>(null);
+  const [billingAppointment, setBillingAppointment] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
+  const [providerAvailability, setProviderAvailability] = useState<AvailabilitySlot[]>([
+    { id: 1, day: "Monday", startTime: "09:00", endTime: "17:00" },
+    { id: 2, day: "Tuesday", startTime: "09:00", endTime: "17:00" },
+    { id: 3, day: "Wednesday", startTime: "09:00", endTime: "17:00" },
+    { id: 4, day: "Thursday", startTime: "09:00", endTime: "17:00" },
+    { id: 5, day: "Friday", startTime: "09:00", endTime: "15:00" },
+  ]);
   const { toast } = useToast();
 
-  // Fetch appointments when selected date changes
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      if (!selectedDate) return;
-      
-      setIsLoading(true);
-      
-      try {
-        const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-        
-        // Check authentication
-        const { data: authData } = await supabase.auth.getSession();
-        if (!authData.session) {
-          toast({
-            title: "Authentication Error",
-            description: "You must be logged in to view appointments",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        const providerId = authData.session.user.id;
-        
-        const { data, error } = await supabase
-          .from('appointments')
-          .select('*')
-          .eq('provider_id', providerId)
-          .eq('appointment_date', formattedDate)
-          .order('appointment_time');
-        
-        if (error) {
-          console.error('Error fetching appointments:', error);
-          toast({
-            title: "Error",
-            description: "Failed to load appointments. Please try again.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        setAppointments(data || []);
-      } catch (error) {
-        console.error('Error in fetchAppointments:', error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred. Please try again.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
+  const handleCancelAppointment = (appointmentId: number) => {
+    setCancelAppointment(appointmentId);
+  };
+
+  const handleViewVisitReason = (appointmentId: number) => {
+    setVisitReasonAppointment(appointmentId);
+  };
+
+  const handleViewNotes = (appointmentId: number) => {
+    setNotesAppointment(appointmentId);
+  };
+
+  const handleBillingClaim = (appointmentId: number) => {
+    setBillingAppointment(appointmentId);
+  };
+
+  const handleConfirmCancel = (reason: string, details?: string) => {
+    const updatedAppointments = appointments.map(appointment => {
+      if (appointment.id === cancelAppointment) {
+        return {
+          ...appointment,
+          status: "cancelled"
+        };
       }
-    };
+      return appointment;
+    });
     
-    fetchAppointments();
-  }, [selectedDate, toast]);
-  
-  // Handle appointment status change
-  const handleStatusChange = async (appointmentId: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ status: newStatus })
-        .eq('id', appointmentId);
-      
-      if (error) {
-        console.error('Error updating appointment status:', error);
-        toast({
-          title: "Error",
-          description: "Failed to update appointment status.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // Update local state
-      setAppointments(prevAppointments => 
-        prevAppointments.map(appointment => 
-          appointment.id === appointmentId 
-            ? { ...appointment, status: newStatus } 
-            : appointment
-        )
-      );
-      
-      toast({
-        title: "Success",
-        description: `Appointment marked as ${newStatus}.`,
-      });
-    } catch (error) {
-      console.error('Error in handleStatusChange:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive"
-      });
-    }
+    setAppointments(updatedAppointments);
+    
+    setCancelAppointment(null);
+    
+    toast({
+      title: "Appointment Cancelled",
+      description: `The appointment has been cancelled successfully.`,
+    });
   };
-  
-  // Get status badge
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Completed</Badge>;
-      case 'upcoming':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">Upcoming</Badge>;
-      case 'cancelled':
-        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Cancelled</Badge>;
-      case 'in_progress':
-        return <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">In Progress</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+
+  const handleSaveAvailability = (availability: AvailabilitySlot[]) => {
+    setProviderAvailability(availability);
+    toast({
+      title: "Availability Updated",
+      description: "Your availability settings have been saved successfully.",
+    });
   };
-  
+
+  const getActiveAppointment = () => {
+    return appointments.find(a => 
+      a.id === cancelAppointment || 
+      a.id === visitReasonAppointment || 
+      a.id === notesAppointment ||
+      a.id === billingAppointment
+    );
+  };
+
+  const filteredAppointments = appointments.filter(appointment => 
+    appointment.patient.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    appointment.reason.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    appointment.patientId.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const formatAppointmentDate = (date: Date) => {
+    return format(date, "MMMM d, yyyy");
+  };
+
   return (
-    <div className="container mx-auto py-6">
-      <h2 className="text-3xl font-bold mb-6">Appointments</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Calendar */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <CalendarDays className="mr-2 h-5 w-5" />
-              <span>Select Date</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className="border rounded-md p-3"
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-2">
+        <h2 className="text-2xl font-bold font-poppins">Your Appointments</h2>
+        <div className="flex gap-3">
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search appointments..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
             />
-          </CardContent>
-        </Card>
-        
-        {/* Appointments List */}
-        <Card className="col-span-1 md:col-span-2">
-          <CardHeader>
-            <CardTitle>
-              {selectedDate ? (
-                <>Appointments for {format(selectedDate, 'MMMM d, yyyy')}</>
+          </div>
+          <Button onClick={() => setShowAvailabilityDialog(true)}>
+            <Calendar className="mr-2 h-4 w-4" />
+            Set Availability
+          </Button>
+          <Button>
+            <Video className="mr-2 h-4 w-4" />
+            Start Consultation
+          </Button>
+        </div>
+      </div>
+      
+      <Card className="shadow-md border-0 overflow-hidden">
+        <CardHeader className="pb-3 bg-gradient-to-r from-primary/5 to-primary/10">
+          <CardTitle className="text-xl font-poppins tracking-tight">Upcoming Appointments</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Tabs defaultValue="upcoming">
+            <div className="px-4 border-b">
+              <TabsList className="mb-0">
+                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                <TabsTrigger value="completed">Completed</TabsTrigger>
+                <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="upcoming" className="pt-2 space-y-1">
+              {filteredAppointments.filter(a => a.status === "upcoming").length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  No upcoming appointments found
+                </div>
               ) : (
-                <>Select a date</>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-6">Loading appointments...</div>
-            ) : appointments.length === 0 ? (
-              <div className="text-center py-6 text-muted-foreground">
-                No appointments scheduled for this date
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Patient</TableHead>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {appointments.map((appointment) => (
-                    <TableRow key={appointment.id}>
-                      <TableCell className="font-medium">{appointment.appointment_time}</TableCell>
-                      <TableCell>{appointment.patient_name}</TableCell>
-                      <TableCell>{appointment.service_type}</TableCell>
-                      <TableCell>{getStatusBadge(appointment.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                filteredAppointments
+                  .filter(a => a.status === "upcoming")
+                  .sort((a, b) => a.date.getTime() - b.date.getTime())
+                  .map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="px-6 py-5 hover:bg-muted/20 transition-all duration-200 border-b last:border-0"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold shadow-sm">
+                            {appointment.patient.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold font-poppins text-lg leading-tight tracking-tight">{appointment.reason}</h3>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                              <span className="font-medium text-primary/80">{appointment.patientId}</span> 
+                              <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50"></span> 
+                              {appointment.patient}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center gap-3 md:gap-5 text-sm ml-13">
+                          <div className="flex items-center gap-1.5 bg-primary/5 px-3 py-1.5 rounded-full shadow-sm">
+                            <CalendarClock className="h-4 w-4 text-primary" />
+                            <span className="font-medium">{formatAppointmentDate(appointment.date)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 bg-primary/5 px-3 py-1.5 rounded-full shadow-sm">
+                            <Clock className="h-4 w-4 text-primary" />
+                            <span className="font-medium">{appointment.time}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1.5 rounded-full shadow-sm">
+                            <Video className="h-4 w-4" />
+                            <span className="font-medium">Video Call</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 ml-auto mt-2 md:mt-0">
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => {
-                              setSelectedAppointmentId(appointment.id);
-                              setShowChartDialog(true);
-                            }}
+                            className="text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50 shadow-sm"
+                            onClick={() => handleCancelAppointment(appointment.id)}
                           >
-                            <Eye className="h-4 w-4 mr-1" /> View
+                            Cancel
                           </Button>
-                          
-                          {appointment.status === 'upcoming' && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleStatusChange(appointment.id, 'in_progress')}
-                            >
-                              <Video className="h-4 w-4 mr-1" /> Start
-                            </Button>
-                          )}
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="shadow-sm hover:bg-primary/5"
+                            onClick={() => handleViewVisitReason(appointment.id)}
+                          >
+                            Visit Reason
+                          </Button>
+                          <Button size="sm" className="shadow-sm font-medium">
+                            <Video className="mr-1.5 h-4 w-4" />
+                            Join Call
+                          </Button>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Patient Chart Dialog */}
-      <Dialog open={showChartDialog} onOpenChange={setShowChartDialog}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Patient Chart</DialogTitle>
-          </DialogHeader>
-          <div className="mt-4">
-            {selectedAppointmentId ? (
-              <div className="grid gap-4">
-                <div className="text-center">
-                  Loading patient details...
+                      </div>
+                    </div>
+                  ))
+              )}
+            </TabsContent>
+            
+            <TabsContent value="completed" className="pt-2">
+              {filteredAppointments.filter(a => a.status === "completed").length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  No completed appointments found
                 </div>
-              </div>
-            ) : (
-              <div className="text-center">No appointment selected</div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+              ) : (
+                filteredAppointments
+                  .filter(a => a.status === "completed")
+                  .map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="px-6 py-5 hover:bg-muted/20 transition-all duration-200 border-b last:border-0"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-12 h-12 bg-primary/5 rounded-full flex items-center justify-center text-primary font-semibold shadow-sm">
+                            {appointment.patient.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold font-poppins tracking-tight">{appointment.reason}</h3>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                              <span className="font-medium text-primary/80">{appointment.patientId}</span>
+                              <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50"></span>
+                              {appointment.patient}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center gap-3 md:gap-5 text-sm ml-13">
+                          <div className="flex items-center gap-1.5">
+                            <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                            <span>{formatAppointmentDate(appointment.date)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span>{appointment.time}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 ml-auto mt-2 md:mt-0">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="shadow-sm hover:bg-primary/5"
+                            onClick={() => handleViewNotes(appointment.id)}
+                          >
+                            <FileText className="mr-1.5 h-4 w-4" />
+                            View Notes
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="shadow-sm hover:bg-primary/5"
+                            onClick={() => handleBillingClaim(appointment.id)}
+                          >
+                            <DollarSign className="mr-1.5 h-4 w-4" />
+                            Claim
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+              )}
+            </TabsContent>
+            
+            <TabsContent value="cancelled" className="pt-2">
+              {filteredAppointments.filter(a => a.status === "cancelled").length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  No cancelled appointments found
+                </div>
+              ) : (
+                filteredAppointments
+                  .filter(a => a.status === "cancelled")
+                  .map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="px-6 py-5 hover:bg-muted/20 transition-all duration-200 border-b last:border-0 opacity-75"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-12 h-12 bg-muted/50 rounded-full flex items-center justify-center text-muted-foreground font-semibold shadow-sm">
+                            {appointment.patient.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold font-poppins line-through tracking-tight">{appointment.reason}</h3>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                              <span className="font-medium text-muted/80">{appointment.patientId}</span>
+                              <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/50"></span>
+                              {appointment.patient}
+                            </p>
+                            <p className="text-xs text-destructive mt-1">Cancelled</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center gap-3 md:gap-5 text-sm ml-13">
+                          <div className="flex items-center gap-1.5">
+                            <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                            <span className="line-through">{formatAppointmentDate(appointment.date)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span className="line-through">{appointment.time}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+      
+      <CancelAppointmentDialog
+        isOpen={cancelAppointment !== null}
+        onClose={() => setCancelAppointment(null)}
+        appointmentId={cancelAppointment || 0}
+        patientName={getActiveAppointment()?.patient || ""}
+        onConfirmCancel={handleConfirmCancel}
+      />
+
+      {visitReasonAppointment && getActiveAppointment() && (
+        <VisitReasonDialog
+          isOpen={visitReasonAppointment !== null}
+          onClose={() => setVisitReasonAppointment(null)}
+          appointment={{
+            id: getActiveAppointment()?.id || 0,
+            patientName: getActiveAppointment()?.patient || "",
+            patientId: getActiveAppointment()?.patientId || "",
+            appointmentType: getActiveAppointment()?.reason || "",
+            date: getActiveAppointment()?.date || new Date(),
+            time: getActiveAppointment()?.time || "",
+          }}
+        />
+      )}
+
+      {notesAppointment && getActiveAppointment() && (
+        <ConsultationNotesDialog
+          isOpen={notesAppointment !== null}
+          onClose={() => setNotesAppointment(null)}
+          appointment={{
+            id: getActiveAppointment()?.id || 0,
+            patient: getActiveAppointment()?.patient || "",
+            patientId: getActiveAppointment()?.patientId || "",
+            reason: getActiveAppointment()?.reason || "",
+            date: getActiveAppointment()?.date || new Date(),
+            time: getActiveAppointment()?.time || "",
+          }}
+        />
+      )}
+
+      {billingAppointment && getActiveAppointment() && (
+        <OHIPBillingDialog
+          isOpen={billingAppointment !== null}
+          onClose={() => setBillingAppointment(null)}
+          appointment={{
+            id: getActiveAppointment()?.id || 0,
+            patient: getActiveAppointment()?.patient || "",
+            patientId: getActiveAppointment()?.patientId || "",
+            reason: getActiveAppointment()?.reason || "",
+            date: getActiveAppointment()?.date || new Date(),
+            time: getActiveAppointment()?.time || "",
+          }}
+        />
+      )}
+
+      <AvailabilityDialog
+        isOpen={showAvailabilityDialog}
+        onClose={() => setShowAvailabilityDialog(false)}
+        onSave={handleSaveAvailability}
+        initialAvailability={providerAvailability}
+      />
     </div>
   );
 };
