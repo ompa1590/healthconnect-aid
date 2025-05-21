@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import useUser from "./useUser";
 
 export interface Doctor {
   id: string;
@@ -21,13 +22,18 @@ export function useDoctors() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { isAuthenticated } = useUser();
 
   const fetchDoctors = useCallback(async () => {
+    if (!isAuthenticated) {
+      setError("Please log in to view available doctors.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
-      
-      console.log("Fetching doctors from provider_profiles table...");
       
       // Fetch doctors from the provider_profiles table with no filters
       const { data, error } = await supabase
@@ -35,16 +41,12 @@ export function useDoctors() {
         .select('id, first_name, last_name, specializations, provider_type');
       
       if (error) {
-        console.error("Supabase error:", error);
         throw error;
       }
-
-      console.log("Raw provider data from supabase:", data);
-      console.log("Number of providers found:", data?.length || 0);
       
       if (!data || data.length === 0) {
-        console.log("No providers found in the database");
         setDoctors([]);
+        setError("No providers found in the database.");
         return;
       }
 
@@ -55,13 +57,10 @@ export function useDoctors() {
         const lastName = doctor.last_name || '';
         const fullName = `${firstName} ${lastName}`.trim() || `Provider ${index + 1}`;
         
-        console.log(`Processing provider: ${fullName} (ID: ${doctor.id})`);
-        
         // Use provider_type or first specialization as specialty
         const specialty = doctor.specializations?.[0] || doctor.provider_type || "General Practitioner";
         
         // Generate consistent rating and experience based on the doctor's ID
-        // This ensures the same doctor always gets the same random values
         const idSum = doctor.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
         const rating = 4.5 + ((idSum % 5) / 10); // Consistent rating between 4.5-5.0
         const experience = `${5 + (idSum % 15)} years`; // Consistent experience
@@ -69,7 +68,7 @@ export function useDoctors() {
         // Generate consistent avatar URL based on doctor ID
         const gender = idSum % 2 === 0 ? 'men' : 'women';
         const imageNumber = idSum % 100;
-        const imageUrl = `https://randomuser.me/api/portraits/${gender}/${imageNumber}.jpg`;
+        const imageUrl = `https://randomuser.me/api/portraits//${gender}/${imageNumber}.jpg`;
         
         return {
           id: doctor.id,
@@ -84,40 +83,17 @@ export function useDoctors() {
           provider_type: doctor.provider_type
         };
       });
-
-      console.log("Transformed all provider data:", formattedDoctors);
-      console.log("Number of transformed providers:", formattedDoctors.length);
       
       setDoctors(formattedDoctors);
     } catch (err) {
       console.error("Error fetching doctors:", err);
       setError("Failed to load doctors. Please try again later.");
-      
-      // Fallback to dummy data if the fetch fails
-      setDoctors([
-        {
-          id: "dr-1",
-          name: "Dr. Sarah Johnson",
-          specialty: "General Practitioner",
-          rating: 4.8,
-          experience: "12 years",
-          image: "https://randomuser.me/api/portraits/women/44.jpg"
-        },
-        {
-          id: "dr-2",
-          name: "Dr. Mark Williams",
-          specialty: "Dermatologist",
-          rating: 4.9,
-          experience: "15 years",
-          image: "https://randomuser.me/api/portraits/men/32.jpg"
-        }
-      ]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isAuthenticated, toast]);
 
-  // Fetch doctors on initial mount
+  // Fetch doctors on initial mount or when authentication state changes
   useEffect(() => {
     fetchDoctors();
   }, [fetchDoctors]);

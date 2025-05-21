@@ -1,7 +1,7 @@
 
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowRight, RefreshCw, AlertCircle } from "lucide-react";
 import { useDoctors } from "@/hooks/useDoctors";
 import DoctorCard from "./DoctorCard";
 import DoctorSelectionLoading from "./DoctorSelectionLoading";
@@ -50,8 +50,17 @@ const DoctorSelection = ({
       {isLoading ? (
         <DoctorSelectionLoading />
       ) : error ? (
-        <div className="text-center bg-red-50 p-4 rounded-md text-red-600">
-          {error}
+        <div className="flex flex-col items-center justify-center bg-red-50 p-6 rounded-md text-red-600 space-y-3">
+          <AlertCircle className="h-8 w-8" />
+          <p className="font-medium">{error}</p>
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh}
+            className="mt-2"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Try Again
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2">
