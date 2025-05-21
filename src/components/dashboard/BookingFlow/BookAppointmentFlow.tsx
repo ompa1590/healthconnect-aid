@@ -58,20 +58,6 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
   const goToNextStep = () => setCurrentStep(prev => prev + 1);
   const goToPreviousStep = () => setCurrentStep(prev => prev - 1);
   
-  // Reset selection when going back to previous steps
-  useEffect(() => {
-    if (currentStep === 1) {
-      // Reset doctor selection when going back to service selection
-      setSelectedDoctor(null);
-      setSelectedDoctorName("");
-    }
-    if (currentStep === 2) {
-      // Reset time selection when going back to doctor selection
-      setSelectedDate(undefined);
-      setSelectedTime(null);
-    }
-  }, [currentStep]);
-  
   // Final submission function
   const { saveAppointment, isSubmitting } = useAppointment();
   const { toast } = useToast();
