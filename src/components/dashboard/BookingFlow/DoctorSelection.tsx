@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,23 +42,54 @@ const DoctorSelection = ({
       try {
         setIsLoading(true);
         
-        // Fetch doctors from the provider_profiles table
-        const { data, error } = await supabase
-          .from('provider_profiles')
-          .select('id, first_name, last_name, specializations, provider_type');
+        // First check if user is authenticated
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        let queryResult;
+        
+        if (session) {
+          console.log("User is authenticated, fetching with user credentials");
+          // If authenticated, use the user's credentials
+          queryResult = await supabase
+            .from('provider_profiles')
+            .select('id, first_name, last_name, specializations, provider_type');
+        } else {
+          console.log("User is not authenticated, using public access");
+          // For public access, you might need a special endpoint or a function 
+          // that has service role permissions
+          
+          // OPTION 1: If you've created a public access policy
+          queryResult = await supabase
+            .from('provider_profiles')
+            .select('id, first_name, last_name, specializations, provider_type');
+            
+          // OPTION 2: Use a Supabase Edge Function or server API
+          // const response = await fetch('/api/get-providers');
+          // const data = await response.json();
+          // queryResult = { data, error: null };
+        }
+        
+        const { data, error } = queryResult;
         
         if (error) {
-          throw error;
+          console.error("Supabase query error:", error);
+          throw new Error(error.message || "Failed to fetch providers");
         }
 
         console.log("Fetched provider data:", data);
         
         if (!data || data.length === 0) {
           console.log("No providers found in the database");
+          // Show a toast notification instead of a silent failure
+          toast({
+            title: "No providers found",
+            description: "There are currently no healthcare providers available.",
+            variant: "destructive"
+          });
         }
 
         // Transform the data to match our Doctor interface
-        const formattedDoctors = data.map(doctor => {
+        const formattedDoctors = data ? data.map(doctor => {
           // Ensure first_name and last_name are treated as strings, even if null
           const firstName = doctor.first_name || '';
           const lastName = doctor.last_name || '';
@@ -79,7 +109,7 @@ const DoctorSelection = ({
           
           return {
             id: doctor.id,
-            name: fullName,
+            name: fullName || `Provider ${doctor.id.substring(0, 5)}`, // Fallback name if both first and last are empty
             specialty: specialty,
             rating: rating,
             experience: experience,
@@ -89,7 +119,7 @@ const DoctorSelection = ({
             specializations: doctor.specializations,
             provider_type: doctor.provider_type
           };
-        });
+        }) : [];
 
         console.log("Transformed provider data:", formattedDoctors);
         
@@ -97,6 +127,12 @@ const DoctorSelection = ({
       } catch (err) {
         console.error("Error fetching doctors:", err);
         setError("Failed to load doctors. Please try again later.");
+        
+        toast({
+          title: "Error loading providers",
+          description: err instanceof Error ? err.message : "Please try again later",
+          variant: "destructive"
+        });
         
         // Fallback to dummy data if the fetch fails
         setDoctors([
@@ -123,7 +159,7 @@ const DoctorSelection = ({
     };
 
     fetchDoctors();
-  }, []);
+  }, [toast]);
 
   const getSelectedDoctor = () => {
     return doctors.find(doctor => doctor.id === selectedDoctor) || null;
