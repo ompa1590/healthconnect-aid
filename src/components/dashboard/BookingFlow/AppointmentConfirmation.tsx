@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Clock, User, CheckCircle } from "lucide-react";
@@ -47,6 +46,9 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
       title: "Pre-screening Reminder Set",
       description: `You'll be reminded to complete your pre-screening on ${formattedDate} at ${formattedTime}.`,
     });
+
+    // Call onDone to save appointment and close modal
+    onDone();
   };
 
   const handleConfirmAppointment = async () => {
@@ -64,7 +66,7 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
       console.log("Confirming appointment with details:", appointmentDetails);
       setIsConfirmed(true);
       
-      // Call onDone to trigger saveAppointment in the parent component
+      // Save the appointment but don't close modal yet
       await onDone();
     } catch (error) {
       console.error("Error confirming appointment:", error);
@@ -75,6 +77,10 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
       });
       setIsConfirmed(false);
     }
+  };
+
+  const handleStartPrescreening = () => {
+    setShowPrescreening(true);
   };
 
   return (
@@ -93,7 +99,7 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
         </h2>
         <p className="text-muted-foreground mt-1">
           {isConfirmed 
-            ? "Your appointment has been successfully scheduled." 
+            ? "Your appointment has been successfully scheduled. Complete your pre-screening to save time at your visit." 
             : "Please review and confirm your appointment details below."}
         </p>
       </div>
@@ -147,33 +153,32 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
             Confirm Appointment
           </Button>
         ) : (
-          <p className="text-sm text-muted-foreground mb-4">
-            We've sent a confirmation email with these details. 
-            You can manage your appointments in the Dashboard.
-          </p>
+          <>
+            <p className="text-sm text-muted-foreground mb-4">
+              We've sent a confirmation email with these details.
+            </p>
+            
+            <div className="space-y-3">
+              <Button 
+                onClick={handleStartPrescreening} 
+                size="lg" 
+                className="px-8"
+              >
+                Start Your Prescreening
+              </Button>
+              <div className="flex gap-2 justify-center">
+                <Button
+                  onClick={handlePrescreenLater}
+                  variant="outline"
+                  size="lg"
+                  className="px-8"
+                >
+                  Prescreen Later
+                </Button>
+              </div>
+            </div>
+          </>
         )}
-        
-        <div className="space-y-3">
-          <Button 
-            onClick={togglePrescreening} 
-            size="lg" 
-            className="px-8"
-            disabled={!isConfirmed}
-          >
-            {showPrescreening ? 'Close Prescreening' : 'Start Your Prescreening'}
-          </Button>
-          <div className="flex gap-2 justify-center">
-            <Button
-              onClick={handlePrescreenLater}
-              variant="outline"
-              size="lg"
-              className="px-8 mt-2"
-              disabled={!isConfirmed}
-            >
-              Prescreen Later
-            </Button>
-          </div>
-        </div>
       </div>
 
       {showPrescreening && (
