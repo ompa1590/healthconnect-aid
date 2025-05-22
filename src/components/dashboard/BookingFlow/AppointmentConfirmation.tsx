@@ -23,7 +23,13 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
   const { user } = useUser();
 
   const togglePrescreening = () => {
-    setShowPrescreening(!showPrescreening);
+    if (showPrescreening) {
+      // When closing prescreening, save appointment and close modal
+      setShowPrescreening(false);
+      onDone();
+    } else {
+      setShowPrescreening(true);
+    }
   };
 
   const handlePrescreenLater = () => {
@@ -66,8 +72,8 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
       console.log("Confirming appointment with details:", appointmentDetails);
       setIsConfirmed(true);
       
-      // Save the appointment but don't close modal yet
-      await onDone();
+      // Just set confirmed state, don't call onDone yet
+      // onDone will be called when user chooses prescreen later or completes prescreening
     } catch (error) {
       console.error("Error confirming appointment:", error);
       toast({
