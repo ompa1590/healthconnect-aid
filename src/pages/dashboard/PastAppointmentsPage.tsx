@@ -14,7 +14,10 @@ import {
   Sparkles,
   Filter,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  ClipboardList,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -34,6 +37,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { HeartPulseLoader } from "@/components/ui/heart-pulse-loader";
 import useAppointment from "@/hooks/useAppointment";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 type Appointment = {
   id: number | string;
@@ -52,6 +57,15 @@ type Appointment = {
   medications?: string[];
   followUp?: string;
   reason?: string;
+  ai_triage_data?: {
+    symptoms?: string[];
+    duration?: string;
+    severity?: string;
+    additional_notes?: string;
+    preliminary_assessment?: string;
+    recommended_action?: string;
+    urgency_level?: "low" | "medium" | "high";
+  };
 };
 
 const PastAppointmentsPage = () => {
@@ -76,6 +90,17 @@ const PastAppointmentsPage = () => {
         
         // Transform the fetched appointments to match our component's expected format
         const formattedAppointments = fetchedAppointments.map(apt => {
+          // Mock AI triage data (this would come from your database in a real scenario)
+          const mockAiTriageData = {
+            symptoms: ["Persistent cough", "Mild fever", "Fatigue"],
+            duration: "5 days",
+            severity: "Moderate",
+            additional_notes: "Symptoms worsen at night. No known allergies.",
+            preliminary_assessment: "Possible respiratory infection",
+            recommended_action: "Consultation with general practitioner for evaluation and possible prescription",
+            urgency_level: apt.reason?.toLowerCase().includes("urgent") ? "high" : "medium"
+          };
+
           return {
             id: apt.id,
             doctor: apt.doctor_name || `Dr. ${apt.provider_id?.substring(0, 8) || "Unknown"}`,
@@ -88,7 +113,8 @@ const PastAppointmentsPage = () => {
             appointment_date: apt.appointment_date,
             appointment_time: apt.appointment_time,
             status: apt.status as "upcoming" | "completed" | "cancelled" | "in_progress",
-            reason: apt.reason || "No reason provided"
+            reason: apt.reason || "No reason provided",
+            ai_triage_data: mockAiTriageData
           };
         });
 
@@ -482,7 +508,7 @@ const PastAppointmentsPage = () => {
       </Tabs>
 
       <Dialog open={!!selectedAppointment} onOpenChange={(open) => !open && setSelectedAppointment(null)}>
-        <DialogContent className="max-w-md sm:max-w-lg animate-in fade-in-0 zoom-in-90 bg-white/95 backdrop-blur-lg border border-border/30">
+        <DialogContent className="max-w-3xl animate-in fade-in-0 zoom-in-90 bg-white/95 backdrop-blur-lg border border-border/30">
           <div className="flex justify-between items-start">
             <h2 className="text-xl font-medium font-poppins">Appointment Details</h2>
             <Button 
@@ -496,7 +522,7 @@ const PastAppointmentsPage = () => {
           </div>
 
           {selectedAppointment && (
-            <div className="space-y-6 pt-2">
+            <div className="space-y-6 pt-2 max-h-[70vh] overflow-y-auto pr-2">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center">
                   <User2 className="h-6 w-6 text-primary" />
@@ -505,6 +531,19 @@ const PastAppointmentsPage = () => {
                   <h3 className="font-medium text-lg font-poppins">{selectedAppointment.doctor}</h3>
                   <p className="text-primary/80">{selectedAppointment.specialty}</p>
                 </div>
+                
+                <Badge 
+                  className={cn(
+                    "ml-auto",
+                    selectedAppointment.status === "completed" && "bg-green-500/20 text-green-700 hover:bg-green-500/30",
+                    selectedAppointment.status === "upcoming" && "bg-blue-500/20 text-blue-700 hover:bg-blue-500/30",
+                    selectedAppointment.status === "cancelled" && "bg-red-500/20 text-red-700 hover:bg-red-500/30",
+                    selectedAppointment.status === "in_progress" && "bg-amber-500/20 text-amber-700 hover:bg-amber-500/30",
+                  )}
+                >
+                  {selectedAppointment.status === "in_progress" ? "In Progress" : 
+                   selectedAppointment.status.charAt(0).toUpperCase() + selectedAppointment.status.slice(1)}
+                </Badge>
               </div>
 
               <div className="flex gap-6 text-sm">
@@ -517,14 +556,110 @@ const PastAppointmentsPage = () => {
                   <span>{selectedAppointment.appointment_time || selectedAppointment.time}</span>
                 </div>
               </div>
+
+              {/* AI Triage Data Section */}
+              <div className="bg-gradient-to-r from-health-50/30 to-health-100/20 border border-health-200/30 p-6 rounded-xl">
+                <div className="flex items-center gap-2 mb-4">
+                  <ClipboardList className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-medium">AI Triage Assessment</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  {selectedAppointment.reason && (
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Reason for Visit</h4>
+                      <p className="text-base">{selectedAppointment.reason}</p>
+                    </div>
+                  )}
+                  
+                  {selectedAppointment.ai_triage_data?.symptoms && (
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Reported Symptoms</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedAppointment.ai_triage_data.symptoms.map((symptom, i) => (
+                          <Badge key={i} variant="outline" className="bg-primary/10 border-primary/20">
+                            {symptom}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {selectedAppointment.ai_triage_data?.duration && (
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground mb-1">Duration</h4>
+                        <p>{selectedAppointment.ai_triage_data.duration}</p>
+                      </div>
+                    )}
+                    
+                    {selectedAppointment.ai_triage_data?.severity && (
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground mb-1">Severity</h4>
+                        <p>{selectedAppointment.ai_triage_data.severity}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {selectedAppointment.ai_triage_data?.additional_notes && (
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Additional Notes</h4>
+                      <p className="text-sm bg-white/50 p-3 rounded-md border border-health-200/20">
+                        {selectedAppointment.ai_triage_data.additional_notes}
+                      </p>
+                    </div>
+                  )}
+
+                  <Separator className="my-2" />
+                  
+                  {selectedAppointment.ai_triage_data?.preliminary_assessment && (
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Preliminary Assessment</h4>
+                      <div className="flex items-center gap-2 bg-primary/10 p-3 rounded-md">
+                        <Stethoscope className="h-4 w-4 text-primary flex-shrink-0" />
+                        <p>{selectedAppointment.ai_triage_data.preliminary_assessment}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedAppointment.ai_triage_data?.recommended_action && (
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Recommended Action</h4>
+                      <div className="flex items-start gap-2 bg-primary/5 p-3 rounded-md">
+                        <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <p>{selectedAppointment.ai_triage_data.recommended_action}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedAppointment.ai_triage_data?.urgency_level && (
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Urgency Level</h4>
+                      <Badge 
+                        className={cn(
+                          selectedAppointment.ai_triage_data.urgency_level === "low" && "bg-green-500/20 text-green-700",
+                          selectedAppointment.ai_triage_data.urgency_level === "medium" && "bg-amber-500/20 text-amber-700",
+                          selectedAppointment.ai_triage_data.urgency_level === "high" && "bg-red-500/20 text-red-700",
+                        )}
+                      >
+                        {selectedAppointment.ai_triage_data.urgency_level === "high" && (
+                          <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                        )}
+                        {selectedAppointment.ai_triage_data.urgency_level.charAt(0).toUpperCase() + 
+                         selectedAppointment.ai_triage_data.urgency_level.slice(1)}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </div>
               
-              {selectedAppointment.reason && (
+              {selectedAppointment.summary && (
                 <div className="bg-gradient-to-r from-health-50 to-medical-light border border-health-200/40 p-4 rounded-xl shadow-sm">
                   <h4 className="font-medium flex items-center gap-2 font-poppins text-primary">
                     <FileText className="h-4 w-4 text-medical-DEFAULT" />
-                    Reason for Visit
+                    Summary from Doctor
                   </h4>
-                  <p className="text-sm text-muted-foreground mt-2">{selectedAppointment.reason}</p>
+                  <p className="text-sm text-muted-foreground mt-2">{selectedAppointment.summary}</p>
                 </div>
               )}
 
