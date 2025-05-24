@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,7 +14,9 @@ import {
   ShieldAlert,
   SaveIcon,
   Stethoscope,
-  Sparkles
+  Sparkles,
+  ArrowLeft,
+  FileText
 } from "lucide-react";
 
 import { Label } from "@/components/ui/label";
@@ -46,7 +47,6 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 const ProfileSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
   
   // Initialize the form
   const form = useForm<ProfileFormValues>({
