@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from "react";
 import { 
   CalendarClock, 
@@ -511,14 +510,6 @@ const PastAppointmentsPage = () => {
         <DialogContent className="max-w-3xl animate-in fade-in-0 zoom-in-90 bg-white/95 backdrop-blur-lg border border-border/30">
           <div className="flex justify-between items-start">
             <h2 className="text-xl font-medium font-poppins">Appointment Details</h2>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setSelectedAppointment(null)}
-              className="h-8 w-8 hover:bg-primary/5"
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </div>
 
           {selectedAppointment && (
