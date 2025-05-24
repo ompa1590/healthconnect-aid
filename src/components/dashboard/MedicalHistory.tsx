@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash, Loader2, Upload, FileText, File, Sparkles, ArrowLeft, Edit, Save, X, Heart, Pill, Activity, Clock } from "lucide-react";
+import { Plus, Trash, Loader2, Upload, FileText, File, Sparkles, ArrowLeft, Edit, Save, X, Heart, Pill, Activity, Clock, Cigarette, Wine, Scissors, Dna, Stethoscope, Users, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { 
@@ -19,26 +19,80 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface EditingState {
   medications: boolean;
   allergies: boolean;
   conditions: boolean;
   treatments: boolean;
+  lifestyle: boolean;
+  surgeries: boolean;
+  genetic: boolean;
+  emergency: boolean;
 }
 
 const MedicalHistory = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [medications, setMedications] = useState<string[]>([]);
-  const [allergies, setAllergies] = useState<string[]>([]);
-  const [conditions, setConditions] = useState<string[]>([]);
-  const [pastTreatments, setPastTreatments] = useState<string[]>([]);
+  
+  // Existing medical data with dummy data
+  const [medications, setMedications] = useState<string[]>([
+    "Lisinopril 10mg - Once daily",
+    "Metformin 500mg - Twice daily with meals",
+    "Vitamin D3 1000IU - Once daily",
+    "Aspirin 81mg - Once daily (low dose)"
+  ]);
+  const [allergies, setAllergies] = useState<string[]>([
+    "Penicillin - Severe rash",
+    "Shellfish - Anaphylaxis",
+    "Latex - Contact dermatitis"
+  ]);
+  const [conditions, setConditions] = useState<string[]>([
+    "Type 2 Diabetes - Diagnosed 2019",
+    "Hypertension - Well controlled",
+    "Seasonal Allergies"
+  ]);
+  const [pastTreatments, setPastTreatments] = useState<string[]>([
+    "Physical Therapy for lower back pain (2023)",
+    "Dental cleaning and filling (March 2024)",
+    "Annual eye exam (January 2024)"
+  ]);
+
+  // New health categories with dummy data
+  const [lifestyle, setLifestyle] = useState<string[]>([
+    "Non-smoker (quit 5 years ago)",
+    "Social drinker - 1-2 glasses wine per week",
+    "Regular exercise - 3x weekly",
+    "Balanced diet with occasional sweets"
+  ]);
+  const [surgeries, setSurgeries] = useState<string[]>([
+    "Appendectomy - Age 25 (2010)",
+    "Wisdom teeth removal - Age 22 (2007)",
+    "Mole removal - Left shoulder (2021)"
+  ]);
+  const [genetic, setGenetic] = useState<string[]>([
+    "Family history of heart disease (father)",
+    "Family history of breast cancer (maternal grandmother)",
+    "No known genetic disorders"
+  ]);
+  const [emergency, setEmergency] = useState<string[]>([
+    "Emergency Contact: Jane Doe - Spouse - (555) 123-4567",
+    "Blood Type: O+",
+    "Preferred Hospital: City General Hospital"
+  ]);
+
+  // New item states
   const [newMedication, setNewMedication] = useState("");
   const [newAllergy, setNewAllergy] = useState("");
   const [newCondition, setNewCondition] = useState("");
   const [newTreatment, setNewTreatment] = useState("");
+  const [newLifestyle, setNewLifestyle] = useState("");
+  const [newSurgery, setNewSurgery] = useState("");
+  const [newGenetic, setNewGenetic] = useState("");
+  const [newEmergency, setNewEmergency] = useState("");
+  
   const [documents, setDocuments] = useState<any[]>([]);
   const [documentName, setDocumentName] = useState("");
   const [documentType, setDocumentType] = useState("Medical Report");
@@ -47,7 +101,11 @@ const MedicalHistory = () => {
     medications: false,
     allergies: false,
     conditions: false,
-    treatments: false
+    treatments: false,
+    lifestyle: false,
+    surgeries: false,
+    genetic: false,
+    emergency: false
   });
   
   const { toast } = useToast();
@@ -176,6 +234,7 @@ const MedicalHistory = () => {
     }
   };
   
+  // Add functions
   const addMedication = () => {
     if (newMedication.trim()) {
       setMedications([...medications, newMedication.trim()]);
@@ -203,7 +262,36 @@ const MedicalHistory = () => {
       setNewTreatment("");
     }
   };
+
+  const addLifestyle = () => {
+    if (newLifestyle.trim()) {
+      setLifestyle([...lifestyle, newLifestyle.trim()]);
+      setNewLifestyle("");
+    }
+  };
+
+  const addSurgery = () => {
+    if (newSurgery.trim()) {
+      setSurgeries([...surgeries, newSurgery.trim()]);
+      setNewSurgery("");
+    }
+  };
+
+  const addGenetic = () => {
+    if (newGenetic.trim()) {
+      setGenetic([...genetic, newGenetic.trim()]);
+      setNewGenetic("");
+    }
+  };
+
+  const addEmergency = () => {
+    if (newEmergency.trim()) {
+      setEmergency([...emergency, newEmergency.trim()]);
+      setNewEmergency("");
+    }
+  };
   
+  // Remove functions
   const removeMedication = (index: number) => {
     setMedications(medications.filter((_, i) => i !== index));
   };
@@ -218,6 +306,22 @@ const MedicalHistory = () => {
   
   const removeTreatment = (index: number) => {
     setPastTreatments(pastTreatments.filter((_, i) => i !== index));
+  };
+
+  const removeLifestyle = (index: number) => {
+    setLifestyle(lifestyle.filter((_, i) => i !== index));
+  };
+
+  const removeSurgery = (index: number) => {
+    setSurgeries(surgeries.filter((_, i) => i !== index));
+  };
+
+  const removeGenetic = (index: number) => {
+    setGenetic(genetic.filter((_, i) => i !== index));
+  };
+
+  const removeEmergency = (index: number) => {
+    setEmergency(emergency.filter((_, i) => i !== index));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -483,6 +587,8 @@ const MedicalHistory = () => {
     );
   }
 
+  const totalItems = medications.length + allergies.length + conditions.length + pastTreatments.length + lifestyle.length + surgeries.length + genetic.length + emergency.length;
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
       {/* Header */}
@@ -502,9 +608,9 @@ const MedicalHistory = () => {
               <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600">
                 <FileText className="h-6 w-6 text-white" />
               </div>
-              Medical History
+              Complete Medical Profile
             </h1>
-            <p className="text-gray-600 mt-1">Manage your health information and medical records</p>
+            <p className="text-gray-600 mt-1">Comprehensive health information and medical records</p>
           </div>
         </div>
         <Button 
@@ -526,94 +632,156 @@ const MedicalHistory = () => {
         </Button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
-          <CardContent className="p-4 text-center">
-            <Heart className="h-6 w-6 text-red-600 mx-auto mb-2" />
-            <p className="text-sm text-red-700 font-medium">Conditions</p>
-            <p className="text-2xl font-bold text-red-800">{conditions.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <CardContent className="p-4 text-center">
-            <Pill className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-            <p className="text-sm text-blue-700 font-medium">Medications</p>
-            <p className="text-2xl font-bold text-blue-800">{medications.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-          <CardContent className="p-4 text-center">
-            <Activity className="h-6 w-6 text-orange-600 mx-auto mb-2" />
-            <p className="text-sm text-orange-700 font-medium">Allergies</p>
-            <p className="text-2xl font-bold text-orange-800">{allergies.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-          <CardContent className="p-4 text-center">
-            <Clock className="h-6 w-6 text-green-600 mx-auto mb-2" />
-            <p className="text-sm text-green-700 font-medium">Treatments</p>
-            <p className="text-2xl font-bold text-green-800">{pastTreatments.length}</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Overview Card */}
+      <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-2xl font-bold text-blue-600">{totalItems}</p>
+              <p className="text-sm text-gray-600">Total Records</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">{medications.length}</p>
+              <p className="text-sm text-gray-600">Medications</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-orange-600">{conditions.length}</p>
+              <p className="text-sm text-gray-600">Conditions</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-purple-600">{surgeries.length}</p>
+              <p className="text-sm text-gray-600">Surgeries</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Medical Information Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MedicalSection
-          title="Current Medications"
-          icon={Pill}
-          items={medications}
-          newItem={newMedication}
-          setNewItem={setNewMedication}
-          addItem={addMedication}
-          removeItem={removeMedication}
-          editKey="medications"
-          placeholder="Add new medication..."
-          color="blue"
-        />
+      {/* Tabbed Medical Information */}
+      <Tabs defaultValue="medical" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="medical">Medical Information</TabsTrigger>
+          <TabsTrigger value="lifestyle">Lifestyle & History</TabsTrigger>
+          <TabsTrigger value="emergency">Emergency & Genetic</TabsTrigger>
+        </TabsList>
 
-        <MedicalSection
-          title="Allergies"
-          icon={Activity}
-          items={allergies}
-          newItem={newAllergy}
-          setNewItem={setNewAllergy}
-          addItem={addAllergy}
-          removeItem={removeAllergy}
-          editKey="allergies"
-          placeholder="Add new allergy..."
-          color="orange"
-        />
+        <TabsContent value="medical" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <MedicalSection
+              title="Current Medications"
+              icon={Pill}
+              items={medications}
+              newItem={newMedication}
+              setNewItem={setNewMedication}
+              addItem={addMedication}
+              removeItem={removeMedication}
+              editKey="medications"
+              placeholder="Add medication with dosage..."
+              color="blue"
+            />
 
-        <MedicalSection
-          title="Medical Conditions"
-          icon={Heart}
-          items={conditions}
-          newItem={newCondition}
-          setNewItem={setNewCondition}
-          addItem={addCondition}
-          removeItem={removeCondition}
-          editKey="conditions"
-          placeholder="Add new condition..."
-          color="red"
-        />
+            <MedicalSection
+              title="Known Allergies"
+              icon={AlertTriangle}
+              items={allergies}
+              newItem={newAllergy}
+              setNewItem={setNewAllergy}
+              addItem={addAllergy}
+              removeItem={removeAllergy}
+              editKey="allergies"
+              placeholder="Add allergy and reaction..."
+              color="orange"
+            />
 
-        <MedicalSection
-          title="Past Treatments"
-          icon={Clock}
-          items={pastTreatments}
-          newItem={newTreatment}
-          setNewItem={setNewTreatment}
-          addItem={addTreatment}
-          removeItem={removeTreatment}
-          editKey="treatments"
-          placeholder="Add past treatment..."
-          color="green"
-        />
-      </div>
+            <MedicalSection
+              title="Medical Conditions"
+              icon={Heart}
+              items={conditions}
+              newItem={newCondition}
+              setNewItem={setNewCondition}
+              addItem={addCondition}
+              removeItem={removeCondition}
+              editKey="conditions"
+              placeholder="Add medical condition..."
+              color="red"
+            />
 
-      {/* Documents Section */}
+            <MedicalSection
+              title="Past Treatments"
+              icon={Stethoscope}
+              items={pastTreatments}
+              newItem={newTreatment}
+              setNewItem={setNewTreatment}
+              addItem={addTreatment}
+              removeItem={removeTreatment}
+              editKey="treatments"
+              placeholder="Add past treatment..."
+              color="green"
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="lifestyle" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <MedicalSection
+              title="Lifestyle Factors"
+              icon={Activity}
+              items={lifestyle}
+              newItem={newLifestyle}
+              setNewItem={setNewLifestyle}
+              addItem={addLifestyle}
+              removeItem={removeLifestyle}
+              editKey="lifestyle"
+              placeholder="Add lifestyle information..."
+              color="teal"
+            />
+
+            <MedicalSection
+              title="Surgical History"
+              icon={Scissors}
+              items={surgeries}
+              newItem={newSurgery}
+              setNewItem={setNewSurgery}
+              addItem={addSurgery}
+              removeItem={removeSurgery}
+              editKey="surgeries"
+              placeholder="Add surgical procedure..."
+              color="purple"
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="emergency" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <MedicalSection
+              title="Family & Genetic History"
+              icon={Dna}
+              items={genetic}
+              newItem={newGenetic}
+              setNewItem={setNewGenetic}
+              addItem={addGenetic}
+              removeItem={removeGenetic}
+              editKey="genetic"
+              placeholder="Add family/genetic history..."
+              color="indigo"
+            />
+
+            <MedicalSection
+              title="Emergency Information"
+              icon={Users}
+              items={emergency}
+              newItem={newEmergency}
+              setNewItem={setNewEmergency}
+              addItem={addEmergency}
+              removeItem={removeEmergency}
+              editKey="emergency"
+              placeholder="Add emergency contact/info..."
+              color="pink"
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Documents Section - keeping the existing implementation */}
       <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/30">
         <CardHeader>
           <div className="flex items-center justify-between">
