@@ -133,20 +133,28 @@ const Dashboard = () => {
     <div className="max-w-6xl mx-auto px-6 py-10">
       {/* Welcome section */}
       <div className="mb-8 rounded-xl overflow-hidden relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-health-200/70 via-health-100/50 to-health-50/30 opacity-80"></div>
-        <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
-        <div className="relative p-8 border border-health-200/30 rounded-xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent"></div>
+        <div className="absolute top-4 right-4 opacity-20">
+          <Sparkles className="h-16 w-16 text-white animate-pulse-slow" />
+        </div>
+        <div className="absolute bottom-4 left-4 opacity-10">
+          <div className="w-32 h-32 rounded-full border-2 border-white"></div>
+        </div>
+        <div className="relative p-8 z-10">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
             <div>
-              <h1 className="text-3xl font-normal text-gray-800 mb-2 flex items-center">
-                Welcome back, <span className="font-medium ml-1.5 text-primary">{userName}</span>
-                <Sparkles className="h-5 w-5 ml-2 text-yellow-500 animate-pulse-slow" />
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 flex items-center">
+                Welcome back, <span className="ml-2 text-yellow-300">{userName}</span>
+                <Sparkles className="h-6 w-6 ml-3 text-yellow-400 animate-pulse-slow" />
               </h1>
-              <p className="text-gray-600">Track your health journey and upcoming appointments</p>
+              <p className="text-white/90 text-lg leading-relaxed">
+                Track your health journey and upcoming appointments
+              </p>
             </div>
             <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="flex items-center gap-2 bg-primary/90 hover:bg-primary shadow-md transition-all duration-200 group">
+                <Button className="flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm shadow-lg transition-all duration-300 group">
                   <PlusCircle className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
                   Book a New Appointment
                 </Button>
