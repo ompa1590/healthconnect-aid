@@ -36,12 +36,12 @@ const WelcomeSection = ({ userName = "Patient" }: WelcomeSectionProps) => {
 
   return (
     <div className="mb-8">
-      <div className="mb-6">
-        <h1 className="text-4xl md:text-5xl font-bold mb-2">
+      <div className="mb-6 bg-gradient-to-r from-secondary/20 to-secondary/10 p-6 rounded-2xl border border-secondary/20">
+        <h1 className="text-4xl md:text-5xl font-bold mb-2 text-white">
           Welcome back, {userName}
         </h1>
-        <p className="text-muted-foreground text-lg">
-          Your next appointment is on <span className="font-medium text-foreground">June 15th at 2:00 PM</span>
+        <p className="text-white/90 text-lg">
+          Your next appointment is on <span className="font-medium text-white">June 15th at 2:00 PM</span>
         </p>
       </div>
 
