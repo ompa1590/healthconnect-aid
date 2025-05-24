@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import {
   Stethoscope,
   Sparkles
 } from "lucide-react";
+
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -45,6 +47,7 @@ const ProfileSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
+  
   // Initialize the form
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -60,6 +63,10 @@ const ProfileSettings = () => {
       data_consent: false
     }
   });
+  const navigate = useNavigate();
+  const handleBackToHome = () => {
+    navigate("/dashboard");
+  };
   
   // Fetch user profile data from Supabase
   useEffect(() => {
@@ -175,6 +182,21 @@ const ProfileSettings = () => {
   
   return (
     <main className="max-w-6xl mx-auto px-6 py-10 animate-fade-in">
+      <div className="flex items-center mb-6">
+        <Button 
+          variant="back" 
+          size="sm" 
+          onClick={handleBackToHome}
+          className="mr-4 bg-white/80 backdrop-blur-sm shadow-sm hover:bg-white group"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1 group-hover:-translate-x-1 transition-transform" />
+          Back to Home
+        </Button>
+        <h1 className="text-3xl font-normal flex items-center">
+          Medical History
+          <FileText className="ml-2 h-6 w-6 text-primary/70" />
+        </h1>
+      </div>
       <div className="mb-6 relative overflow-hidden rounded-xl">
         <div className="absolute inset-0 bg-gradient-to-r from-health-200/40 to-health-100/20"></div>
         <div className="relative p-6 border border-health-200/30">
