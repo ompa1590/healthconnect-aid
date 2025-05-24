@@ -386,7 +386,7 @@ const MedicalHistory = () => {
           Back to Home
         </Button>
         <h1 className="text-3xl font-normal flex items-center">
-          Health Records
+          Medical History
           <FileText className="ml-2 h-6 w-6 text-primary/70" />
         </h1>
       </div>
