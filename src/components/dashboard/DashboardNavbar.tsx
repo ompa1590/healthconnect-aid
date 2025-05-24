@@ -137,20 +137,20 @@ const DashboardNavbar = ({
                 <Home className="h-4 w-4" />
                 Home
               </Link>
-              <Link to="/dashboard/services" className={`${isActive('/dashboard/services') ? 'text-primary border-b-2 border-primary' : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
+              <Link to="/dashboard/prescriptions" className={`${isActive('/dashboard/prescriptions') ? 'text-primary border-b-2 border-primary' : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
                   transition-colors flex items-center gap-1.5 pb-1`}>
-                <Stethoscope className="h-4 w-4" />
-                Our Services
+                <Pill className="h-4 w-4" />
+                Healthcare Hub
               </Link>
               <Link to="/dashboard/past-appointments" className={`${isActive('/dashboard/past-appointments') ? 'text-primary border-b-2 border-primary' : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
                   transition-colors flex items-center gap-1.5 pb-1`}>
                 <CalendarClock className="h-4 w-4" />
                 Past Appointments
               </Link>
-              <Link to="/dashboard/prescriptions" className={`${isActive('/dashboard/prescriptions') ? 'text-primary border-b-2 border-primary' : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
+              <Link to="/dashboard/services" className={`${isActive('/dashboard/services') ? 'text-primary border-b-2 border-primary' : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
                   transition-colors flex items-center gap-1.5 pb-1`}>
-                <Pill className="h-4 w-4" />
-                Healthcare Hub
+                <Stethoscope className="h-4 w-4" />
+                Our Services
               </Link>
               <Link to="/dashboard/support" className={`${isActive('/dashboard/support') ? 'text-primary border-b-2 border-primary' : 'text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary/40'} 
                   transition-colors flex items-center gap-1.5 pb-1`}>
