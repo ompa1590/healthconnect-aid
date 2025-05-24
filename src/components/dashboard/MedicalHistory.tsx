@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash, Loader2, Upload, FileText, File, Sparkles, ArrowLeft, Edit, Save, X, Heart, Pill, Activity, Clock, Cigarette, Wine, Scissors, Dna, Stethoscope, Users, AlertTriangle } from "lucide-react";
+import { Plus, Trash, Loader2, Upload, FileText, File, Sparkles, ArrowLeft, Edit, Save, X, Heart, Pill, Activity, Clock, Cigarette, Wine, Scissors, Dna, Stethoscope, Users, AlertTriangle, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { 
@@ -635,20 +636,40 @@ const MedicalHistory = () => {
       {/* Overview Card */}
       <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
         <CardContent className="p-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-2">
+                <div className="p-2 rounded-lg bg-blue-100">
+                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                </div>
+              </div>
               <p className="text-2xl font-bold text-blue-600">{totalItems}</p>
               <p className="text-sm text-gray-600">Total Records</p>
             </div>
-            <div>
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-2">
+                <div className="p-2 rounded-lg bg-green-100">
+                  <Pill className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
               <p className="text-2xl font-bold text-green-600">{medications.length}</p>
               <p className="text-sm text-gray-600">Medications</p>
             </div>
-            <div>
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-2">
+                <div className="p-2 rounded-lg bg-orange-100">
+                  <Heart className="h-5 w-5 text-orange-600" />
+                </div>
+              </div>
               <p className="text-2xl font-bold text-orange-600">{conditions.length}</p>
               <p className="text-sm text-gray-600">Conditions</p>
             </div>
-            <div>
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-2">
+                <div className="p-2 rounded-lg bg-purple-100">
+                  <Scissors className="h-5 w-5 text-purple-600" />
+                </div>
+              </div>
               <p className="text-2xl font-bold text-purple-600">{surgeries.length}</p>
               <p className="text-sm text-gray-600">Surgeries</p>
             </div>
