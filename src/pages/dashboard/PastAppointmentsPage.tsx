@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from "react";
 import { 
   CalendarClock, 
@@ -6,7 +7,6 @@ import {
   MessageSquareText, 
   Pill, 
   User2, 
-  X,
   Search,
   ArrowLeft,
   Stethoscope,
