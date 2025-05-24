@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -542,14 +541,24 @@ const MedicalHistory = () => {
         ) : (
           <div className="space-y-2">
             {items.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
-                <span className="text-gray-700">{item}</span>
+              <div key={index} className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 hover:shadow-md ${
+                color === 'blue' ? 'bg-gradient-to-r from-blue-50 to-blue-100/50 border-blue-200 hover:border-blue-300' :
+                color === 'orange' ? 'bg-gradient-to-r from-orange-50 to-orange-100/50 border-orange-200 hover:border-orange-300' :
+                color === 'red' ? 'bg-gradient-to-r from-red-50 to-red-100/50 border-red-200 hover:border-red-300' :
+                color === 'green' ? 'bg-gradient-to-r from-green-50 to-green-100/50 border-green-200 hover:border-green-300' :
+                color === 'teal' ? 'bg-gradient-to-r from-teal-50 to-teal-100/50 border-teal-200 hover:border-teal-300' :
+                color === 'purple' ? 'bg-gradient-to-r from-purple-50 to-purple-100/50 border-purple-200 hover:border-purple-300' :
+                color === 'indigo' ? 'bg-gradient-to-r from-indigo-50 to-indigo-100/50 border-indigo-200 hover:border-indigo-300' :
+                color === 'pink' ? 'bg-gradient-to-r from-pink-50 to-pink-100/50 border-pink-200 hover:border-pink-300' :
+                'bg-gradient-to-r from-gray-50 to-gray-100/50 border-gray-200 hover:border-gray-300'
+              }`}>
+                <span className="text-gray-700 flex-1">{item}</span>
                 {editing[editKey] && (
                   <Button 
                     size="sm" 
                     variant="ghost" 
                     onClick={() => removeItem(index)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 ml-2"
                   >
                     <X className="h-4 w-4" />
                   </Button>
