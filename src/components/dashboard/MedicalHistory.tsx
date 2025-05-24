@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash, Loader2, Upload, FileText, File, Sparkles, ArrowLeft } from "lucide-react";
+import { Plus, Trash, Loader2, Upload, FileText, File, Sparkles, ArrowLeft, Edit, Save, X, Heart, Pill, Activity, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { 
@@ -18,7 +17,15 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+
+interface EditingState {
+  medications: boolean;
+  allergies: boolean;
+  conditions: boolean;
+  treatments: boolean;
+}
 
 const MedicalHistory = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +43,12 @@ const MedicalHistory = () => {
   const [documentName, setDocumentName] = useState("");
   const [documentType, setDocumentType] = useState("Medical Report");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [editing, setEditing] = useState<EditingState>({
+    medications: false,
+    allergies: false,
+    conditions: false,
+    treatments: false
+  });
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -363,283 +376,379 @@ const MedicalHistory = () => {
     }
   };
 
+  const toggleEditing = (section: keyof EditingState) => {
+    setEditing(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  const MedicalSection = ({ 
+    title, 
+    icon: Icon, 
+    items, 
+    newItem, 
+    setNewItem, 
+    addItem, 
+    removeItem, 
+    editKey,
+    placeholder,
+    color = "blue"
+  }: {
+    title: string;
+    icon: any;
+    items: string[];
+    newItem: string;
+    setNewItem: (value: string) => void;
+    addItem: () => void;
+    removeItem: (index: number) => void;
+    editKey: keyof EditingState;
+    placeholder: string;
+    color?: string;
+  }) => (
+    <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/30">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-3 text-lg font-semibold">
+            <div className={`p-2 rounded-lg bg-${color}-100`}>
+              <Icon className={`h-5 w-5 text-${color}-600`} />
+            </div>
+            {title}
+            <Badge variant="outline" className="text-xs">
+              {items.length} {items.length === 1 ? 'item' : 'items'}
+            </Badge>
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => toggleEditing(editKey)}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            {editing[editKey] ? <Save className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {items.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Icon className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <p className="text-sm">No {title.toLowerCase()} recorded yet</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {items.map((item, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
+                <span className="text-gray-700">{item}</span>
+                {editing[editKey] && (
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={() => removeItem(index)}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {editing[editKey] && (
+          <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+            <Input 
+              placeholder={placeholder}
+              value={newItem}
+              onChange={(e) => setNewItem(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addItem()}
+              className="flex-1"
+            />
+            <Button size="sm" onClick={addItem} disabled={!newItem.trim()}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-40">
-        <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-        <span>Loading your medical history...</span>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-gray-600">Loading your medical history...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    
-    <div className="max-w-6xl mx-auto px-6 py-10 animate-fade-in space-y-6">
-      <div className="flex items-center mb-6">
-        <Button 
-          variant="back" 
-          size="sm" 
-          onClick={handleBackToHome}
-          className="mr-4 bg-white/80 backdrop-blur-sm shadow-sm hover:bg-white group"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1 group-hover:-translate-x-1 transition-transform" />
-          Back to Home
-        </Button>
-        <h1 className="text-3xl font-normal flex items-center">
-          Medical History
-          <FileText className="ml-2 h-6 w-6 text-primary/70" />
-        </h1>
-      </div>
-            <div className="mb-6 relative overflow-hidden rounded-xl">
-        <div className="absolute inset-0 bg-gradient-to-r from-health-200/40 to-health-100/20"></div>
-        <div className="relative p-6 border border-health-200/30">
-          <div className="flex items-center mb-2">
-            <Sparkles className="h-5 w-5 text-primary/70 mr-2" />
-            <h2 className="text-xl font-medium">Update your History</h2>
-          </div>
-          <p className="text-muted-foreground max-w-2xl">
-          Update your medical history to ensure accurate and personalized care.          
-          </p>
-        </div>
-      </div>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="text-xl font-semibold">Medical Documents</h2>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Upload className="h-4 w-4" />
-                Upload Document
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Upload Medical Document</DialogTitle>
-                <DialogDescription>
-                  Upload reports, scans, or other medical documents to keep track of your health records.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="documentName" className="text-right">Name</Label>
-                  <Input
-                    id="documentName"
-                    placeholder="Document name"
-                    className="col-span-3"
-                    value={documentName}
-                    onChange={(e) => setDocumentName(e.target.value)}
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="documentType" className="text-right">Type</Label>
-                  <select
-                    id="documentType"
-                    className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={documentType}
-                    onChange={(e) => setDocumentType(e.target.value)}
-                  >
-                    <option value="Medical Report">Medical Report</option>
-                    <option value="Lab Test">Lab Test</option>
-                    <option value="Prescription">Prescription</option>
-                    <option value="Scan/Imaging">Scan/Imaging</option>
-                    <option value="Insurance">Insurance</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="documentFile" className="text-right">File</Label>
-                  <div className="col-span-3">
-                    <Input
-                      id="documentFile"
-                      type="file"
-                      className="cursor-pointer"
-                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                      onChange={handleFileChange}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Accepted formats: PDF, DOC, DOCX, JPG, JPEG, PNG
-                    </p>
-                  </div>
-                </div>
+    <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleBackToHome}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600">
+                <FileText className="h-6 w-6 text-white" />
               </div>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button type="button" variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button 
-                  onClick={uploadDocument} 
-                  disabled={isUploading || !selectedFile || !documentName.trim()}
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : "Upload"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {documents.length === 0 ? (
-          <div className="text-center py-8 bg-muted/20 rounded-lg border border-dashed">
-            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-            <h3 className="text-lg font-medium mb-1">No documents yet</h3>
-            <p className="text-muted-foreground mb-4">Upload your first medical document to keep track of your health records</p>
+              Medical History
+            </h1>
+            <p className="text-gray-600 mt-1">Manage your health information and medical records</p>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {documents.map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
-                <div className="flex items-center gap-3">
-                  <div className="bg-primary/10 p-2 rounded-md">
-                    <File className="h-5 w-5 text-primary" />
+        </div>
+        <Button 
+          onClick={saveMedicalHistory} 
+          disabled={isSaving}
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Save Changes
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+          <CardContent className="p-4 text-center">
+            <Heart className="h-6 w-6 text-red-600 mx-auto mb-2" />
+            <p className="text-sm text-red-700 font-medium">Conditions</p>
+            <p className="text-2xl font-bold text-red-800">{conditions.length}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <CardContent className="p-4 text-center">
+            <Pill className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+            <p className="text-sm text-blue-700 font-medium">Medications</p>
+            <p className="text-2xl font-bold text-blue-800">{medications.length}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+          <CardContent className="p-4 text-center">
+            <Activity className="h-6 w-6 text-orange-600 mx-auto mb-2" />
+            <p className="text-sm text-orange-700 font-medium">Allergies</p>
+            <p className="text-2xl font-bold text-orange-800">{allergies.length}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <CardContent className="p-4 text-center">
+            <Clock className="h-6 w-6 text-green-600 mx-auto mb-2" />
+            <p className="text-sm text-green-700 font-medium">Treatments</p>
+            <p className="text-2xl font-bold text-green-800">{pastTreatments.length}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Medical Information Sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MedicalSection
+          title="Current Medications"
+          icon={Pill}
+          items={medications}
+          newItem={newMedication}
+          setNewItem={setNewMedication}
+          addItem={addMedication}
+          removeItem={removeMedication}
+          editKey="medications"
+          placeholder="Add new medication..."
+          color="blue"
+        />
+
+        <MedicalSection
+          title="Allergies"
+          icon={Activity}
+          items={allergies}
+          newItem={newAllergy}
+          setNewItem={setNewAllergy}
+          addItem={addAllergy}
+          removeItem={removeAllergy}
+          editKey="allergies"
+          placeholder="Add new allergy..."
+          color="orange"
+        />
+
+        <MedicalSection
+          title="Medical Conditions"
+          icon={Heart}
+          items={conditions}
+          newItem={newCondition}
+          setNewItem={setNewCondition}
+          addItem={addCondition}
+          removeItem={removeCondition}
+          editKey="conditions"
+          placeholder="Add new condition..."
+          color="red"
+        />
+
+        <MedicalSection
+          title="Past Treatments"
+          icon={Clock}
+          items={pastTreatments}
+          newItem={newTreatment}
+          setNewItem={setNewTreatment}
+          addItem={addTreatment}
+          removeItem={removeTreatment}
+          editKey="treatments"
+          placeholder="Add past treatment..."
+          color="green"
+        />
+      </div>
+
+      {/* Documents Section */}
+      <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/30">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-3 text-xl font-semibold">
+              <div className="p-2 rounded-lg bg-purple-100">
+                <FileText className="h-5 w-5 text-purple-600" />
+              </div>
+              Medical Documents
+              <Badge variant="outline" className="text-xs">
+                {documents.length} {documents.length === 1 ? 'document' : 'documents'}
+              </Badge>
+            </CardTitle>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Document
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Upload Medical Document</DialogTitle>
+                  <DialogDescription>
+                    Upload reports, scans, or other medical documents to keep track of your health records.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="documentName" className="text-right">Name</Label>
+                    <Input
+                      id="documentName"
+                      placeholder="Document name"
+                      className="col-span-3"
+                      value={documentName}
+                      onChange={(e) => setDocumentName(e.target.value)}
+                    />
                   </div>
-                  <div>
-                    <h4 className="font-medium">{doc.document_name}</h4>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Badge variant="outline" className="text-xs">{doc.document_type}</Badge>
-                      <span>
-                        {new Date(doc.uploaded_at).toLocaleDateString()} 
-                      </span>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="documentType" className="text-right">Type</Label>
+                    <select
+                      id="documentType"
+                      className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={documentType}
+                      onChange={(e) => setDocumentType(e.target.value)}
+                    >
+                      <option value="Medical Report">Medical Report</option>
+                      <option value="Lab Test">Lab Test</option>
+                      <option value="Prescription">Prescription</option>
+                      <option value="Scan/Imaging">Scan/Imaging</option>
+                      <option value="Insurance">Insurance</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="documentFile" className="text-right">File</Label>
+                    <div className="col-span-3">
+                      <Input
+                        id="documentFile"
+                        type="file"
+                        className="cursor-pointer"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        onChange={handleFileChange}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Accepted formats: PDF, DOC, DOCX, JPG, JPEG, PNG
+                      </p>
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">Cancel</Button>
+                  </DialogClose>
                   <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => downloadDocument(doc.document_path, doc.document_name)}
+                    onClick={uploadDocument} 
+                    disabled={isUploading || !selectedFile || !documentName.trim()}
                   >
-                    Download
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : "Upload"}
                   </Button>
-                  <Button 
-                    size="sm" 
-                    variant="destructive"
-                    onClick={() => deleteDocument(doc.id, doc.document_path)}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {documents.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No documents yet</h3>
+              <p className="text-gray-600 mb-4">Upload your first medical document to keep track of your health records</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {documents.map((doc) => (
+                <div key={doc.id} className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-purple-100 p-3 rounded-lg">
+                      <File className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{doc.document_name}</h4>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                        <Badge variant="secondary" className="text-xs">{doc.document_type}</Badge>
+                        <span>•</span>
+                        <span>{new Date(doc.uploaded_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => downloadDocument(doc.document_path, doc.document_name)}
+                    >
+                      Download
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="destructive"
+                      onClick={() => deleteDocument(doc.id, doc.document_path)}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Current Medications</h3>
-        <div className="space-y-2">
-          {medications.map((medication, index) => (
-            <div key={index} className="flex items-center justify-between bg-muted/30 p-2 rounded-md">
-              <span>{medication}</span>
-              <Button size="sm" variant="ghost" onClick={() => removeMedication(index)}>
-                <Trash className="h-4 w-4" />
-              </Button>
+              ))}
             </div>
-          ))}
-          <div className="flex items-center gap-2">
-            <Input 
-              placeholder="Add medication" 
-              value={newMedication}
-              onChange={(e) => setNewMedication(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addMedication()}
-            />
-            <Button size="icon" variant="outline" onClick={addMedication}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Allergies</h3>
-        <div className="space-y-2">
-          {allergies.map((allergy, index) => (
-            <div key={index} className="flex items-center justify-between bg-muted/30 p-2 rounded-md">
-              <span>{allergy}</span>
-              <Button size="sm" variant="ghost" onClick={() => removeAllergy(index)}>
-                <Trash className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          <div className="flex items-center gap-2">
-            <Input 
-              placeholder="Add allergy" 
-              value={newAllergy}
-              onChange={(e) => setNewAllergy(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addAllergy()}
-            />
-            <Button size="icon" variant="outline" onClick={addAllergy}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Medical Conditions</h3>
-        <div className="space-y-2">
-          {conditions.map((condition, index) => (
-            <div key={index} className="flex items-center justify-between bg-muted/30 p-2 rounded-md">
-              <span>{condition}</span>
-              <Button size="sm" variant="ghost" onClick={() => removeCondition(index)}>
-                <Trash className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          <div className="flex items-center gap-2">
-            <Input 
-              placeholder="Add condition" 
-              value={newCondition}
-              onChange={(e) => setNewCondition(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addCondition()}
-            />
-            <Button size="icon" variant="outline" onClick={addCondition}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-      
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Past Treatments or Surgeries</h3>
-        <div className="space-y-2">
-          {pastTreatments.map((treatment, index) => (
-            <div key={index} className="flex items-center justify-between bg-muted/30 p-2 rounded-md">
-              <span>{treatment}</span>
-              <Button size="sm" variant="ghost" onClick={() => removeTreatment(index)}>
-                <Trash className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          <div className="flex items-center gap-2">
-            <Input 
-              placeholder="Add past treatment" 
-              value={newTreatment}
-              onChange={(e) => setNewTreatment(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addTreatment()}
-            />
-            <Button size="icon" variant="outline" onClick={addTreatment}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <Button 
-        className="w-full sm:w-auto" 
-        onClick={saveMedicalHistory} 
-        disabled={isSaving}
-      >
-        {isSaving ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Saving...
-          </>
-        ) : "Save Changes"}
-      </Button>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
