@@ -132,31 +132,46 @@ const Dashboard = () => {
   const DashboardHome = () => (
     <div className="max-w-6xl mx-auto px-6 py-10">
       {/* Welcome section */}
-      <div className="mb-8 rounded-xl overflow-hidden relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent"></div>
-        <div className="absolute top-4 right-4 opacity-20">
-          <Sparkles className="h-16 w-16 text-white animate-pulse-slow" />
+      <div className="mb-8 rounded-2xl overflow-hidden relative shadow-xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-secondary"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-black/5 to-transparent"></div>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-6 right-6 opacity-15">
+          <div className="w-24 h-24 rounded-full border-2 border-white animate-pulse-slow"></div>
         </div>
-        <div className="absolute bottom-4 left-4 opacity-10">
-          <div className="w-32 h-32 rounded-full border-2 border-white"></div>
+        <div className="absolute bottom-6 left-6 opacity-10">
+          <div className="w-16 h-16 rounded-lg border border-white rotate-45"></div>
         </div>
-        <div className="relative p-8 z-10">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 flex items-center">
-                Welcome back, <span className="ml-2 text-yellow-300">{userName}</span>
-                <Sparkles className="h-6 w-6 ml-3 text-yellow-400 animate-pulse-slow" />
-              </h1>
-              <p className="text-white/90 text-lg leading-relaxed">
-                Track your health journey and upcoming appointments
+        <div className="absolute top-1/2 right-20 opacity-10">
+          <Sparkles className="h-12 w-12 text-white animate-float" />
+        </div>
+        
+        <div className="relative p-8 md:p-10 z-10">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-1 h-12 bg-white/80 rounded-full"></div>
+                <div>
+                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight">
+                    Welcome back,
+                  </h1>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-white/95">{userName}</span>
+                    <Sparkles className="h-6 w-6 text-yellow-300 animate-pulse-slow" />
+                  </div>
+                </div>
+              </div>
+              <p className="text-white/85 text-lg md:text-xl leading-relaxed max-w-2xl">
+                Track your health journey and manage your appointments with ease
               </p>
             </div>
+            
             <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm shadow-lg transition-all duration-300 group">
-                  <PlusCircle className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
-                  Book a New Appointment
+                <Button className="flex items-center gap-3 bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-md shadow-lg transition-all duration-300 group px-6 py-3 rounded-xl font-medium">
+                  <PlusCircle className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
+                  Book New Appointment
                 </Button>
               </DialogTrigger>
               <BookAppointmentFlow onClose={() => setBookingDialogOpen(false)} />
@@ -167,7 +182,7 @@ const Dashboard = () => {
 
       {/* Current Treatment Card - Show real appointment data */}
       <GlassCard 
-        className="mb-8 rounded-xl overflow-hidden"
+        className="mb-8 rounded-xl overflow-hidden border border-primary/20"
         variant="colored"
         borderEffect
         glowEffect
@@ -255,7 +270,7 @@ const Dashboard = () => {
       </h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <GlassCard 
-          className="rounded-xl"
+          className="rounded-xl border border-primary/20"
           variant="elevated"
           hoverEffect
           borderEffect
@@ -265,7 +280,7 @@ const Dashboard = () => {
         </GlassCard>
         
         <GlassCard 
-          className="lg:col-span-1 rounded-xl" 
+          className="lg:col-span-1 rounded-xl border border-secondary/20" 
           variant="accent"
           hoverEffect
           borderEffect
@@ -277,7 +292,7 @@ const Dashboard = () => {
           <div className="space-y-2.5">
             <Button 
               variant="outline" 
-              className="w-full justify-start text-left hover:bg-health-50/50 hover:border-health-200/50 transition-colors shadow-sm group" 
+              className="w-full justify-start text-left hover:bg-primary/5 hover:border-primary/30 transition-colors shadow-sm group border-primary/20" 
               onClick={() => navigate("/dashboard/medical-history")}
             >
               <ClipboardList className="mr-2 h-4 w-4 text-primary/70 group-hover:text-primary transition-colors" />
@@ -288,7 +303,7 @@ const Dashboard = () => {
             </Button>
             <Button 
               variant="outline" 
-              className="w-full justify-start text-left hover:bg-health-50/50 hover:border-health-200/50 transition-colors shadow-sm group" 
+              className="w-full justify-start text-left hover:bg-primary/5 hover:border-primary/30 transition-colors shadow-sm group border-primary/20" 
               onClick={() => navigate("/dashboard/health-records")}
             >
               <UserCircle className="mr-2 h-4 w-4 text-primary/70 group-hover:text-primary transition-colors" />
@@ -299,18 +314,18 @@ const Dashboard = () => {
             </Button>
             <Button 
               variant="outline" 
-              className="w-full justify-start text-left hover:bg-health-50/50 hover:border-health-200/50 transition-colors shadow-sm group" 
+              className="w-full justify-start text-left hover:bg-secondary/5 hover:border-secondary/30 transition-colors shadow-sm group border-secondary/20" 
               onClick={() => navigate("/dashboard/prescriptions")}
             >
-              <Pill className="mr-2 h-4 w-4 text-primary/70 group-hover:text-primary transition-colors" />
+              <Pill className="mr-2 h-4 w-4 text-secondary/70 group-hover:text-secondary transition-colors" />
               <span>My Prescriptions</span>
               <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                <Sparkles className="h-3 w-3 text-primary/70" />
+                <Sparkles className="h-3 w-3 text-secondary/70" />
               </div>
             </Button>
             <Button 
               variant="outline" 
-              className="w-full justify-start text-left hover:bg-health-50/50 hover:border-health-200/50 transition-colors shadow-sm group" 
+              className="w-full justify-start text-left hover:bg-primary/5 hover:border-primary/30 transition-colors shadow-sm group border-primary/20" 
               onClick={() => navigate("/dashboard/treatment-options")}
             >
               <Stethoscope className="mr-2 h-4 w-4 text-primary/70 group-hover:text-primary transition-colors" />
@@ -321,13 +336,13 @@ const Dashboard = () => {
             </Button>
             <Button 
               variant="outline" 
-              className="w-full justify-start text-left hover:bg-health-50/50 hover:border-health-200/50 transition-colors shadow-sm group" 
+              className="w-full justify-start text-left hover:bg-secondary/5 hover:border-secondary/30 transition-colors shadow-sm group border-secondary/20" 
               onClick={() => navigate("/dashboard/support")}
             >
-              <HelpCircle className="mr-2 h-4 w-4 text-primary/70 group-hover:text-primary transition-colors" />
+              <HelpCircle className="mr-2 h-4 w-4 text-secondary/70 group-hover:text-secondary transition-colors" />
               <span>Get Support</span>
               <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                <MessageSquare className="h-3 w-3 text-primary/70" />
+                <MessageSquare className="h-3 w-3 text-secondary/70" />
               </div>
             </Button>
           </div>
