@@ -31,6 +31,13 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
+// Add this before your CORS configuration
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, x-api-key, ngrok-skip-browser-warning');
+  next();
+});
+
 
 // CORS configuration
 app.use(cors({
@@ -50,7 +57,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
 // Authentication middleware for all /vapi routes
-app.use('/vapi', authenticate);
+// app.use('/vapi', authenticate);
 
 // Routes
 app.use('/vapi', vapiRoutes);
