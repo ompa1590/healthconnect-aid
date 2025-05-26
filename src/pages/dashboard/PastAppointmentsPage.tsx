@@ -119,10 +119,10 @@ const PastAppointmentsPage = () => {
 
         setAppointments(formattedAppointments);
         
-        // Automatically select the first appointment if available
-        if (formattedAppointments.length > 0) {
-          setSelectedAppointment(formattedAppointments[0]);
-        }
+        // // Automatically select the first appointment if available
+        // if (formattedAppointments.length > 0) {
+        //   setSelectedAppointment(formattedAppointments[0]);
+        // }
       } catch (err) {
         console.error("Error in appointment fetch effect:", err);
       }
