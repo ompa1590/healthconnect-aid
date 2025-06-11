@@ -1,37 +1,63 @@
 const supabase = require('./supabaseClient');
 
 /**
- * Parse success evaluation to determine if call was successful
+ * Parse success evaluation to determine call outcome
  * @param {string} successEvalValue - The success evaluation text from Vapi
- * @returns {object} - { isSuccessful: boolean, reason: string }
+ * @returns {object} - { status: string, reason: string, isSuccessful: boolean, isEmergency: boolean }
  */
 function parseSuccessEvaluation(successEvalValue) {
   if (!successEvalValue || typeof successEvalValue !== 'string') {
     return {
+      status: 'incomplete',
+      reason: 'No success evaluation provided',
       isSuccessful: false,
-      reason: 'No success evaluation provided'
+      isEmergency: false
     };
   }
 
   const evalText = successEvalValue.toLowerCase();
   
-  // Look for success indicators
+  const emergencyIndicators = [
+    'emergency declared',
+    'emergency',
+    'urgent medical attention',
+    'immediate care required',
+    'call 911',
+    'emergency situation'
+  ];
+  
+  const hasEmergencyIndicators = emergencyIndicators.some(indicator => 
+    evalText.includes(indicator)
+  );
+  
+  if (hasEmergencyIndicators) {
+    return {
+      status: 'emergency_declared',
+      reason: 'Emergency situation identified during screening',
+      isSuccessful: false,
+      isEmergency: true
+    };
+  }
+  
   const successIndicators = [
     'successful',
     'successfully',
     'completed successfully',
     'gathered the necessary information',
-    'all required areas'
+    'all required areas',
+    'screening complete',
+    'ready for appointment'
   ];
   
-  // Look for failure indicators
   const failureIndicators = [
     'unsuccessful',
     'failed',
     'incomplete',
     'missing information',
     'unclear',
-    'insufficient'
+    'insufficient',
+    'requires rescreening',
+    'incomplete screening'
   ];
   
   const hasSuccessIndicators = successIndicators.some(indicator => 
@@ -42,34 +68,50 @@ function parseSuccessEvaluation(successEvalValue) {
     evalText.includes(indicator)
   );
   
-  // If we have success indicators and no failure indicators, consider it successful
-  const isSuccessful = hasSuccessIndicators && !hasFailureIndicators;
-  
-  return {
-    isSuccessful,
-    reason: isSuccessful ? 'Call completed successfully' : successEvalValue
-  };
+  if (hasSuccessIndicators && !hasFailureIndicators) {
+    return {
+      status: 'successful',
+      reason: 'Pre-screening completed successfully',
+      isSuccessful: true,
+      isEmergency: false
+    };
+  } else if (hasFailureIndicators) {
+    return {
+      status: 'failed',
+      reason: 'Pre-screening incomplete - requires retry',
+      isSuccessful: false,
+      isEmergency: false
+    };
+  } else {
+    return {
+      status: 'incomplete',
+      reason: successEvalValue,
+      isSuccessful: false,
+      isEmergency: false
+    };
+  }
 }
 
 /**
  * Extract patient ID from call analysis or structured data
  * @param {object} analysisResult - The analysis result object
  * @param {object} call - The call object from Vapi
- * @returns {string|null} - Patient ID if found
+ * @returns {string} - Verified patient ID
+ * @throws {Error} - If no patient ID is found
  */
 function extractPatientId(analysisResult, call) {
-  // Try to get patient ID from structured data
-  if (analysisResult.structuredData?.patientId) {
-    return analysisResult.structuredData.patientId;
-  }
-  
-  // Try to get from call metadata if available
   if (call.metadata?.patientId) {
+    console.log('[Extract] Found patientId in call metadata:', call.metadata.patientId);
     return call.metadata.patientId;
   }
   
-  // If not available, we'll need to look it up by name/DOB from the summary
-  return null;
+  if (analysisResult.structuredData?.patientId) {
+    console.log('[Extract] Found patientId in structuredData:', analysisResult.structuredData.patientId);
+    return analysisResult.structuredData.patientId;
+  }
+  
+  console.error('[Extract] No patientId found for call:', call.id);
+  throw new Error('Missing patientId: Identity verification should have provided a patientId');
 }
 
 /**
@@ -79,12 +121,10 @@ function extractPatientId(analysisResult, call) {
  * @returns {string|null} - Appointment ID if found
  */
 function extractAppointmentId(analysisResult, call) {
-  // Try to get appointment ID from structured data
   if (analysisResult.structuredData?.appointmentId) {
     return analysisResult.structuredData.appointmentId;
   }
   
-  // Try to get from call metadata if available
   if (call.metadata?.appointmentId) {
     return call.metadata.appointmentId;
   }
@@ -93,7 +133,7 @@ function extractAppointmentId(analysisResult, call) {
 }
 
 /**
- * Save call analysis to Supabase database
+ * Save call analysis to Supabase database - SAVES ALL CALLS WITH VERIFIED PATIENT ID
  * @param {object} callData - The complete call data from Vapi
  * @param {object} analysisResult - The processed analysis result
  * @returns {object} - Database operation result
@@ -102,41 +142,49 @@ async function saveCallAnalysis(callData, analysisResult) {
   try {
     console.log('[Database] Preparing to save call analysis for call:', callData.id);
     
-    // Parse success evaluation
     const successEvaluation = parseSuccessEvaluation(analysisResult.successEvaluation?.value);
     
-    // Extract patient and appointment IDs
     const patientId = extractPatientId(analysisResult, callData);
     const appointmentId = extractAppointmentId(analysisResult, callData);
     
-    if (!patientId) {
-      throw new Error('Patient ID is required but not found in call data');
-    }
+    console.log('[Database] Call evaluation results:', {
+      callId: callData.id,
+      status: successEvaluation.status,
+      isSuccessful: successEvaluation.isSuccessful,
+      isEmergency: successEvaluation.isEmergency,
+      patientId,
+      appointmentId,
+      hasSummary: !!analysisResult.summary,
+      hasStructuredData: !!analysisResult.structuredData
+    });
     
-    // Prepare data for insertion
     const insertData = {
+      id: callData.id, // UUID generated by gen_random_uuid()
       call_id: callData.id,
-      patient_id: patientId,
+      patient_id: patientId, // Verified patientId
       appointment_id: appointmentId,
-      call_summary: analysisResult.summary,
-      structured_data: analysisResult.structuredData,
-      success_evaluation: successEvaluation.isSuccessful,
-      success_rubric: analysisResult.successEvaluation?.value || null,
+      call_summary: analysisResult.summary || 'No summary available',
+      structured_data: analysisResult.structuredData || {},
+      success_evaluation: successEvaluation.status, // Text status
+      success_rubric: analysisResult.successEvaluation?.value || successEvaluation.reason, // Full Vapi reason
+      is_emergency: successEvaluation.isEmergency, // New column
       call_transcript: callData.transcript || null,
       call_duration: callData.duration || null,
-      analysis_timestamp: callData.endedAt ? new Date(callData.endedAt) : new Date()
+      analysis_timestamp: callData.endedAt ? new Date(callData.endedAt) : new Date(),
+      created_at: new Date()
     };
     
     console.log('[Database] Inserting call analysis:', {
       callId: insertData.call_id,
       patientId: insertData.patient_id,
-      appointmentId: insertData.appointment_id,
-      successEvaluation: insertData.success_evaluation,
+      appointmentId: insertData.appointment_id || 'NOT_PROVIDED',
+      evaluationStatus: insertData.success_evaluation,
+      successRubricLength: insertData.success_rubric?.length || 0,
+      isEmergency: insertData.is_emergency,
       hasSummary: !!insertData.call_summary,
       hasStructuredData: !!insertData.structured_data
     });
     
-    // Insert into database
     const { data, error } = await supabase
       .from('call_analysis')
       .insert([insertData])
@@ -152,7 +200,9 @@ async function saveCallAnalysis(callData, analysisResult) {
     return {
       success: true,
       data: data[0],
-      callSuccessful: successEvaluation.isSuccessful,
+      evaluationStatus: successEvaluation.status,
+      isSuccessful: successEvaluation.isSuccessful,
+      isEmergency: successEvaluation.isEmergency,
       reason: successEvaluation.reason
     };
     
@@ -161,8 +211,10 @@ async function saveCallAnalysis(callData, analysisResult) {
     return {
       success: false,
       error: error.message,
-      callSuccessful: false,
-      reason: 'Database error occurred'
+      evaluationStatus: successEvaluation.status,
+      isSuccessful: successEvaluation.isSuccessful,
+      isEmergency: successEvaluation.isEmergency,
+      reason: successEvaluation.reason || 'Database error occurred'
     };
   }
 }
@@ -180,7 +232,7 @@ async function callAnalysisExists(callId) {
       .eq('call_id', callId)
       .single();
     
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+    if (error && error.code !== 'PGRST116') {
       console.error('[Database] Error checking call analysis existence:', error);
       return false;
     }
@@ -207,7 +259,7 @@ async function getCallAnalysis(callId) {
     
     if (error) {
       if (error.code === 'PGRST116') {
-        return null; // Not found
+        return null;
       }
       throw error;
     }
@@ -219,11 +271,49 @@ async function getCallAnalysis(callId) {
   }
 }
 
+/**
+ * Update appointment status based on call outcome
+ * @param {string} appointmentId - The appointment ID
+ * @param {string} status - New status ('confirmed', 'cancelled', 'requires_rescreening')
+ * @param {string} reason - Reason for status change
+ * @returns {object} - Update result
+ */
+async function updateAppointmentStatus(appointmentId, status, reason) {
+  try {
+    if (!appointmentId) {
+      return { success: false, error: 'No appointment ID provided' };
+    }
+
+    const { data, error } = await supabase
+      .from('appointments')
+      .update({
+        status: status,
+        status_reason: reason,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', appointmentId)
+      .select();
+
+    if (error) {
+      console.error('[Database] Error updating appointment status:', error);
+      throw error;
+    }
+
+    console.log(`[Database] Appointment ${appointmentId} status updated to: ${status}`);
+    return { success: true, data: data[0] };
+
+  } catch (error) {
+    console.error('[Database] Error updating appointment status:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 module.exports = {
   saveCallAnalysis,
   callAnalysisExists,
   getCallAnalysis,
   parseSuccessEvaluation,
   extractPatientId,
-  extractAppointmentId
+  extractAppointmentId,
+  updateAppointmentStatus
 };
