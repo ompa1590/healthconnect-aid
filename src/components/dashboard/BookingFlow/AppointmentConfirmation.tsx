@@ -1,9 +1,8 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Clock, User, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
-import PreScreeningAssistant from "../../prescreening/PreScreeningAssistant";
+import RadialCard from "../../prescreening/PreScreeningAssistant";
 import { useToast } from "@/components/ui/use-toast";
 import useUser from "@/hooks/useUser";
 
@@ -25,6 +24,7 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
 
   const togglePrescreening = () => {
     if (showPrescreening) {
+      // When closing prescreening, save appointment and close modal
       setShowPrescreening(false);
       onDone();
     } else {
@@ -33,16 +33,18 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
   };
 
   const handlePrescreenLater = () => {
+    // Calculate 8 hours before appointment
     const appointmentTime = new Date(appointmentDetails.date);
     const timeComponents = appointmentDetails.time.includes(':') 
       ? appointmentDetails.time.split(':') 
-      : ['9', '00'];
+      : ['9', '00']; // Default to 9:00 if no time format
     
     const hours = parseInt(timeComponents[0]);
     const minutes = parseInt(timeComponents[1] || '0');
     
     appointmentTime.setHours(hours, minutes);
     
+    // Format the date and time for display
     const formattedDate = format(appointmentTime, "MMMM d, yyyy");
     const formattedTime = format(appointmentTime, "h:mm a");
     
@@ -51,11 +53,13 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
       description: `You'll be reminded to complete your pre-screening on ${formattedDate} at ${formattedTime}.`,
     });
 
+    // Call onDone to save appointment and close modal
     onDone();
   };
 
   const handleConfirmAppointment = async () => {
     try {
+      // Don't proceed if not authenticated
       if (!user) {
         toast({
           title: "Authentication Error",
@@ -68,6 +72,8 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
       console.log("Confirming appointment with details:", appointmentDetails);
       setIsConfirmed(true);
       
+      // Just set confirmed state, don't call onDone yet
+      // onDone will be called when user chooses prescreen later or completes prescreening
     } catch (error) {
       console.error("Error confirming appointment:", error);
       toast({
@@ -184,7 +190,7 @@ const AppointmentConfirmation = ({ appointmentDetails, onDone }: AppointmentConf
       {showPrescreening && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
           <div className="fixed inset-4 z-50 rounded-lg border bg-background shadow-lg p-6 overflow-y-auto">
-            <PreScreeningAssistant autoStart={true}/>
+            <RadialCard autoStart={true}/>
             <Button
               onClick={togglePrescreening}
               className="absolute top-4 right-4"

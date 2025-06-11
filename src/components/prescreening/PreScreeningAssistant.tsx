@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -6,23 +5,11 @@ import { Mic, MicOff } from 'lucide-react';
 import useVapi from '@/hooks/use-vapi';
 import Transcriber from '@/components/ui/transcriber';
 import { Button } from '@/components/ui/button';
-import PrescreeningValidationModal from './PrescreeningValidationModal';
-import useUser from '@/hooks/useUser';
 
 const PreScreeningAssistant: React.FC<{ autoStart?: boolean }> = ({ autoStart = false }) => {
-  const { 
-    volumeLevel, 
-    isSessionActive, 
-    toggleCall, 
-    conversation,
-    showValidationModal,
-    closeValidationModal,
-    restartPrescreening
-  } = useVapi();
+  const { volumeLevel, isSessionActive, toggleCall, conversation } = useVapi();
   const [bars, setBars] = useState(Array(50).fill(0));
   const [isStarted, setIsStarted] = useState(autoStart);
-  const [attempts, setAttempts] = useState(0);
-  const { user } = useUser();
 
   const formattedConversation = conversation.map((msg) => ({
     ...msg,
@@ -38,6 +25,7 @@ const PreScreeningAssistant: React.FC<{ autoStart?: boolean }> = ({ autoStart = 
     }
   }, [volumeLevel, isSessionActive]);
 
+  // Add new useEffect for auto-starting
   useEffect(() => {
     if (autoStart && !isSessionActive) {
       setIsStarted(true);
@@ -55,12 +43,7 @@ const PreScreeningAssistant: React.FC<{ autoStart?: boolean }> = ({ autoStart = 
 
   const handleStart = () => {
     setIsStarted(true);
-    toggleCall();
-  };
-
-  const handleRetry = () => {
-    setAttempts(prev => prev + 1);
-    restartPrescreening();
+    toggleCall(); // Automatically start the call when clicking the start button
   };
 
   if (!isStarted) {
@@ -132,15 +115,6 @@ const PreScreeningAssistant: React.FC<{ autoStart?: boolean }> = ({ autoStart = 
       <div className="h-[400px] mt-6">
         <Transcriber conversation={formattedConversation} />
       </div>
-
-      <PrescreeningValidationModal
-        isOpen={showValidationModal}
-        onClose={closeValidationModal}
-        patientId={user?.id || null}
-        onRetry={handleRetry}
-        currentAttempts={attempts}
-        maxAttempts={3}
-      />
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Vapi from '@vapi-ai/web';
 
@@ -17,8 +16,7 @@ const useVapi = () => {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [conversation, setConversation] = useState<Message[]>([]);
   const [callCompleted, setCallCompleted] = useState(false);
-  const [prescreeningStatus, setPrescreeningStatus] = useState<'pending' | 'completed'>('pending');
-  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [prescreeningStatus, setPrescreeningStatus] = useState<'pending' | 'successful' | 'failed'>('pending');
   const vapiRef = useRef<any>(null);
 
   const initializeVapi = useCallback(() => {
@@ -30,15 +28,14 @@ const useVapi = () => {
         setIsSessionActive(true);
         setCallCompleted(false);
         setPrescreeningStatus('pending');
-        setShowValidationModal(false);
       });
 
       vapiInstance.on('call-end', () => {
         setIsSessionActive(false);
         setCallCompleted(true);
-        setConversation([]);
-        setPrescreeningStatus('completed');
-        setShowValidationModal(true);
+        setConversation([]); // Reset conversation on call end
+        // Check prescreening status after call ends
+        checkPrescreeningStatus();
       });
 
       vapiInstance.on('volume-level', (volume: number) => {
@@ -59,6 +56,22 @@ const useVapi = () => {
       });
     }
   }, []);
+
+  const checkPrescreeningStatus = async () => {
+    try {
+      // Implementation to check appointment prescreening status
+      // This will be called after call ends to update UI
+      // You can fetch the call analysis from Vapi API here
+      // and determine if the prescreening was successful or failed
+      console.log('Checking prescreening status...');
+      
+      // Placeholder logic - replace with actual API call to check status
+      // setPrescreeningStatus('successful'); // or 'failed' based on analysis
+    } catch (error) {
+      console.error('Error checking prescreening status:', error);
+      setPrescreeningStatus('failed');
+    }
+  };
 
   useEffect(() => {
     initializeVapi();
@@ -83,28 +96,13 @@ const useVapi = () => {
     }
   };
 
-  const closeValidationModal = () => {
-    setShowValidationModal(false);
-  };
-
-  const restartPrescreening = () => {
-    setShowValidationModal(false);
-    setCallCompleted(false);
-    setPrescreeningStatus('pending');
-    // Automatically start a new call
-    toggleCall();
-  };
-
   return { 
     volumeLevel, 
     isSessionActive, 
     conversation, 
     toggleCall,
     callCompleted,
-    prescreeningStatus,
-    showValidationModal,
-    closeValidationModal,
-    restartPrescreening
+    prescreeningStatus
   };
 };
 
