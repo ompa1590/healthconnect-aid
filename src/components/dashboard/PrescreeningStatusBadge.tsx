@@ -30,13 +30,17 @@ const PrescreeningStatusBadge = ({
     const fetchPrescreeningStatus = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`/api/vapi/prescreening-status/${patientId}`);
+        console.log(`Fetching prescreening status for patient ${patientId}, appointment ${appointmentId}`);
+        
+        const response = await fetch(`/api/vapi/prescreening-status/${patientId}?appointmentId=${appointmentId}`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch prescreening status');
         }
         
         const data = await response.json();
+        console.log('Prescreening status response:', data);
+        
         setStatus(data.status || 'not_started');
         setMessage(data.message || '');
       } catch (error) {
@@ -48,10 +52,10 @@ const PrescreeningStatusBadge = ({
       }
     };
 
-    if (patientId) {
+    if (patientId && appointmentId) {
       fetchPrescreeningStatus();
     }
-  }, [patientId]);
+  }, [patientId, appointmentId]);
 
   const getStatusConfig = (status: PrescreeningStatus) => {
     switch (status) {

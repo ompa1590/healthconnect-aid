@@ -956,17 +956,22 @@ async function updateAppointmentPrescreeningStatus(appointmentId, analysisResult
   router.get('/prescreening-status/:patientId', async (req, res) => {
     try {
       const { patientId } = req.params;
+      const { appointmentId } = req.query;
       
-      console.log(`[API] Checking prescreening status for patient: ${patientId}`);
+      console.log(`[API] Checking prescreening status for patient: ${patientId}, appointment: ${appointmentId}`);
       
-      // Query the most recent call analysis for this patient
-      const { data, error } = await supabase
+      let query = supabase
         .from('call_analysis')
-        .select('success_evaluation, success_rubric, is_emergency, analysis_timestamp')
+        .select('success_evaluation, success_rubric, is_emergency, analysis_timestamp, appointment_id')
         .eq('patient_id', patientId)
-        .order('analysis_timestamp', { ascending: false })
-        .limit(1)
-        .single();
+        .order('analysis_timestamp', { ascending: false });
+      
+      // If appointment ID is provided, filter by it, otherwise get the latest for any appointment
+      if (appointmentId) {
+        query = query.eq('appointment_id', appointmentId);
+      }
+      
+      const { data, error } = await query.limit(1).single();
       
       if (error && error.code !== 'PGRST116') {
         console.error('[API] Error fetching prescreening status:', error);
@@ -974,28 +979,85 @@ async function updateAppointmentPrescreeningStatus(appointmentId, analysisResult
       }
       
       if (!data) {
+        // No call analysis found, check appointments table
+        console.log(`[API] No call analysis found, checking appointments table`);
+        
+        let appointmentQuery = supabase
+          .from('appointments')
+          .select('prescreening_status, status')
+          .eq('patient_id', patientId);
+        
+        if (appointmentId) {
+          appointmentQuery = appointmentQuery.eq('id', appointmentId);
+        }
+        
+        const { data: appointmentData, error: appointmentError } = await appointmentQuery
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (appointmentError && appointmentError.code !== 'PGRST116') {
+          console.error('[API] Error fetching appointment status:', appointmentError);
+          throw appointmentError;
+        }
+        
+        if (!appointmentData) {
+          return res.status(200).json({
+            status: 'not_started',
+            message: 'No prescreening records found',
+            patientId
+          });
+        }
+        
+        // Map appointment prescreening_status to our status format
+        let status = 'not_started';
+        let message = 'Prescreening not started';
+        
+        switch (appointmentData.prescreening_status) {
+          case 'completed':
+            status = 'successful';
+            message = 'Prescreening completed successfully';
+            break;
+          case 'failed':
+            status = 'failed';
+            message = 'Prescreening failed, please retry';
+            break;
+          case 'emergency_declared':
+            status = 'emergency_declared';
+            message = 'Emergency situation detected';
+            break;
+          case 'pending':
+            status = 'loading';
+            message = 'Prescreening in progress...';
+            break;
+          default:
+            status = 'not_started';
+            message = 'Prescreening not started';
+        }
+        
         return res.status(200).json({
-          status: 'loading',
-          message: 'Prescreening analysis in progress...',
-          patientId
+          status,
+          message,
+          patientId,
+          source: 'appointments_table'
         });
       }
       
-      // Map database status to frontend status
+      // Map call analysis data to frontend status
       let status = 'loading';
       let message = 'Processing your prescreening...';
       let reason = null;
       
       if (data.is_emergency) {
         status = 'emergency_declared';
-        message = 'Your symptoms require immediate medical attention. This platform cannot treat your condition.';
+        message = 'Emergency situation detected during prescreening';
         reason = data.success_rubric;
       } else if (data.success_evaluation === 'successful') {
         status = 'successful';
-        message = 'Prescreening completed successfully! You\'re ready for your appointment.';
+        message = 'Prescreening completed successfully';
       } else if (data.success_evaluation === 'failed' || data.success_evaluation === 'incomplete') {
         status = 'failed';
-        message = 'Prescreening was incomplete. Please try again.';
+        message = 'Prescreening was incomplete, please retry';
         reason = data.success_rubric;
       }
       
@@ -1006,7 +1068,9 @@ async function updateAppointmentPrescreeningStatus(appointmentId, analysisResult
         message,
         reason,
         patientId,
-        timestamp: data.analysis_timestamp
+        appointmentId: data.appointment_id,
+        timestamp: data.analysis_timestamp,
+        source: 'call_analysis'
       });
       
     } catch (error) {
