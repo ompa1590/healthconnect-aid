@@ -8,6 +8,7 @@ const {
   parseSuccessEvaluation,
   updateAppointmentStatus
 } = require('../utils/callAnalysisUtils');
+const { supabase } = require('../services/supabase');
 
 const router = express.Router();
 
@@ -279,6 +280,90 @@ router.post('/getAppointmentDetails', async (req, res) => {
       service: 'vapi-triage-backend'
     });
   });
+
+// Helper function to find appointment by patient ID
+async function findAppointmentByPatientId(patientId) {
+  try {
+    console.log(`[Appointment] Finding appointment for patient: ${patientId}`);
+    
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('id, status, prescreening_attempts')
+      .eq('patient_id', patientId)
+      .in('status', ['upcoming', 'confirmed'])
+      .order('appointment_date', { ascending: true })
+      .limit(1)
+      .single();
+    
+    if (error) {
+      console.error('[Appointment] Error finding appointment:', error);
+      return null;
+    }
+    
+    console.log(`[Appointment] Found appointment:`, data);
+    return data;
+  } catch (error) {
+    console.error('[Appointment] Exception finding appointment:', error);
+    return null;
+  }
+}
+
+// Helper function to update appointment prescreening status
+async function updateAppointmentPrescreeningStatus(appointmentId, analysisResult, currentAttempts = 0) {
+  try {
+    console.log(`[Appointment] Updating prescreening status for appointment ${appointmentId}`);
+    
+    // Map call analysis status to appointment prescreening status
+    let prescreeningStatus;
+    let newAttempts = currentAttempts;
+    
+    switch (analysisResult.successEvaluation?.status) {
+      case 'successful':
+        prescreeningStatus = 'completed';
+        break;
+      case 'emergency_declared':
+        prescreeningStatus = 'emergency_declared';
+        break;
+      case 'failed':
+      case 'incomplete':
+        prescreeningStatus = 'failed';
+        newAttempts = currentAttempts + 1;
+        break;
+      default:
+        prescreeningStatus = 'pending';
+        newAttempts = currentAttempts + 1;
+    }
+    
+    const updateData = {
+      prescreening_status: prescreeningStatus,
+      prescreening_attempts: newAttempts,
+      updated_at: new Date().toISOString()
+    };
+    
+    const { data, error } = await supabase
+      .from('appointments')
+      .update(updateData)
+      .eq('id', appointmentId)
+      .select();
+    
+    if (error) {
+      console.error('[Appointment] Error updating prescreening status:', error);
+      return { success: false, error: error.message };
+    }
+    
+    console.log(`[Appointment] Successfully updated prescreening status to ${prescreeningStatus} for appointment ${appointmentId}`);
+    return { 
+      success: true, 
+      prescreeningStatus, 
+      attempts: newAttempts,
+      data 
+    };
+    
+  } catch (error) {
+    console.error('[Appointment] Exception updating prescreening status:', error);
+    return { success: false, error: error.message };
+  }
+}
   
   router.post('/end-of-call-report', async (req, res) => {
     const startTime = Date.now();
@@ -606,13 +691,78 @@ router.post('/getAppointmentDetails', async (req, res) => {
       callStatus = databaseResult.evaluationStatus || 'incomplete';
       failureReason = databaseResult.reason || 'No evaluation provided';
     }
+
+    // NEW: Update appointment prescreening status based on call analysis
+    let appointmentUpdateResult = { executed: false };
+    
+    try {
+      // Try to get patient ID from call metadata first
+      const patientId = call.metadata?.patientId || analysisResult.structuredData?.patientId;
+      
+      if (patientId) {
+        console.log(`[Appointment] Found patient ID ${patientId}, looking for appointment to update`);
+        
+        // Find the appointment for this patient
+        const appointment = await findAppointmentByPatientId(patientId);
+        
+        if (appointment) {
+          console.log(`[Appointment] Found appointment ${appointment.id} for patient ${patientId}`);
+          
+          // Update the appointment prescreening status
+          const updateResult = await updateAppointmentPrescreeningStatus(
+            appointment.id, 
+            analysisResult, 
+            appointment.prescreening_attempts
+          );
+          
+          if (updateResult.success) {
+            console.log(`[Appointment] Successfully updated appointment ${appointment.id} prescreening status to ${updateResult.prescreeningStatus}`);
+            appointmentUpdateResult = {
+              executed: true,
+              appointmentId: appointment.id,
+              prescreeningStatus: updateResult.prescreeningStatus,
+              attempts: updateResult.attempts,
+              success: true
+            };
+          } else {
+            console.error(`[Appointment] Failed to update appointment ${appointment.id}:`, updateResult.error);
+            appointmentUpdateResult = {
+              executed: false,
+              error: updateResult.error,
+              appointmentId: appointment.id
+            };
+          }
+        } else {
+          console.log(`[Appointment] No appointment found for patient ${patientId}`);
+          appointmentUpdateResult = {
+            executed: false,
+            error: 'No appointment found for patient',
+            patientId
+          };
+        }
+      } else {
+        console.log(`[Appointment] No patient ID found in call metadata or structured data`);
+        appointmentUpdateResult = {
+          executed: false,
+          error: 'No patient ID available in call data'
+        };
+      }
+    } catch (error) {
+      console.error(`[Appointment] Error updating appointment status:`, error);
+      appointmentUpdateResult = {
+        executed: false,
+        error: error.message
+      };
+    }
     
     const businessResult = await executeBusinessLogic(call, analysisResult, databaseResult);
     
     console.log(`[Vapi] Call ${call.id} processing complete:`, {
       evaluationStatus: callStatus,
       savedToDatabase: databaseResult?.success,
-      businessLogicExecuted: businessResult.executed
+      businessLogicExecuted: businessResult.executed,
+      appointmentUpdated: appointmentUpdateResult.executed,
+      appointmentUpdateStatus: appointmentUpdateResult.prescreeningStatus
     });
     
     return {
@@ -621,6 +771,7 @@ router.post('/getAppointmentDetails', async (req, res) => {
       analysis: analysisResult,
       database: databaseResult,
       businessLogic: businessResult,
+      appointmentUpdate: appointmentUpdateResult,
       evaluationStatus: callStatus,
       failureReason: failureReason,
       timestamp: new Date().toISOString()
