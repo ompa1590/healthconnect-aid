@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarClock, Clock, FileText, Video, MessageCircle, RefreshCw } from "lucide-react";
@@ -11,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import useAppointment from "@/hooks/useAppointment";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import PrescreeningStatusBadge from "./PrescreeningStatusBadge";
 
 type Appointment = {
   id: number | string;
@@ -31,6 +31,7 @@ type Appointment = {
   appointment_date?: string;
   appointment_time?: string;
   reason?: string;
+  patient_id?: string;
 };
 
 const AppointmentHistory = () => {
@@ -64,7 +65,8 @@ const AppointmentHistory = () => {
             provider_id: apt.provider_id,
             doctor_name: apt.doctor_name,
             appointment_date: apt.appointment_date,
-            appointment_time: apt.appointment_time
+            appointment_time: apt.appointment_time,
+            patient_id: apt.patient_id
           };
         });
 
@@ -111,6 +113,16 @@ const AppointmentHistory = () => {
       title: "Retrying",
       description: "Attempting to reconnect and fetch your appointments...",
     });
+  };
+
+  const handleStartPrescreening = (appointmentId: string) => {
+    // Navigate to prescreening page
+    navigate(`/prescreening?appointmentId=${appointmentId}`);
+  };
+
+  const handleRetryPrescreening = (appointmentId: string) => {
+    // Navigate to prescreening page for retry
+    navigate(`/prescreening?appointmentId=${appointmentId}&retry=true`);
   };
 
   if (isLoading) {
@@ -173,36 +185,48 @@ const AppointmentHistory = () => {
                   {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1).replace('_', ' ')}
                 </Badge>
               </div>
-              <div className="flex gap-3">
-                {(appointment.status === "upcoming" || appointment.status === "in_progress") ? (
-                  <Button 
-                    variant="default"
-                    size="sm"
-                    className="transition-all duration-300 hover:scale-105"
-                  >
-                    Join Call
-                    <Video className="ml-2 h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button 
-                    variant="outline" 
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-3">
+                  {(appointment.status === "upcoming" || appointment.status === "in_progress") ? (
+                    <Button 
+                      variant="default"
+                      size="sm"
+                      className="transition-all duration-300 hover:scale-105"
+                    >
+                      Join Call
+                      <Video className="ml-2 h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="transition-all duration-300 hover:bg-primary/10"
+                      onClick={() => handleViewDetails(appointment)}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      View Details
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
                     size="sm"
                     className="transition-all duration-300 hover:bg-primary/10"
-                    onClick={() => handleViewDetails(appointment)}
+                    onClick={() => handleChatWithDoctor(appointment.doctor)}
                   >
-                    <FileText className="mr-2 h-4 w-4" />
-                    View Details
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    Chat
                   </Button>
+                </div>
+                
+                {/* Prescreening Status - only show for upcoming appointments */}
+                {(appointment.status === "upcoming" || appointment.status === "in_progress") && appointment.patient_id && (
+                  <PrescreeningStatusBadge
+                    patientId={appointment.patient_id}
+                    appointmentId={appointment.id.toString()}
+                    onStartPrescreening={() => handleStartPrescreening(appointment.id.toString())}
+                    onRetryPrescreening={() => handleRetryPrescreening(appointment.id.toString())}
+                  />
                 )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="transition-all duration-300 hover:bg-primary/10"
-                  onClick={() => handleChatWithDoctor(appointment.doctor)}
-                >
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  Chat
-                </Button>
               </div>
             </div>
             <div className="mt-4 flex items-center gap-6 text-sm text-muted-foreground">
