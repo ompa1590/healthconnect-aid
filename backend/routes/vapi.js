@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { verifyPatientIdentity } = require('../utils/verifyIdentity');
 const { getUpcomingAppointment } = require('../utils/getAppointmentDetails');
@@ -801,6 +800,71 @@ router.post('/getAppointmentDetails', async (req, res) => {
       pendingCount: pending.length,
       pendingCalls: pending
     });
+  });
+  
+  router.get('/prescreening-status/:patientId', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      
+      console.log(`[API] Checking prescreening status for patient: ${patientId}`);
+      
+      // Query the most recent call analysis for this patient
+      const { data, error } = await supabase
+        .from('call_analysis')
+        .select('success_evaluation, success_rubric, is_emergency, analysis_timestamp')
+        .eq('patient_id', patientId)
+        .order('analysis_timestamp', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('[API] Error fetching prescreening status:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        return res.status(200).json({
+          status: 'loading',
+          message: 'Prescreening analysis in progress...',
+          patientId
+        });
+      }
+      
+      // Map database status to frontend status
+      let status = 'loading';
+      let message = 'Processing your prescreening...';
+      let reason = null;
+      
+      if (data.is_emergency) {
+        status = 'emergency_declared';
+        message = 'Your symptoms require immediate medical attention. This platform cannot treat your condition.';
+        reason = data.success_rubric;
+      } else if (data.success_evaluation === 'successful') {
+        status = 'successful';
+        message = 'Prescreening completed successfully! You\'re ready for your appointment.';
+      } else if (data.success_evaluation === 'failed' || data.success_evaluation === 'incomplete') {
+        status = 'failed';
+        message = 'Prescreening was incomplete. Please try again.';
+        reason = data.success_rubric;
+      }
+      
+      console.log(`[API] Prescreening status for ${patientId}:`, { status, message });
+      
+      res.status(200).json({
+        status,
+        message,
+        reason,
+        patientId,
+        timestamp: data.analysis_timestamp
+      });
+      
+    } catch (error) {
+      console.error('[API] Error checking prescreening status:', error);
+      res.status(500).json({
+        error: 'Failed to check prescreening status',
+        details: error.message
+      });
+    }
   });
   
   module.exports = router;

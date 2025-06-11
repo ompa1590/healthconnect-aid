@@ -19,6 +19,8 @@ export type Database = {
           patient_email: string
           patient_id: string | null
           patient_name: string
+          prescreening_attempts: number | null
+          prescreening_status: string | null
           provider_id: string
           reason: string | null
           service_name: string | null
@@ -35,6 +37,8 @@ export type Database = {
           patient_email: string
           patient_id?: string | null
           patient_name: string
+          prescreening_attempts?: number | null
+          prescreening_status?: string | null
           provider_id: string
           reason?: string | null
           service_name?: string | null
@@ -51,6 +55,8 @@ export type Database = {
           patient_email?: string
           patient_id?: string | null
           patient_name?: string
+          prescreening_attempts?: number | null
+          prescreening_status?: string | null
           provider_id?: string
           reason?: string | null
           service_name?: string | null
@@ -61,6 +67,72 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fk_appointments_patient_id"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_analysis: {
+        Row: {
+          analysis_timestamp: string | null
+          appointment_id: string | null
+          call_duration: number | null
+          call_id: string
+          call_summary: string | null
+          call_transcript: string | null
+          created_at: string | null
+          evaluation_reason: string | null
+          id: string
+          is_emergency: boolean | null
+          patient_id: string
+          structured_data: Json | null
+          success_evaluation: string
+          success_rubric: string | null
+        }
+        Insert: {
+          analysis_timestamp?: string | null
+          appointment_id?: string | null
+          call_duration?: number | null
+          call_id: string
+          call_summary?: string | null
+          call_transcript?: string | null
+          created_at?: string | null
+          evaluation_reason?: string | null
+          id?: string
+          is_emergency?: boolean | null
+          patient_id: string
+          structured_data?: Json | null
+          success_evaluation: string
+          success_rubric?: string | null
+        }
+        Update: {
+          analysis_timestamp?: string | null
+          appointment_id?: string | null
+          call_duration?: number | null
+          call_id?: string
+          call_summary?: string | null
+          call_transcript?: string | null
+          created_at?: string | null
+          evaluation_reason?: string | null
+          id?: string
+          is_emergency?: boolean | null
+          patient_id?: string
+          structured_data?: Json | null
+          success_evaluation?: string
+          success_rubric?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_analysis_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_analysis_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "profiles"
