@@ -47,7 +47,7 @@ const PrescriptionsPage = () => {
         </div>
       </div>
       
-      <Tabs defaultValue="prescriptions" className="mb-8">
+      <Tabs defaultValue="my-health" className="mb-8">
         <TabsList className="mb-6 bg-white/70 backdrop-blur-sm p-1 rounded-lg border border-border/30">
           <TabsTrigger value="my-health" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
             <Heart className="h-4 w-4 mr-2" />
