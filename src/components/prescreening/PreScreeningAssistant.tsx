@@ -1,15 +1,25 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Mic, MicOff } from 'lucide-react';
-import useVapi from '@/hooks/use-vapi';
-import Transcriber from '@/components/ui/transcriber';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Mic, MicOff } from "lucide-react";
+import useVapi from "@/hooks/use-vapi";
+import Transcriber from "@/components/ui/transcriber";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 
-const PreScreeningAssistant: React.FC<{ autoStart?: boolean }> = ({ autoStart = false }) => {
+interface PreScreeningAssistantProps {
+  autoStart?: boolean;
+  onComplete?: () => void; // Add onComplete prop
+}
+
+const PreScreeningAssistant: React.FC<PreScreeningAssistantProps> = ({
+  autoStart = false,
+  onComplete,
+}) => {
   const { volumeLevel, isSessionActive, toggleCall, conversation } = useVapi();
   const [bars, setBars] = useState(Array(50).fill(0));
   const [isStarted, setIsStarted] = useState(autoStart);
+  const { toast } = useToast();
 
   const formattedConversation = conversation.map((msg) => ({
     ...msg,
@@ -25,13 +35,14 @@ const PreScreeningAssistant: React.FC<{ autoStart?: boolean }> = ({ autoStart = 
     }
   }, [volumeLevel, isSessionActive]);
 
-  // Add new useEffect for auto-starting
+  // Handle auto-start
   useEffect(() => {
-    if (autoStart && !isSessionActive) {
+    if (autoStart && !isSessionActive && !isStarted) {
+      console.log("Auto-starting prescreening session");
       setIsStarted(true);
       toggleCall();
     }
-  }, [autoStart]);
+  }, [autoStart, isSessionActive, toggleCall]);
 
   const updateBars = (volume: number) => {
     setBars(bars.map(() => Math.random() * volume * 50));
@@ -42,8 +53,23 @@ const PreScreeningAssistant: React.FC<{ autoStart?: boolean }> = ({ autoStart = 
   };
 
   const handleStart = () => {
+    console.log("Starting prescreening session");
     setIsStarted(true);
-    toggleCall(); // Automatically start the call when clicking the start button
+    toggleCall();
+  };
+
+  const handleComplete = () => {
+    console.log("Completing prescreening session");
+    if (isSessionActive) {
+      toggleCall(); // Stop the session if active
+    }
+    toast({
+      title: "Pre-Screening Completed",
+      description: "Your pre-screening information has been saved.",
+    });
+    if (onComplete) {
+      onComplete(); // Trigger onComplete callback
+    }
   };
 
   if (!isStarted) {
@@ -51,13 +77,10 @@ const PreScreeningAssistant: React.FC<{ autoStart?: boolean }> = ({ autoStart = 
       <div className="flex flex-col items-center justify-center space-y-4 p-8">
         <h2 className="text-2xl font-semibold">Pre-Screening Assistant</h2>
         <p className="text-muted-foreground text-center max-w-md">
-          Welcome to your pre-screening session. Our AI assistant will help gather important information before your appointment.
+          Welcome to your pre-screening session. Our AI assistant will help gather
+          important information before your appointment.
         </p>
-        <Button 
-          size="lg"
-          className="mt-4"
-          onClick={handleStart}
-        >
+        <Button size="lg" className="mt-4" onClick={handleStart}>
           Start Pre-Screening
         </Button>
       </div>
@@ -66,24 +89,32 @@ const PreScreeningAssistant: React.FC<{ autoStart?: boolean }> = ({ autoStart = 
 
   return (
     <div className="space-y-6">
-      <div className='border text-center justify-items-center p-4 rounded-2xl'>
-        <div className="flex items-center justify-center h-full relative" style={{ width: '300px', height: '300px' }}>
-          { isSessionActive ? 
-          <MicOff
-            size={24}
-            className="text-black dark:text-white"
-            onClick={toggleCall}
-            style={{ cursor: 'pointer', zIndex: 10 }}
-          />
-          :
-          <Mic
-          size={28}
-          className="text-black dark:text-white"
-          onClick={toggleCall}
-          style={{ cursor: 'pointer', zIndex: 10 }}
-          />
-          }
-          <svg width="100%" height="100%" viewBox="0 0 300 300" style={{ position: 'absolute', top: 0, left: 0 }}>
+      <div className="border text-center justify-items-center p-4 rounded-2xl">
+        <div
+          className="flex items-center justify-center h-full relative"
+          style={{ width: "300px", height: "300px" }}
+        >
+          {isSessionActive ? (
+            <MicOff
+              size={24}
+              className="text-black dark:text-white"
+              onClick={toggleCall}
+              style={{ cursor: "pointer", zIndex: 10 }}
+            />
+          ) : (
+            <Mic
+              size={28}
+              className="text-black dark:text-white"
+              onClick={toggleCall}
+              style={{ cursor: "pointer", zIndex: 10 }}
+            />
+          )}
+          <svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 300 300"
+            style={{ position: "absolute", top: 0, left: 0 }}
+          >
             {bars.map((height, index) => {
               const angle = (index / bars.length) * 360;
               const radians = (angle * Math.PI) / 180;
@@ -103,7 +134,7 @@ const PreScreeningAssistant: React.FC<{ autoStart?: boolean }> = ({ autoStart = 
                   strokeWidth="2"
                   initial={{ x2: x1, y2: y1 }}
                   animate={{ x2, y2 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 />
               );
             })}
@@ -114,6 +145,17 @@ const PreScreeningAssistant: React.FC<{ autoStart?: boolean }> = ({ autoStart = 
 
       <div className="h-[400px] mt-6">
         <Transcriber conversation={formattedConversation} />
+      </div>
+
+      {/* Add Complete Button */}
+      <div className="flex justify-center">
+        <Button
+          size="lg"
+          onClick={handleComplete}
+          disabled={!isStarted || isSessionActive} // Disable if session is still active
+        >
+          Complete Pre-Screening
+        </Button>
       </div>
     </div>
   );

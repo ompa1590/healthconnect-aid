@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { serviceCategories } from "@/data/serviceCategories";
@@ -40,6 +39,10 @@ const ServiceSelection = ({
   onSelectService, 
   onNext 
 }: ServiceSelectionProps) => {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const processingRef = useRef(false);
+  const lastSelectedRef = useRef<string | null>(null);
+
   // Flatten all services from all categories and cast to EnhancedService type
   const allServices: EnhancedService[] = serviceCategories.flatMap(category => 
     category.services.map(service => ({
@@ -49,6 +52,68 @@ const ServiceSelection = ({
       categoryIcon: category.icon
     }))
   );
+
+  // Handle service selection with proper debouncing and event handling
+  const handleServiceSelect = useCallback((e: React.MouseEvent, serviceKey: string, serviceName: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Prevent double selection or rapid clicking
+    if (processingRef.current || isProcessing || lastSelectedRef.current === serviceKey) {
+      return;
+    }
+
+    processingRef.current = true;
+    setIsProcessing(true);
+    lastSelectedRef.current = serviceKey;
+
+    try {
+      // Small delay to prevent rapid state changes
+      setTimeout(() => {
+        onSelectService(serviceKey, serviceName);
+        processingRef.current = false;
+        setIsProcessing(false);
+      }, 100);
+    } catch (error) {
+      console.error("Error selecting service:", error);
+      processingRef.current = false;
+      setIsProcessing(false);
+      lastSelectedRef.current = null;
+    }
+  }, [onSelectService, isProcessing]);
+
+  // Handle next button with proper event handling
+  const handleNext = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (processingRef.current || isProcessing || !selectedService) {
+      return;
+    }
+
+    processingRef.current = true;
+    setIsProcessing(true);
+
+    try {
+      setTimeout(() => {
+        onNext();
+        processingRef.current = false;
+        setIsProcessing(false);
+      }, 100);
+    } catch (error) {
+      console.error("Error proceeding to next step:", error);
+      processingRef.current = false;
+      setIsProcessing(false);
+    }
+  }, [onNext, selectedService, isProcessing]);
+
+  // Reset processing state when selectedService changes
+  React.useEffect(() => {
+    if (selectedService && lastSelectedRef.current === selectedService) {
+      processingRef.current = false;
+      setIsProcessing(false);
+    }
+  }, [selectedService]);
   
   return (
     <div className="flex flex-col h-[calc(100vh-180px)] max-h-[700px]">
@@ -75,9 +140,9 @@ const ServiceSelection = ({
                       isSelected 
                         ? "border-primary shadow-sm bg-primary/5" 
                         : "border-muted/50 hover:border-muted"
-                    }`}
+                    } ${isProcessing ? "pointer-events-none opacity-75" : ""}`}
                     style={{ animationDelay: `${index * 50}ms` }}
-                    onClick={() => onSelectService(serviceKey, service.title)}
+                    onClick={(e) => handleServiceSelect(e, serviceKey, service.title)}
                   >
                     <CardContent className="p-4 flex flex-col h-full relative">
                       {isSelected && (
@@ -164,11 +229,12 @@ const ServiceSelection = ({
       {/* Footer with action button - sticky */}
       <div className="sticky bottom-0 bg-background pt-4 flex justify-end border-t mt-auto">
         <Button 
-          onClick={onNext}
-          disabled={!selectedService}
+          onClick={handleNext}
+          disabled={!selectedService || isProcessing}
           className="flex items-center gap-2 px-6 transition-all duration-300 hover:shadow-md"
+          type="button"
         >
-          Choose Specialist
+          {isProcessing ? "Processing..." : "Choose Specialist"}
           <ArrowRight className="h-4 w-4 animate-slide-left" />
         </Button>
       </div>
