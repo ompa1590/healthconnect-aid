@@ -184,7 +184,7 @@ const BookAppointmentFlow = ({ onClose }: BookAppointmentFlowProps) => {
   
   return (
     <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
-      <DialogHeader className="sticky top-0 z-30 bg-background pb-2">
+      <DialogHeader className="sticky top-0 bg-background pb-2">
         <DialogTitle className="text-2xl font-normal">Book an Appointment</DialogTitle>
       </DialogHeader>
       
