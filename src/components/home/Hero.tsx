@@ -1,14 +1,17 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { ArrowRight, Video, Calendar, Shield, MessageCircle, Stethoscope, Clock, Headphones, Pill, Lock, ClipboardCheck } from "lucide-react";
+import { ArrowRight, Video, Calendar, Shield, MessageCircle, Stethoscope, Clock, Headphones, Pill, Lock, ClipboardCheck, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MedicalIcon3D } from "@/components/ui/MedicalIcons3D";
+import TrialVoiceAssistant from "@/components/home/TrialVoiceAssistant";
 
 const Hero = () => {
   const { t } = useLanguage();
+  const [trialOpen, setTrialOpen] = useState(false);
   
   const benefits = [
     { text: "24/7 access to healthcare professionals", icon: <Headphones className="h-5 w-5 text-primary" />, iconBg: "bg-primary/20" },
@@ -56,16 +59,20 @@ const Hero = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="rounded-full text-base font-medium px-8 group" asChild>
-                <Link to="/signup">
-                  {t('startYourVisit')}
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                </Link>
+              <Button
+                size="lg"
+                className="rounded-full text-base font-medium px-8 group animate-glow"
+                onClick={() => setTrialOpen(true)}
+              >
+                <Sparkles className="mr-2 h-5 w-5" />
+                Try Vyra AI
               </Button>
               <Button variant="outline" size="lg" className="rounded-full text-base font-medium px-8 border-primary/20 hover:bg-primary/5 hover:border-primary/30" asChild>
                 <Link to="/how-it-works">{t('howItWorks')}</Link>
               </Button>
             </div>
+
+            <TrialVoiceAssistant open={trialOpen} onOpenChange={setTrialOpen} />
           </div>
 
           {/* Hero Visual */}
